@@ -1,0 +1,28 @@
+{
+  "name": "hideki-plugins",
+  "owner": {
+    "name": "Hideki"
+  },
+  "plugins": [
+    {
+      "name": "multi-agent-council",
+      "source": "./plugins/multi-agent-council",
+      "description": "Multi-LLM council for architecture decisions and code reviews"
+    },
+    {
+      "name": "my-skill-factory",
+      "source": "./plugins/my-skill-factory",
+      "description": "Create, build, and install custom Claude Code skills into Hideki's local marketplace. End-to-end workflow from requirements gathering to a fully installed and usable skill. Use when the user asks to c"
+    },
+    {
+      "name": "review-pr",
+      "source": "./plugins/review-pr",
+      "description": "Perform detailed code review on a GitHub pull request. Analyzes every changed file for bugs, security vulnerabilities, performance issues, design problems, and style nits. Produces a structured report"
+    },
+    {
+      "name": "dev-workflow",
+      "source": "./plugins/dev-workflow",
+      "description": "End-to-end development workflow: plan, implement, commit, and optionally PR. Use when the user asks to implement a feature, fix a bug, refactor code, or any multi-step development task."
+    }
+  ]
+}

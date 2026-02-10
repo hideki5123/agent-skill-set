@@ -1,0 +1,20 @@
+{
+  "name": "hideki-plugins",
+  "owner": {
+    "name": "Hideki"
+  },
+  "metadata": {
+    "description": "Custom Claude Code plugins by Hideki"
+  },
+  "plugins": [
+    {
+      "name": "review-pr",
+      "source": {
+        "type": "local",
+        "path": "."
+      },
+      "description": "Perform detailed code review on a GitHub pull request. Analyzes every changed file for bugs, security vulnerabilities, performance issues, design problems, and style nits. Produces a structured report",
+      "version": "1.0.0"
+    }
+  ]
+}

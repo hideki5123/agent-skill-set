@@ -1,0 +1,20 @@
+{
+  "name": "hideki-plugins",
+  "owner": {
+    "name": "Hideki"
+  },
+  "metadata": {
+    "description": "Custom Claude Code plugins by Hideki"
+  },
+  "plugins": [
+    {
+      "name": "multi-agent-council",
+      "source": {
+        "type": "local",
+        "path": "."
+      },
+      "description": "Multi-LLM council for architecture decisions and code reviews. Orchestrates Claude + external LLMs through a 3-round protocol.",
+      "version": "1.0.0"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "name": "review-pr",
+  "version": "1.0.0",
+  "description": "Perform detailed code review on a GitHub pull request. Analyzes every changed file for bugs, security vulnerabilities, performance issues, design problems, and style nits. Produces a structured report",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "review-pr"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}

@@ -1,0 +1,20 @@
+{
+  "name": "multi-agent-council",
+  "version": "1.0.0",
+  "description": "Multi-LLM council for architecture decisions and code reviews. Orchestrates Claude + external LLMs (OpenAI, Gemini) through a 3-round protocol for diverse AI perspectives and thorough analysis.",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "multi-agent",
+    "council",
+    "architecture",
+    "code-review",
+    "llm",
+    "openai",
+    "gemini",
+    "decision-making"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}

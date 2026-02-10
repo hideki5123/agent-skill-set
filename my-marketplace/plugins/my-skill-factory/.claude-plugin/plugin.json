@@ -1,0 +1,13 @@
+{
+  "name": "my-skill-factory",
+  "version": "1.0.0",
+  "description": "Create, build, and install custom Claude Code skills into Hideki's local marketplace. End-to-end workflow from requirements gathering to a fully installed and usable skill. Use when the user asks to c",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "my-skill-factory"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}
