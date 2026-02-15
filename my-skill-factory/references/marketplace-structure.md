@@ -4,6 +4,9 @@
 
 ```
 D:\Shared\agents\my-skills\
+├── <skill-name>\                            # Canonical source (authoring)
+│   ├── SKILL.md
+│   └── references\
 ├── my-marketplace\                          # Local marketplace root
 │   ├── .claude-plugin\
 │   │   └── marketplace.json                 # Root registry (lists all plugins)
@@ -14,12 +17,31 @@ D:\Shared\agents\my-skills\
 │           │   └── marketplace.json         # Per-plugin marketplace ref
 │           └── skills\
 │               └── <skill-name>\
-│                   ├── SKILL.md
-│                   └── references\
-├── <skill-name>\                            # Skill source (working copy)
-│   ├── SKILL.md
-│   └── references\
+│                   ├── SKILL.md             # Generated from source
+│                   └── references\          # Generated from source
 └── my-skill-factory\                        # This skill
+```
+
+## Source of Truth and Sync
+
+- Source of truth is the root skill directory (`<skill>/...`).
+- Marketplace plugin skills are generated artifacts.
+- Regenerate artifacts with:
+
+```bash
+python sync_marketplace.py
+```
+
+- Validate no drift between source and generated artifacts:
+
+```bash
+python sync_marketplace.py --validate
+```
+
+- Sync a subset:
+
+```bash
+python sync_marketplace.py --skills dev-workflow review-pr
 ```
 
 ## Claude Code Config Files
@@ -68,6 +90,12 @@ Example: `review-pr@hideki-plugins`
   "skills": "./skills"
 }
 ```
+
+## Contributor Rule
+
+- Edit skill content only under root source directories.
+- Never manually edit files under `my-marketplace/plugins/*/skills/*`.
+- After edits: run `python sync_marketplace.py`, then `python sync_marketplace.py --validate`.
 
 ## installed_plugins.json Entry Schema
 

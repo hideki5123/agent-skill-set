@@ -8,12 +8,12 @@
   },
   "plugins": [
     {
-      "name": "my-skill-factory",
+      "name": "dev-workflow",
       "source": {
         "type": "local",
         "path": "."
       },
-      "description": "Create, build, and install custom Claude Code skills into Hideki's local marketplace. End-to-end workflow from requirements gathering to a fully installed and usable skill. Use when the user asks to c",
+      "description": "Create an agent team to explore this from different angles: one teammate on architecture, one on security, one considering edge device resource, one playing devil's advocate. End-to-end development wo",
       "version": "1.0.0"
     }
   ]

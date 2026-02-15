@@ -5,6 +5,11 @@
   },
   "plugins": [
     {
+      "name": "dev-workflow",
+      "source": "./plugins/dev-workflow",
+      "description": "Create an agent team to explore this from different angles: one teammate on architecture, one on security, one considering edge device resource, one playing devil's advocate. End-to-end development wo"
+    },
+    {
       "name": "multi-agent-council",
       "source": "./plugins/multi-agent-council",
       "description": "Multi-LLM council for architecture decisions and code reviews"
@@ -18,11 +23,6 @@
       "name": "review-pr",
       "source": "./plugins/review-pr",
       "description": "Perform detailed code review on a GitHub pull request. Analyzes every changed file for bugs, security vulnerabilities, performance issues, design problems, and style nits. Produces a structured report"
-    },
-    {
-      "name": "dev-workflow",
-      "source": "./plugins/dev-workflow",
-      "description": "End-to-end development workflow: plan, implement, commit, and optionally PR. Use when the user asks to implement a feature, fix a bug, refactor code, or any multi-step development task."
     }
   ]
 }
