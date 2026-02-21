@@ -1,7 +1,7 @@
 ---
 name: dev-workflow
 description: >
-  Create an agent team to explore this from different angles: one teammate on architecture, one on security, one considering edge device resource, one playing devil's advocate.
+  Create an agent team to explore this from different angles: one teammate on architecture, one on security, one considering edge device resource, one playing devil's advocate and any other team mate who need to be on this task.
   End-to-end development workflow: plan, implement, commit, and optionally PR.
   Use when the user asks to implement a feature, fix a bug, refactor code, or any multi-step development task. Triggers on requests like "implement X", "build Y", "add feature Z", "fix bug", "refactor", or when the user invokes /dev-workflow.
   Orchestrates: branch creation, plan-mode iteration, team-based implementation, self-review, structured commits (conventional commits), and optional PR creation using the repo's PR template.

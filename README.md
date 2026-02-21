@@ -7,10 +7,12 @@ A collection of agent skills and tools for Claude Code and Cursor.
 | Skill | Description |
 |-------|-------------|
 | [multi-agent-council](multi-agent-council/) | Multi-LLM council for architecture decisions and code reviews (submodule) |
-| [dev-workflow](dev-workflow/) | End-to-end development workflow: plan, implement, commit, and PR |
+| [dev-workflow](dev-workflow/) | End-to-end development workflow: plan, implement, commit, and PR (supports multi-agent team) |
+| [tdd-team-workflow](tdd-team-workflow/) | Test-Driven Development workflow with multi-agent team discussion |
 | [review-pr](review-pr/) | Detailed code review on GitHub pull requests |
 | [my-skill-factory](my-skill-factory/) | Create, build, and install custom skills |
 | [my-marketplace](my-marketplace/) | Local skill marketplace |
+| [session-handover](session-handover/) | Generate a HANDOVER.md session handover document |
 
 ## Authoring Workflow
 
