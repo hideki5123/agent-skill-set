@@ -45,3 +45,12 @@ dist/
 build/
 out/
 coverage/
+
+# AI agent local files (ephemeral, not for version control)
+.agent/local/
+
+# Claude Code local settings (machine-specific)
+.claude/settings.local.json
+
+# Generated marketplace skill payloads (build artifacts)
+my-marketplace/plugins/*/skills/

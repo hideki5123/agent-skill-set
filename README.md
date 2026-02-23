@@ -18,23 +18,24 @@ A collection of agent skills and tools for Claude Code and Cursor.
 
 - Treat each skill root as source of truth (`<skill>/SKILL.md`, `<skill>/references/*`).
 - Do not hand-edit `my-marketplace/plugins/*/skills/*`; those are generated artifacts.
+- Generated trees under `my-marketplace/plugins/*/skills/*` are build artifacts and are gitignored.
 
 ### Sync Marketplace Artifacts
 
 ```bash
-python sync_marketplace.py
+python scripts/sync_marketplace.py
 ```
 
 Sync selected skills only:
 
 ```bash
-python sync_marketplace.py --skills dev-workflow review-pr
+python scripts/sync_marketplace.py --skills dev-workflow review-pr
 ```
 
 ### Validate Drift
 
 ```bash
-python sync_marketplace.py --validate
+python scripts/sync_marketplace.py --validate
 ```
 
 Use this in CI or before publishing to ensure source and generated plugin skills are in sync.
@@ -42,32 +43,32 @@ Use this in CI or before publishing to ensure source and generated plugin skills
 ### Unified Sync (Claude + Codex)
 
 ```bash
-python sync_skills.py
+python scripts/sync_skills.py
 ```
 
 Sync selected skills only:
 
 ```bash
-python sync_skills.py --skills dev-workflow review-pr
+python scripts/sync_skills.py --skills dev-workflow review-pr
 ```
 
 Sync a single target:
 
 ```bash
-python sync_skills.py --targets claude
-python sync_skills.py --targets codex
+python scripts/sync_skills.py --targets claude
+python scripts/sync_skills.py --targets codex
 ```
 
 Validate drift for selected targets:
 
 ```bash
-python sync_skills.py --validate
+python scripts/sync_skills.py --validate
 ```
 
 Optional Codex home override:
 
 ```bash
-python sync_skills.py --targets codex --codex-home "D:/path/to/.codex"
+python scripts/sync_skills.py --targets codex --codex-home "D:/path/to/.codex"
 ```
 
-`sync_skills.py` syncs marketplace artifacts under `my-marketplace/` and Codex skills under `$CODEX_HOME/skills` (fallback: `~/.codex/skills`). It does not update `~/.claude` install state.
+`scripts/sync_skills.py` syncs marketplace artifacts under `my-marketplace/` and Codex skills under `$CODEX_HOME/skills` (fallback: `~/.codex/skills`). It does not update `~/.claude` install state.

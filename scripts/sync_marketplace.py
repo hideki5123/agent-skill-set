@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
-"""Sync authoring-first skills for Claude marketplace and Codex.
+"""Sync authoring-first skills into marketplace plugin artifacts.
 
 Usage:
-  python sync_skills.py
-  python sync_skills.py --skills dev-workflow review-pr
-  python sync_skills.py --targets claude
-  python sync_skills.py --targets codex
-  python sync_skills.py --validate
+  python scripts/sync_marketplace.py
+  python scripts/sync_marketplace.py --validate
+  python scripts/sync_marketplace.py --skills dev-workflow review-pr
 """
 
 from __future__ import annotations
@@ -14,18 +12,16 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import os
 import shutil
 import sys
 from dataclasses import dataclass
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parent
-MARKETPLACE_ROOT = ROOT / "my-marketplace"
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+MARKETPLACE_ROOT = PROJECT_ROOT / "my-marketplace"
 MARKETPLACE_REGISTRY = MARKETPLACE_ROOT / ".claude-plugin" / "marketplace.json"
 PLUGINS_DIR = MARKETPLACE_ROOT / "plugins"
-DEFAULT_CODEX_HOME = Path.home() / ".codex"
 
 EXCLUDED_SOURCE_DIRS = {
     ".git",
@@ -106,7 +102,7 @@ def parse_skill_frontmatter(skill_md: Path) -> tuple[str, str]:
 
 def discover_source_skills(selected: set[str] | None) -> list[SkillMeta]:
     skills: list[SkillMeta] = []
-    for child in ROOT.iterdir():
+    for child in PROJECT_ROOT.iterdir():
         if not child.is_dir():
             continue
         if child.name in EXCLUDED_SOURCE_DIRS:
@@ -230,13 +226,14 @@ def collect_files(base: Path) -> dict[str, str]:
     return files
 
 
-def validate_tree(meta: SkillMeta, destination: Path, label: str) -> list[str]:
+def validate(meta: SkillMeta) -> list[str]:
     errors: list[str] = []
-    if not destination.exists():
-        return [f"[{meta.name}] missing generated directory ({label}): {destination}"]
+    plugin_skill_dir = PLUGINS_DIR / meta.name / "skills" / meta.name
+    if not plugin_skill_dir.exists():
+        return [f"[{meta.name}] missing generated directory: {plugin_skill_dir}"]
 
     source_files = collect_files(meta.source_dir)
-    generated_files = collect_files(destination)
+    generated_files = collect_files(plugin_skill_dir)
 
     missing = sorted(set(source_files) - set(generated_files))
     extra = sorted(set(generated_files) - set(source_files))
@@ -245,72 +242,37 @@ def validate_tree(meta: SkillMeta, destination: Path, label: str) -> list[str]:
     )
 
     if missing:
-        errors.append(f"[{meta.name}] missing files in {label}: {', '.join(missing)}")
+        errors.append(f"[{meta.name}] missing files in generated plugin: {', '.join(missing)}")
     if extra:
-        errors.append(f"[{meta.name}] extra files in {label}: {', '.join(extra)}")
+        errors.append(f"[{meta.name}] extra files in generated plugin: {', '.join(extra)}")
     if changed:
-        errors.append(f"[{meta.name}] changed file content in {label}: {', '.join(changed)}")
+        errors.append(f"[{meta.name}] changed file content: {', '.join(changed)}")
 
     return errors
 
 
-def resolve_codex_home(override: str | None) -> Path:
-    if override:
-        return Path(override).expanduser().resolve()
-
-    env_home = os.environ.get("CODEX_HOME")
-    if env_home:
-        return Path(env_home).expanduser().resolve()
-
-    return DEFAULT_CODEX_HOME.resolve()
-
-
-def codex_skills_dir(codex_home: Path) -> Path:
-    return codex_home / "skills"
-
-
-def run_claude_sync(skills: list[SkillMeta]) -> None:
+def run_sync(skills: list[SkillMeta]) -> None:
     synced: list[SkillMeta] = []
+
     for meta in skills:
         plugin_dir = PLUGINS_DIR / meta.name
         plugin_skill_dir = plugin_dir / "skills" / meta.name
         copy_skill_tree(meta.source_dir, plugin_skill_dir)
         ensure_plugin_metadata(plugin_dir, meta)
         synced.append(meta)
-        print(f"[claude] Synced {meta.name}: {meta.source_dir} -> {plugin_skill_dir}")
+        print(f"Synced {meta.name}: {meta.source_dir} -> {plugin_skill_dir}")
 
     if synced:
         sync_registry(synced)
-        print(f"[claude] Updated registry: {MARKETPLACE_REGISTRY}")
+        print(f"Updated registry: {MARKETPLACE_REGISTRY}")
     else:
-        print("[claude] No skills matched selection; nothing synced.")
+        print("No skills matched selection; nothing synced.")
 
 
-def run_codex_sync(skills: list[SkillMeta], codex_home: Path) -> None:
-    skills_dir = codex_skills_dir(codex_home)
-    skills_dir.mkdir(parents=True, exist_ok=True)
-
-    if not skills:
-        print("[codex] No skills matched selection; nothing synced.")
-        return
-
-    for meta in skills:
-        destination = skills_dir / meta.name
-        copy_skill_tree(meta.source_dir, destination)
-        print(f"[codex] Synced {meta.name}: {meta.source_dir} -> {destination}")
-
-
-def run_validate(skills: list[SkillMeta], targets: set[str], codex_home: Path) -> int:
+def run_validate(skills: list[SkillMeta]) -> int:
     all_errors: list[str] = []
-
     for meta in skills:
-        if "claude" in targets:
-            plugin_skill_dir = PLUGINS_DIR / meta.name / "skills" / meta.name
-            all_errors.extend(validate_tree(meta, plugin_skill_dir, "claude marketplace plugin"))
-
-        if "codex" in targets:
-            codex_skill_dir = codex_skills_dir(codex_home) / meta.name
-            all_errors.extend(validate_tree(meta, codex_skill_dir, "codex skills dir"))
+        all_errors.extend(validate(meta))
 
     if all_errors:
         print("Validation failed:")
@@ -318,31 +280,18 @@ def run_validate(skills: list[SkillMeta], targets: set[str], codex_home: Path) -
             print(f"  - {err}")
         return 1
 
-    target_summary = ", ".join(sorted(targets))
-    print(f"Validation succeeded for targets: {target_summary}.")
+    print("Validation succeeded: source and generated skills are in sync.")
     return 0
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Sync source skills to Claude marketplace and Codex skills")
-    parser.add_argument("--validate", action="store_true", help="Validate generated targets match source skills")
+    parser = argparse.ArgumentParser(description="Sync source skills to marketplace plugin artifacts")
+    parser.add_argument("--validate", action="store_true", help="Validate generated plugins match source skills")
     parser.add_argument(
         "--skills",
         nargs="+",
         default=None,
         help="Optional skill names (or root dir names) to sync/validate",
-    )
-    parser.add_argument(
-        "--targets",
-        nargs="+",
-        choices=["claude", "codex"],
-        default=["claude", "codex"],
-        help="Targets to sync/validate (default: claude codex)",
-    )
-    parser.add_argument(
-        "--codex-home",
-        default=None,
-        help="Codex home directory (default: $CODEX_HOME or ~/.codex)",
     )
     args = parser.parse_args()
 
@@ -352,17 +301,10 @@ def main() -> int:
         print("No source skills found. Expected skill roots with SKILL.md at repo root.")
         return 1
 
-    targets = set(args.targets)
-    codex_home = resolve_codex_home(args.codex_home)
-
     if args.validate:
-        return run_validate(skills, targets, codex_home)
+        return run_validate(skills)
 
-    if "claude" in targets:
-        run_claude_sync(skills)
-    if "codex" in targets:
-        run_codex_sync(skills, codex_home)
-
+    run_sync(skills)
     return 0
 
 

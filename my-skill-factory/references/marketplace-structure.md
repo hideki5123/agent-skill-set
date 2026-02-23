@@ -29,19 +29,19 @@ D:\Shared\agents\my-skills\
 - Regenerate artifacts with:
 
 ```bash
-python sync_marketplace.py
+python scripts/sync_marketplace.py
 ```
 
 - Validate no drift between source and generated artifacts:
 
 ```bash
-python sync_marketplace.py --validate
+python scripts/sync_marketplace.py --validate
 ```
 
 - Sync a subset:
 
 ```bash
-python sync_marketplace.py --skills dev-workflow review-pr
+python scripts/sync_marketplace.py --skills dev-workflow review-pr
 ```
 
 ## Claude Code Config Files
@@ -95,7 +95,8 @@ Example: `review-pr@hideki-plugins`
 
 - Edit skill content only under root source directories.
 - Never manually edit files under `my-marketplace/plugins/*/skills/*`.
-- After edits: run `python sync_marketplace.py`, then `python sync_marketplace.py --validate`.
+- Generated files under `my-marketplace/plugins/*/skills/*` are build artifacts and should remain untracked in Git.
+- After edits: run `python scripts/sync_marketplace.py`, then `python scripts/sync_marketplace.py --validate`.
 
 ## installed_plugins.json Entry Schema
 
