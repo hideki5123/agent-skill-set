@@ -16,6 +16,7 @@ All paths are configured for Hideki's environment.
 
 import argparse
 import json
+import re
 import shutil
 import sys
 from datetime import datetime, timezone
@@ -32,8 +33,19 @@ CACHE_DIR = PLUGINS_DIR / "cache" / "hideki-plugins"
 MARKETPLACE_NAME = "hideki-plugins"
 
 
+import re
+
+def strip_comments(text: str) -> str:
+    # Remove // comments
+    text = re.sub(r'//.*', '', text)
+    # Remove /* */ comments (not handling nested or string-embedded specifically but good enough for config)
+    text = re.sub(r'/\*[\s\S]*?\*/', '', text)
+    return text
+
 def read_json(path: Path) -> dict:
-    return json.loads(path.read_text(encoding="utf-8"))
+    text = path.read_text(encoding="utf-8")
+    clean_text = strip_comments(text)
+    return json.loads(clean_text)
 
 
 def write_json(path: Path, data: dict):
