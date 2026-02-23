@@ -8,12 +8,12 @@
   },
   "plugins": [
     {
-      "name": "dev-workflow",
+      "name": "session-handover",
       "source": {
         "type": "local",
         "path": "."
       },
-      "description": "Create an agent team to explore this from different angles: one teammate on architecture, one on security, one considering edge device resource, one playing devil's advocate and any other team mate wh",
+      "description": "Install a PreCompact hook that auto-generates .agent/local/HANDOVER.md before context compaction, plus a SessionStart hook that restores context from a previous handover. Run once to install, then it ",
       "version": "1.0.0"
     }
   ]

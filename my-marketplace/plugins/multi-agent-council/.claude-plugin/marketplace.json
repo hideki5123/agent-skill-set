@@ -13,7 +13,7 @@
         "type": "local",
         "path": "."
       },
-      "description": "Multi-LLM council for architecture decisions and code reviews. Orchestrates Claude + external LLMs through a 3-round protocol.",
+      "description": "Multi-LLM council for architecture decisions and code reviews. Use when needing diverse AI perspectives, design validation, cross-model critique, or thorough review of project state. Invokes Claude + ",
       "version": "1.0.0"
     }
   ]

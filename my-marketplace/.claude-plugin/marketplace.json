@@ -7,12 +7,12 @@
     {
       "name": "dev-workflow",
       "source": "./plugins/dev-workflow",
-      "description": "Create an agent team to explore this from different angles: one teammate on architecture, one on security, one considering edge device resource, one playing devil's advocate. End-to-end development wo"
+      "description": "Create an agent team to explore this from different angles: one teammate on architecture, one on security, one considering edge device resource, one playing devil's advocate and any other team mate wh"
     },
     {
       "name": "multi-agent-council",
       "source": "./plugins/multi-agent-council",
-      "description": "Multi-LLM council for architecture decisions and code reviews"
+      "description": "Multi-LLM council for architecture decisions and code reviews. Use when needing diverse AI perspectives, design validation, cross-model critique, or thorough review of project state. Invokes Claude + "
     },
     {
       "name": "my-skill-factory",
@@ -23,6 +23,16 @@
       "name": "review-pr",
       "source": "./plugins/review-pr",
       "description": "Perform detailed code review on a GitHub pull request. Analyzes every changed file for bugs, security vulnerabilities, performance issues, design problems, and style nits. Produces a structured report"
+    },
+    {
+      "name": "session-handover",
+      "source": "./plugins/session-handover",
+      "description": "Install a PreCompact hook that auto-generates .agent/local/HANDOVER.md before context compaction, plus a SessionStart hook that restores context from a previous handover. Run once to install, then it "
+    },
+    {
+      "name": "tdd-team-workflow",
+      "source": "./plugins/tdd-team-workflow",
+      "description": "Test-Driven Development workflow with multi-agent team discussion. Ensures thorough planning, team review before implementation, and TDD/BDD best practices. Use when implementing features, fixing bugs"
     }
   ]
 }

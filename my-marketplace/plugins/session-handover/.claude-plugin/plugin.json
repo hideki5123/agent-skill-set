@@ -1,0 +1,13 @@
+{
+  "name": "session-handover",
+  "version": "1.0.0",
+  "description": "Install a PreCompact hook that auto-generates .agent/local/HANDOVER.md before context compaction, plus a SessionStart hook that restores context from a previous handover. Run once to install, then it ",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "session-handover"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}

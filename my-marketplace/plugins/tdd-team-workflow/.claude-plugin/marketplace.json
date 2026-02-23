@@ -8,12 +8,12 @@
   },
   "plugins": [
     {
-      "name": "dev-workflow",
+      "name": "tdd-team-workflow",
       "source": {
         "type": "local",
         "path": "."
       },
-      "description": "Create an agent team to explore this from different angles: one teammate on architecture, one on security, one considering edge device resource, one playing devil's advocate and any other team mate wh",
+      "description": "Test-Driven Development workflow with multi-agent team discussion. Ensures thorough planning, team review before implementation, and TDD/BDD best practices. Use when implementing features, fixing bugs",
       "version": "1.0.0"
     }
   ]
