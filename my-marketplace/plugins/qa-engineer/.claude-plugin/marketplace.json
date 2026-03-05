@@ -1,0 +1,20 @@
+{
+  "name": "hideki-plugins",
+  "owner": {
+    "name": "Hideki"
+  },
+  "metadata": {
+    "description": "Custom Claude Code plugins by Hideki"
+  },
+  "plugins": [
+    {
+      "name": "qa-engineer",
+      "source": {
+        "type": "local",
+        "path": "."
+      },
+      "description": ">",
+      "version": "1.0.0"
+    }
+  ]
+}

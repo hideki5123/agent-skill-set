@@ -1,0 +1,13 @@
+{
+  "name": "qa-engineer",
+  "version": "1.0.0",
+  "description": ">",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "qa-engineer"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}
