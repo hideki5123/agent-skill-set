@@ -1,0 +1,13 @@
+{
+  "name": "address-pr-comments",
+  "version": "1.0.0",
+  "description": "Autonomously fetch and apply AI reviewer comments on a GitHub PR — creating a draft PR and requesting reviewers if needed. Default mode processes Copilot/Gemini bot comments without human intervention",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "address-pr-comments"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}

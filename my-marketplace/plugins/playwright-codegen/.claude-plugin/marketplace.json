@@ -1,0 +1,20 @@
+{
+  "name": "hideki-plugins",
+  "owner": {
+    "name": "Hideki"
+  },
+  "metadata": {
+    "description": "Custom Claude Code plugins by Hideki"
+  },
+  "plugins": [
+    {
+      "name": "playwright-codegen",
+      "source": {
+        "type": "local",
+        "path": "."
+      },
+      "description": "Guided workflow for recording browser interactions with Playwright codegen and transforming the raw output into production-quality test suites. Handles the full lifecycle: planning the recording sessi",
+      "version": "1.0.0"
+    }
+  ]
+}

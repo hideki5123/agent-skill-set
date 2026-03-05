@@ -1,0 +1,13 @@
+{
+  "name": "e2e-test",
+  "version": "1.0.0",
+  "description": "Run frontend E2E tests using Playwright MCP browser tools. Takes screenshots at each step as verification evidence and generates a test report. If the test scenario has gaps, recommends updates before",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "e2e-test"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}

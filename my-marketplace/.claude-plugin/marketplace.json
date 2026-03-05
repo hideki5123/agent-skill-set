@@ -5,9 +5,19 @@
   },
   "plugins": [
     {
+      "name": "address-pr-comments",
+      "source": "./plugins/address-pr-comments",
+      "description": "Autonomously fetch and apply AI reviewer comments on a GitHub PR — creating a draft PR and requesting reviewers if needed. Default mode processes Copilot/Gemini bot comments without human intervention"
+    },
+    {
       "name": "dev-workflow",
       "source": "./plugins/dev-workflow",
       "description": "Create an agent team to explore this from different angles: one teammate on architecture, one on security, one considering edge device resource, one playing devil's advocate and any other team mate wh"
+    },
+    {
+      "name": "e2e-test",
+      "source": "./plugins/e2e-test",
+      "description": "Run frontend E2E tests using Playwright MCP browser tools. Takes screenshots at each step as verification evidence and generates a test report. If the test scenario has gaps, recommends updates before"
     },
     {
       "name": "multi-agent-council",
@@ -18,6 +28,16 @@
       "name": "my-skill-factory",
       "source": "./plugins/my-skill-factory",
       "description": "Create, build, and install custom Claude Code skills into Hideki's local marketplace. End-to-end workflow from requirements gathering to a fully installed and usable skill. Use when the user asks to c"
+    },
+    {
+      "name": "playwright-cli",
+      "source": "./plugins/playwright-cli",
+      "description": "Run Playwright CLI commands via Bash for test execution, code generation, browser management, reporting, and debugging. Covers the full `npx playwright` surface: test, codegen, install, show-report, s"
+    },
+    {
+      "name": "playwright-codegen",
+      "source": "./plugins/playwright-codegen",
+      "description": "Guided workflow for recording browser interactions with Playwright codegen and transforming the raw output into production-quality test suites. Handles the full lifecycle: planning the recording sessi"
     },
     {
       "name": "review-pr",

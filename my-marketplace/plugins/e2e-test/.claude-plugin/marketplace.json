@@ -1,0 +1,20 @@
+{
+  "name": "hideki-plugins",
+  "owner": {
+    "name": "Hideki"
+  },
+  "metadata": {
+    "description": "Custom Claude Code plugins by Hideki"
+  },
+  "plugins": [
+    {
+      "name": "e2e-test",
+      "source": {
+        "type": "local",
+        "path": "."
+      },
+      "description": "Run frontend E2E tests using Playwright MCP browser tools. Takes screenshots at each step as verification evidence and generates a test report. If the test scenario has gaps, recommends updates before",
+      "version": "1.0.0"
+    }
+  ]
+}
