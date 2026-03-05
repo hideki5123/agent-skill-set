@@ -1,0 +1,29 @@
+# config
+url,https://demo.playwright.dev/todomvc/#/
+viewport,1280x720
+setup,Clear localStorage
+timeout,10
+
+# steps
+step,action,target,input,expected_result
+1,navigate,https://demo.playwright.dev/todomvc/#/,,Page loads with heading "todos" and input field
+2,verify,todos heading,,Heading text "todos" is displayed
+3,type,New todo input field,Buy groceries,Text appears in input; submit:true to add
+4,verify,todo list,,Todo "Buy groceries" appears; count shows "1 item left"
+5,type,New todo input field,Clean the house,Submit:true; "Clean the house" in list; count "2 items left"
+6,type,New todo input field,Write report,Submit:true; 3 items visible; count "3 items left"
+7,screenshot,viewport,,Full page screenshot of all three todos
+8,click,Toggle checkbox for Buy groceries,,"Buy groceries" strikethrough; count "2 items left"
+9,verify,Items left counter,,"2 items left" text displayed
+10,click,Active filter link,,Only "Clean the house" and "Write report" visible
+11,verify,todo list,,Completed "Buy groceries" NOT visible
+12,click,Completed filter link,,Only "Buy groceries" visible
+13,click,All filter link,,All 3 items visible again
+14,click,Toggle checkbox for Clean the house,,"Clean the house" strikethrough; count "1 item left"
+15,click,Clear completed button,,Completed items removed; only "Write report" remains
+16,hover,Write report todo item,,Destroy button (X) becomes visible
+17,click,Destroy button on Write report item,,List empty; footer disappears
+18,verify,page,,Empty state with just the input field
+19,type,New todo input field,,Press Enter with empty input; no item should be created
+20,dblclick,Buy groceries todo item,,Edit mode activates for the item
+21,wiggle,some element,,Element wiggles around
