@@ -1,7 +1,7 @@
 {
   "name": "review-pr",
   "version": "1.0.0",
-  "description": "Perform detailed code review on a GitHub pull request. Analyzes every changed file for bugs, security vulnerabilities, performance issues, design problems, and style nits. Produces a structured report",
+  "description": "Self-review loop — request AI reviews (Copilot + Gemini), apply fixes, push, re-request, repeat until clean. Use when the user asks to review their PR, self-review, get AI review, run the review loop,",
   "author": {
     "name": "Hideki"
   },
