@@ -8,7 +8,7 @@ confidence scoring.
 
 For each active lens:
 1. Grep source files for the listed patterns
-2. Check if matching code has corresponding test coverage (via coverage data or test file mapping)
+2. Check if matching code has corresponding test coverage (via test file mapping)
 3. If uncovered, create a finding with the appropriate severity/confidence
 4. Use the example findings as templates for your output
 
@@ -25,9 +25,9 @@ For each active lens:
 
 | Level | Meaning |
 |-------|---------|
-| **high** | Coverage data confirms the code is uncovered, or no test file exists for the module |
+| **high** | No test file exists for the module, or test file doesn't reference the function/class at all |
 | **medium** | Test file exists but doesn't appear to test the specific pattern/branch |
-| **low** | Test file exists and references the function, but branch coverage is unclear |
+| **low** | Test file exists and references the function, but specific branch/edge-case testing is unclear |
 
 ---
 

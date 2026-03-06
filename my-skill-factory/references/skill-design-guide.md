@@ -57,6 +57,19 @@ skill-name/
 ## Task C: Analyze
 ```
 
+## Behavior Scenarios
+
+Define 3-5 Given/When/Then scenarios before writing the SKILL.md body. These act as acceptance criteria for the skill's design.
+
+```gherkin
+Scenario: <descriptive name>
+  Given <trigger context>
+  When <user action>
+  Then <skill output>
+```
+
+Include a `## Behavior Scenarios` section in the generated SKILL.md. See `references/bdd-skill-scenarios.md` for full templates by skill type, update-delta guidance, and anti-patterns.
+
 ## Output Templates
 
 When the skill produces structured output, provide the exact template:
