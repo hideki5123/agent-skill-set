@@ -8,12 +8,12 @@
   },
   "plugins": [
     {
-      "name": "tdd-team-workflow",
+      "name": "pr-review",
       "source": {
         "type": "local",
         "path": "."
       },
-      "description": "Test-Driven Development workflow with multi-agent team discussion. Ensures thorough planning, team review before implementation, and TDD/BDD best practices. Use when implementing features, fixing bugs",
+      "description": "Review a teammate's pull request — Claude reads the diff, analyzes code across multiple perspectives, and stages review comments for user approval before submission. NOT for self-review of your own PR",
       "version": "1.0.0"
     }
   ]

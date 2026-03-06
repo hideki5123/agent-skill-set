@@ -1,0 +1,13 @@
+{
+  "name": "pr-review",
+  "version": "1.0.0",
+  "description": "Review a teammate's pull request — Claude reads the diff, analyzes code across multiple perspectives, and stages review comments for user approval before submission. NOT for self-review of your own PR",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "pr-review"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}

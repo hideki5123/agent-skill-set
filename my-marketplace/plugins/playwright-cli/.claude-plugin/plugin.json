@@ -1,7 +1,7 @@
 {
   "name": "playwright-cli",
   "version": "1.0.0",
-  "description": "Run Playwright CLI commands via Bash for test execution, code generation, browser management, reporting, and debugging. Covers the full `npx playwright` surface: test, codegen, install, show-report, s",
+  "description": ">",
   "author": {
     "name": "Hideki"
   },

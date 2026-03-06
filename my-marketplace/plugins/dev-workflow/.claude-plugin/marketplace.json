@@ -13,8 +13,8 @@
         "type": "local",
         "path": "."
       },
-      "description": "Create an agent team to explore this from different angles: one teammate on architecture, one on security, one considering edge device resource, one playing devil's advocate and any other team mate wh",
-      "version": "1.0.0"
+      "description": ">",
+      "version": "2.0.0"
     }
   ]
 }

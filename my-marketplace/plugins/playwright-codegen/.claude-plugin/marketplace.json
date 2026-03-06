@@ -13,7 +13,7 @@
         "type": "local",
         "path": "."
       },
-      "description": "Guided workflow for recording browser interactions with Playwright codegen and transforming the raw output into production-quality test suites. Handles the full lifecycle: planning the recording sessi",
+      "description": ">",
       "version": "1.0.0"
     }
   ]

@@ -13,7 +13,7 @@
         "type": "local",
         "path": "."
       },
-      "description": "Install a PreCompact hook that auto-generates .agent/local/HANDOVER.md before context compaction, plus a SessionStart hook that restores context from a previous handover. Run once to install, then it ",
+      "description": ">",
       "version": "1.0.0"
     }
   ]
