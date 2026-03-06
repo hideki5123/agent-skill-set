@@ -75,7 +75,7 @@ def extract_skill_meta(skill_dir: Path) -> dict:
     return meta
 
 
-def install(skill_dir: Path, version: str):
+def install(skill_dir: Path, version: str, cache_only: bool = False):
     skill_dir = skill_dir.resolve()
     if not skill_dir.is_dir():
         sys.exit(f"Error: {skill_dir} is not a directory")
@@ -89,70 +89,109 @@ def install(skill_dir: Path, version: str):
     plugin_key = f"{name}@{MARKETPLACE_NAME}"
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
-    print(f"Installing skill: {name} v{version}")
+    print(f"Installing skill: {name} v{version}{' (cache-only)' if cache_only else ''}")
 
-    # 1. Create marketplace plugin structure
-    plugin_dir = MARKETPLACE_DIR / "plugins" / name
-    plugin_skills = plugin_dir / "skills" / name
-    plugin_claude = plugin_dir / ".claude-plugin"
+    if cache_only:
+        # Build plugin structure in a temp directory, cache it, then clean up
+        import tempfile
+        tmp_root = Path(tempfile.mkdtemp())
+        try:
+            plugin_dir = tmp_root / name
+            plugin_skills = plugin_dir / "skills" / name
+            plugin_claude = plugin_dir / ".claude-plugin"
+            plugin_skills.mkdir(parents=True)
+            plugin_claude.mkdir(parents=True)
 
-    if plugin_dir.exists():
-        shutil.rmtree(plugin_dir)
+            for item in skill_dir.iterdir():
+                dest = plugin_skills / item.name
+                if item.is_dir():
+                    shutil.copytree(item, dest)
+                else:
+                    shutil.copy2(item, dest)
 
-    plugin_skills.mkdir(parents=True)
-    plugin_claude.mkdir(parents=True)
+            write_json(plugin_claude / "plugin.json", {
+                "name": name, "version": version, "description": desc[:200],
+                "author": {"name": "Hideki"}, "keywords": [name],
+                "license": "MIT", "skills": "./skills"
+            })
+            write_json(plugin_claude / "marketplace.json", {
+                "name": MARKETPLACE_NAME,
+                "owner": {"name": "Hideki"},
+                "metadata": {"description": "Custom Claude Code plugins by Hideki"},
+                "plugins": [{"name": name, "source": {"type": "local", "path": "."},
+                             "description": desc[:200], "version": version}]
+            })
 
-    # Copy skill contents
-    for item in skill_dir.iterdir():
-        dest = plugin_skills / item.name
-        if item.is_dir():
-            shutil.copytree(item, dest)
-        else:
-            shutil.copy2(item, dest)
+            cache_dir = CACHE_DIR / name / version
+            if cache_dir.exists():
+                shutil.rmtree(cache_dir)
+            shutil.copytree(plugin_dir, cache_dir)
+            print(f"  [+] Cached: {cache_dir}")
+        finally:
+            shutil.rmtree(tmp_root, ignore_errors=True)
+    else:
+        # 1. Create marketplace plugin structure
+        plugin_dir = MARKETPLACE_DIR / "plugins" / name
+        plugin_skills = plugin_dir / "skills" / name
+        plugin_claude = plugin_dir / ".claude-plugin"
 
-    # Write plugin.json
-    write_json(plugin_claude / "plugin.json", {
-        "name": name,
-        "version": version,
-        "description": desc[:200],
-        "author": {"name": "Hideki"},
-        "keywords": [name],
-        "license": "MIT",
-        "skills": "./skills"
-    })
+        if plugin_dir.exists():
+            shutil.rmtree(plugin_dir)
 
-    # Write per-plugin marketplace.json
-    write_json(plugin_claude / "marketplace.json", {
-        "name": MARKETPLACE_NAME,
-        "owner": {"name": "Hideki"},
-        "metadata": {"description": "Custom Claude Code plugins by Hideki"},
-        "plugins": [{
+        plugin_skills.mkdir(parents=True)
+        plugin_claude.mkdir(parents=True)
+
+        # Copy skill contents
+        for item in skill_dir.iterdir():
+            dest = plugin_skills / item.name
+            if item.is_dir():
+                shutil.copytree(item, dest)
+            else:
+                shutil.copy2(item, dest)
+
+        # Write plugin.json
+        write_json(plugin_claude / "plugin.json", {
             "name": name,
-            "source": {"type": "local", "path": "."},
+            "version": version,
             "description": desc[:200],
-            "version": version
-        }]
-    })
-    print(f"  [+] Marketplace plugin: {plugin_dir}")
+            "author": {"name": "Hideki"},
+            "keywords": [name],
+            "license": "MIT",
+            "skills": "./skills"
+        })
 
-    # 2. Register in root marketplace.json
-    marketplace = read_json(MARKETPLACE_JSON)
-    existing = [p for p in marketplace["plugins"] if p["name"] != name]
-    existing.append({
-        "name": name,
-        "source": f"./plugins/{name}",
-        "description": desc[:200]
-    })
-    marketplace["plugins"] = existing
-    write_json(MARKETPLACE_JSON, marketplace)
-    print(f"  [+] Root marketplace.json updated")
+        # Write per-plugin marketplace.json
+        write_json(plugin_claude / "marketplace.json", {
+            "name": MARKETPLACE_NAME,
+            "owner": {"name": "Hideki"},
+            "metadata": {"description": "Custom Claude Code plugins by Hideki"},
+            "plugins": [{
+                "name": name,
+                "source": {"type": "local", "path": "."},
+                "description": desc[:200],
+                "version": version
+            }]
+        })
+        print(f"  [+] Marketplace plugin: {plugin_dir}")
 
-    # 3. Cache for Claude Code
-    cache_dir = CACHE_DIR / name / version
-    if cache_dir.exists():
-        shutil.rmtree(cache_dir)
-    shutil.copytree(plugin_dir, cache_dir)
-    print(f"  [+] Cached: {cache_dir}")
+        # 2. Register in root marketplace.json
+        marketplace = read_json(MARKETPLACE_JSON)
+        existing = [p for p in marketplace["plugins"] if p["name"] != name]
+        existing.append({
+            "name": name,
+            "source": f"./plugins/{name}",
+            "description": desc[:200]
+        })
+        marketplace["plugins"] = existing
+        write_json(MARKETPLACE_JSON, marketplace)
+        print(f"  [+] Root marketplace.json updated")
+
+        # 3. Cache for Claude Code
+        cache_dir = CACHE_DIR / name / version
+        if cache_dir.exists():
+            shutil.rmtree(cache_dir)
+        shutil.copytree(plugin_dir, cache_dir)
+        print(f"  [+] Cached: {cache_dir}")
 
     # 4. Register in installed_plugins.json
     installed = read_json(INSTALLED_JSON)
@@ -182,8 +221,10 @@ def main():
     parser = argparse.ArgumentParser(description="Install a skill into hideki-plugins marketplace")
     parser.add_argument("skill_dir", type=Path, help="Path to the skill directory containing SKILL.md")
     parser.add_argument("--version", default="1.0.0", help="Version string (default: 1.0.0)")
+    parser.add_argument("--cache-only", action="store_true",
+                        help="Only update the Claude Code cache, skip marketplace file writes")
     args = parser.parse_args()
-    install(args.skill_dir, args.version)
+    install(args.skill_dir, args.version, cache_only=args.cache_only)
 
 
 if __name__ == "__main__":

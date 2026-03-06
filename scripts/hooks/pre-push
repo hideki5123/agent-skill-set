@@ -66,7 +66,7 @@ echo "[pre-push] Updating Claude Code plugin cache..."
 
 for skill in "${changed_skills[@]}"; do
     echo "[pre-push] Installing: $skill"
-    python "$INSTALL_SCRIPT" "$REPO_ROOT/$skill" --version 1.0.0
+    python "$INSTALL_SCRIPT" "$REPO_ROOT/$skill" --cache-only
     if [ $? -ne 0 ]; then
         echo "[pre-push] Warning: failed to install $skill" >&2
     fi
