@@ -1,0 +1,76 @@
+#!/bin/bash
+# pre-push hook: auto-update changed Claude Code skills into the plugin cache.
+# Non-blocking — always exits 0. Install failures only warn.
+# Skip with: git push --no-verify
+
+# Guard: skip in CI/headless environments without Claude Code
+if [ ! -d "$HOME/.claude" ]; then
+    exit 0
+fi
+
+REPO_ROOT="$(git rev-parse --show-toplevel)"
+INSTALL_SCRIPT="$REPO_ROOT/my-skill-factory/scripts/install_skill.py"
+
+if [ ! -f "$INSTALL_SCRIPT" ]; then
+    echo "[pre-push] Warning: install_skill.py not found at $INSTALL_SCRIPT" >&2
+    exit 0
+fi
+
+ZERO="0000000000000000000000000000000000000000"
+changed_skills=()
+
+while read local_ref local_oid remote_ref remote_oid; do
+    # Skip branch deletions
+    if [ "$local_oid" = "$ZERO" ]; then
+        continue
+    fi
+
+    # Determine diff range
+    if [ "$remote_oid" = "$ZERO" ]; then
+        # New branch — compare against merge-base with master
+        merge_base=$(git merge-base origin/master "$local_oid" 2>/dev/null)
+        if [ -n "$merge_base" ]; then
+            range="$merge_base..$local_oid"
+        else
+            range="$local_oid"
+        fi
+    else
+        range="$remote_oid..$local_oid"
+    fi
+
+    # Get unique top-level directories that changed
+    dirs=$(git diff --name-only "$range" 2>/dev/null | cut -d'/' -f1 | sort -u)
+
+    for dir in $dirs; do
+        # Only process skill directories (contain SKILL.md)
+        if [ -f "$REPO_ROOT/$dir/SKILL.md" ]; then
+            # Skip submodules
+            if git config --file "$REPO_ROOT/.gitmodules" "submodule.$dir.path" >/dev/null 2>&1; then
+                continue
+            fi
+            changed_skills+=("$dir")
+        fi
+    done
+done
+
+# Deduplicate
+changed_skills=($(printf '%s\n' "${changed_skills[@]}" | sort -u))
+
+if [ ${#changed_skills[@]} -eq 0 ]; then
+    echo "[pre-push] No skill changes detected."
+    exit 0
+fi
+
+echo "[pre-push] Changed skills: ${changed_skills[*]}"
+echo "[pre-push] Updating Claude Code plugin cache..."
+
+for skill in "${changed_skills[@]}"; do
+    echo "[pre-push] Installing: $skill"
+    python "$INSTALL_SCRIPT" "$REPO_ROOT/$skill" --version 1.0.0
+    if [ $? -ne 0 ]; then
+        echo "[pre-push] Warning: failed to install $skill" >&2
+    fi
+done
+
+echo "[pre-push] Skill sync complete."
+exit 0
