@@ -1,6 +1,6 @@
 ---
-name: review-pr
-description: Self-review loop — request AI reviews (Copilot + Gemini), apply fixes, push, re-request, repeat until clean. Use when the user asks to review their PR, self-review, get AI review, run the review loop, or wants Copilot + Gemini to review their code. Trigger phrases include "review my PR", "self-review", "get AI review", "review loop", "copilot + gemini review", "review PR", "review #123".
+name: self-pr-review
+description: Self-review loop for YOUR OWN PR — request AI reviews (Copilot + Gemini), apply their fixes, push, re-request, and repeat until clean. NOT for reviewing someone else's PR. Use when the user asks to self-review their PR, run the AI review loop, or wants Copilot + Gemini to review their own code. Trigger phrases include "self-review", "self-pr-review", "review my PR", "AI review my PR", "review loop", "copilot + gemini review", "run self-review on my PR".
 ---
 
 # Self-Review Loop

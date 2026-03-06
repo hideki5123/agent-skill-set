@@ -1,10 +1,12 @@
 # Team Agent Roles
 
-Create an agent team to explore topic from different angles: one teammate on architecture, one on security, one considering edge device resource, one playing devil's advocate and any other team mate who need to be on this task.
+Create an agent team to explore this from different angles: one teammate on architecture, one on security, one considering edge device resource, one playing devil's advocate and any other team mate who need to be on this task.
 
-Each agent in the team discussion phase has a specific focus area and review criteria.
+Use `TeamCreate` to create the team, then `SendMessage` to spawn each teammate with their role-specific prompt below. Include the approved implementation plan and relevant codebase context in each spawn prompt. Teammates will communicate with each other to challenge findings and debate trade-offs.
 
-## Architecture Agent
+Each teammate in the team discussion phase has a specific focus area and review criteria.
+
+## Architecture Teammate
 
 **Focus**: Design patterns, modularity, extensibility, existing conventions
 
@@ -35,7 +37,7 @@ Each agent in the team discussion phase has a specific focus area and review cri
 - [Architectural concerns to address]
 ```
 
-## Security Agent
+## Security Teammate
 
 **Focus**: Input validation, injection risks, auth/authz, data exposure
 
@@ -66,7 +68,7 @@ Each agent in the team discussion phase has a specific focus area and review cri
 - [Specific security measures to implement]
 ```
 
-## Edge Device / Resource Agent
+## Edge Device / Resource Teammate
 
 **Focus**: Memory, CPU, network constraints, offline scenarios
 
@@ -97,7 +99,7 @@ Each agent in the team discussion phase has a specific focus area and review cri
 - [Specific optimizations and safeguards]
 ```
 
-## Devil's Advocate Agent
+## Devil's Advocate Teammate
 
 **Focus**: Challenge assumptions, find flaws, suggest alternatives
 
@@ -130,14 +132,15 @@ Each agent in the team discussion phase has a specific focus area and review cri
 
 ## Synthesis Protocol
 
-After all agents complete their reviews:
+After all teammates complete their reviews:
 
-1. **Collect** all findings from each agent
+1. **Collect** all findings from each teammate
 2. **Categorize** by severity (Critical, Important, Nice-to-have)
 3. **Deduplicate** overlapping concerns
 4. **Prioritize** based on risk and effort
 5. **Update** the implementation plan with concrete action items
 6. **Present** consolidated feedback to user
+7. **Clean up** the team when discussion is complete
 
 ### Severity Levels
 
