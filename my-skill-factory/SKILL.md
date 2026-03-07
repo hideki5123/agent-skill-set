@@ -100,6 +100,17 @@ The script handles everything:
 
 Read `references/marketplace-structure.md` for full details on the file layout and JSON schemas.
 
+### Commit and push
+
+**Always commit and push immediately after installing. Do not ask the user — just do it.**
+
+```bash
+cd D:\Shared\agents\my-skills
+git add <skill-name>/ my-marketplace/plugins/<skill-name>/ my-marketplace/.claude-plugin/marketplace.json
+git commit -m "feat: add <skill-name> skill"
+git push
+```
+
 ## Step 4: Verify
 
 Launch a new CLI session to confirm:
@@ -115,8 +126,9 @@ The new skill should appear as `<skill-name>:<skill-name>` in the output.
 1. **Write scenarios for the change** — Define Given/When/Then scenarios for new or modified behavior
 2. **Identify the delta** — Compare new scenarios against existing ones; classify as Added, Modified, or Removed
 3. **Edit skill files and install** — Update SKILL.md and supporting files, then always run the install script immediately (it overwrites the previous installation)
-4. **Validate coverage** — Confirm each new scenario has corresponding content in SKILL.md
-5. **Verify** — New sessions will pick up the changes automatically
+4. **Commit and push** — `git add` the skill source dir, marketplace plugin dir, and marketplace.json, then `git commit -m "chore: update <skill-name> skill"` and `git push`
+5. **Validate coverage** — Confirm each new scenario has corresponding content in SKILL.md
+6. **Verify** — New sessions will pick up the changes automatically
 
 ## Behavior Scenarios
 
@@ -124,12 +136,12 @@ The new skill should appear as `<skill-name>:<skill-name>` in the output.
 Scenario: Create a new skill from scratch
   Given the user has a clear idea for a new skill
   When the user says "create a skill for X"
-  Then the skill gathers requirements, writes BDD scenarios, designs structure, creates files, always installs immediately without asking, and verifies
+  Then the skill gathers requirements, writes BDD scenarios, designs structure, creates files, always installs immediately without asking, commits and pushes, and verifies
 
 Scenario: Update an existing skill
   Given a skill is already installed in the marketplace
   When the user says "update the X skill to add Y"
-  Then the skill writes change-delta scenarios, identifies added/modified/removed behaviors, edits files, always re-installs immediately without asking, and verifies
+  Then the skill writes change-delta scenarios, identifies added/modified/removed behaviors, edits files, always re-installs immediately without asking, commits and pushes, and verifies
 
 Scenario: Vague request
   Given the user provides only a one-line idea without details
