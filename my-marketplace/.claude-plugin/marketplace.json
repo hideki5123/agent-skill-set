@@ -63,6 +63,11 @@
       "name": "scenario-gen",
       "source": "./plugins/scenario-gen",
       "description": ">"
+    },
+    {
+      "name": "subagent-gen",
+      "source": "./plugins/subagent-gen",
+      "description": ">"
     }
   ]
 }

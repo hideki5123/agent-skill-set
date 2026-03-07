@@ -1,0 +1,13 @@
+{
+  "name": "subagent-gen",
+  "version": "1.0.0",
+  "description": ">",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "subagent-gen"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}
