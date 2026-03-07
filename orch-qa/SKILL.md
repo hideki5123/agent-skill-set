@@ -1,5 +1,5 @@
 ---
-name: qa-engineer
+name: orch-qa
 description: >
   Senior QA/QC engineer that evaluates existing codebases for test quality.
   Runs existing tests, diagnoses failures, identifies missing test coverage,
@@ -197,43 +197,65 @@ Classify every failure from Phase 4. For each failing test:
 ### Phase 6: Gap Analysis
 
 The core value of this skill. Identify untested or under-tested code.
+Uses an agent team for parallel analysis when multiple lens groups are active.
 
-**Method — Source-to-test mapping + pattern scanning:**
+Read [references/qa-team-roles.md](references/qa-team-roles.md) for teammate definitions, output formats, and the synthesis protocol.
+
+#### Phase 6a: Prepare (Lead)
+
+Build the source-to-test mapping that all teammates will use:
 
 1. Build a source-file-to-test-file mapping:
    - Convention-based: `src/foo.ts` -> `test/foo.test.ts`, `src/foo.py` -> `tests/test_foo.py`
    - Config-based: check `testMatch`, `testPathPattern`, pytest `testpaths`
 2. Find source files with NO corresponding test file
-3. For each source file, scan for patterns per the active `--lens` perspectives
+3. Determine which teammate groups are needed based on `--lens`:
+   - **Code Quality** group: functional, resilience, idempotence
+   - **Security & Infra** group: security, infra, network
+   - **User & System** group: frontend, journey, performance, observability
+4. Map each active `--lens` value to its group. Only groups with at least one active lens will be spawned.
+5. Assign non-overlapping gap NNN ranges per group (001-199, 200-399, 400-599)
 
-**Apply QA lenses** per [references/qa-perspectives.md](references/qa-perspectives.md):
-- For each active lens (all 10 by default, or `--lens` subset):
-  - Grep source files for the lens-specific patterns
-  - For each match, check if there's a corresponding test covering that pattern
-  - A pattern is "uncovered" if no test file explicitly references the function/class containing the pattern
+#### Phase 6b: Parallel Lens Analysis (Team)
 
-**For each finding, generate a proof file** `gaps/gap-NNN-<lens>-<severity>.md` containing:
-- Full source code snippet (the function/method, not just file:line)
-- Explanation of why this is a gap
-- The specific pattern matched
-- Suggested test description
+**If only 1 group has active lenses** (e.g., `--lens=security`), skip team creation and run the analysis inline — apply the QA lenses per [references/qa-perspectives.md](references/qa-perspectives.md) sequentially to avoid orchestration overhead.
 
-See [references/evidence-tools.md](references/evidence-tools.md) Tier 1 section for the gap proof template.
+**If 2 or more groups are active**, create an agent team to analyze test gaps from different quality perspectives:
 
-**For browser apps** (`--app-type=browser` or auto-detected): capture a screenshot of the related UI page/component and save as `gaps/gap-NNN-screenshot.png`.
+1. Create the team and spawn each needed teammate with their context package (see [references/qa-team-roles.md](references/qa-team-roles.md) for the full spawn prompt spec):
+   - Source-to-test mapping from Phase 6a
+   - Project metadata (language, framework, test runner, source/test dirs)
+   - Their assigned lenses and lens definitions from [references/qa-perspectives.md](references/qa-perspectives.md)
+   - Gap NNN range, evidence directory path, filter settings (`--severity`, `--exclude`, `--app-type`, `--base-url`)
 
-**For each finding, also produce a summary row:**
-- Lens category
-- Severity: `critical` / `high` / `medium` / `low`
-- Confidence: `high` / `medium` / `low`
-- Source location: `file:line`
-- Pattern matched (what was detected)
-- Proof link: `[proof](gaps/gap-NNN-<lens>-<severity>.md)`
-- Suggested test description (what a test should verify)
+2. Each teammate independently:
+   - Greps source files for their lens-specific patterns
+   - Checks if matching code has corresponding test coverage
+   - Generates proof files `gaps/gap-NNN-<lens>-<severity>.md` containing: full source snippet, explanation, pattern matched, suggested test description (see [references/evidence-tools.md](references/evidence-tools.md) Tier 1 for the proof template)
+   - For browser apps (`--app-type=browser`): the User & System teammate captures screenshots as `gaps/gap-NNN-screenshot.png`
+   - Returns a structured findings table to the lead
 
-**Apply `--severity` filter** — drop findings below the minimum severity.
-**Apply `--max-findings` cap** — keep highest severity findings first.
-**Apply `--exclude` pattern** — skip matching files.
+3. The lead waits for all teammates to complete and report back.
+
+#### Phase 6c: Synthesis (Lead)
+
+Aggregate all teammate findings into a unified gap analysis:
+
+1. **Collect** all findings tables from each teammate
+2. **Deduplicate** — if two lenses found the same `file:line`, keep both findings but note the overlap
+3. **Apply `--severity` filter** — drop findings below the minimum severity
+4. **Apply `--max-findings` cap** — keep highest severity findings first
+5. **Apply `--exclude` pattern** — skip matching files
+6. **Renumber** gap files to a clean unified sequence (001, 002, ...) by renaming files from teammate ranges
+7. **Clean up** the team
+8. For each finding, produce a summary row:
+   - Lens category
+   - Severity: `critical` / `high` / `medium` / `low`
+   - Confidence: `high` / `medium` / `low`
+   - Source location: `file:line`
+   - Pattern matched (what was detected)
+   - Proof link: `[proof](gaps/gap-NNN-<lens>-<severity>.md)`
+   - Suggested test description (what a test should verify)
 
 **Output:** Gap analysis findings list, grouped by lens, with proof links.
 
@@ -322,10 +344,10 @@ When a monorepo is detected:
 
 | Skill | When to use instead / together |
 |-------|-------------------------------|
-| `tdd-team-workflow` | Use TDD to **build** new features with tests. Use `qa-engineer` to **audit** existing code. |
-| `e2e-test` | Use for interactive Playwright browser testing. `qa-engineer` evaluates E2E test coverage but uses the project's own test runner. |
-| `review-pr` | Use for line-by-line PR review. `qa-engineer` focuses on test quality across the codebase, not PR diff review. |
-| `playwright-cli` / `playwright-codegen` | Use to create/run Playwright tests. `qa-engineer` may detect E2E gaps and recommend using these skills. |
+| `tdd-team-workflow` | Use TDD to **build** new features with tests. Use `orch-qa` to **audit** existing code. |
+| `e2e-test` | Use for interactive Playwright browser testing. `orch-qa` evaluates E2E test coverage but uses the project's own test runner. |
+| `review-pr` | Use for line-by-line PR review. `orch-qa` focuses on test quality across the codebase, not PR diff review. |
+| `playwright-cli` / `playwright-codegen` | Use to create/run Playwright tests. `orch-qa` may detect E2E gaps and recommend using these skills. |
 
 ## Example Invocations
 
