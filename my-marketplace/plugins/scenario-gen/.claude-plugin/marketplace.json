@@ -8,7 +8,7 @@
   },
   "plugins": [
     {
-      "name": "qa-engineer",
+      "name": "scenario-gen",
       "source": {
         "type": "local",
         "path": "."

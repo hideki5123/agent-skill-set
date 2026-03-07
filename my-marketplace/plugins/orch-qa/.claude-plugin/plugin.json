@@ -1,0 +1,13 @@
+{
+  "name": "orch-qa",
+  "version": "1.0.0",
+  "description": ">",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "orch-qa"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}

@@ -1,12 +1,12 @@
 {
-  "name": "qa-engineer",
+  "name": "scenario-gen",
   "version": "1.0.0",
   "description": ">",
   "author": {
     "name": "Hideki"
   },
   "keywords": [
-    "qa-engineer"
+    "scenario-gen"
   ],
   "license": "MIT",
   "skills": "./skills"
