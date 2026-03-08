@@ -1,0 +1,13 @@
+{
+  "name": "pm-review",
+  "version": "1.0.0",
+  "description": ">",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "pm-review"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}

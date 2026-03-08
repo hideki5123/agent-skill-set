@@ -1,0 +1,13 @@
+{
+  "name": "review-local",
+  "version": "1.0.0",
+  "description": ">",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "review-local"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}
