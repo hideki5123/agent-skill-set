@@ -45,11 +45,6 @@
       "description": "Review a teammate's pull request — Claude reads the diff, analyzes code across multiple perspectives, and stages review comments for user approval before submission. NOT for self-review of your own PR"
     },
     {
-      "name": "my-skill-factory",
-      "source": "./plugins/my-skill-factory",
-      "description": "Create, build, and install custom Claude Code skills into Hideki's local marketplace. End-to-end workflow from requirements gathering to a fully installed and usable skill. Use when the user asks to c"
-    },
-    {
       "name": "orch-qa",
       "source": "./plugins/orch-qa",
       "description": ">"
@@ -78,6 +73,11 @@
       "name": "pm-review",
       "source": "./plugins/pm-review",
       "description": ">"
+    },
+    {
+      "name": "my-skill-factory",
+      "source": "./plugins/my-skill-factory",
+      "description": "Create, build, and install custom Claude Code skills into Hideki's local marketplace. End-to-end workflow from requirements gathering to a fully installed and usable skill. Use when the user asks to c"
     }
   ]
 }

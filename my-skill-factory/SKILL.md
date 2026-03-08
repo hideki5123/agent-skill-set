@@ -11,8 +11,9 @@ Create custom Claude Code skills and install them into the local `hideki-plugins
 
 1. **Gather requirements** — Understand what the skill should do
 2. **Design the skill** — Plan structure, references, scripts, assets
-3. **Create skill files and install** — Write SKILL.md, supporting resources, then always install immediately
-4. **Verify** — Confirm the skill appears in a new session
+3. **Team orchestration assessment** — Decide if the skill needs multi-agent review; if so, select perspectives
+4. **Create skill files and install** — Write SKILL.md, supporting resources, then always install immediately
+5. **Verify** — Confirm the skill appears in a new session
 
 ## Step 1: Gather Requirements
 
@@ -44,7 +45,33 @@ Decide:
 - **Assets needed?** Templates, images → put in `assets/`
 - **Scenario mapping**: Map each BDD scenario to SKILL.md sections (trigger context → frontmatter, workflow → body, outputs → format/references)
 
-## Step 3: Create Skill Files
+## Step 3: Team Orchestration Assessment
+
+Determine whether the skill being created should have a built-in multi-agent team review step in its own workflow.
+
+### Quick Assessment
+
+Evaluate the target skill against these criteria:
+- Does it have a multi-phase workflow where design decisions affect later phases?
+- Does it touch cross-cutting concerns (security, performance, architecture)?
+- Would multiple stakeholder perspectives improve its output quality?
+- Does it modify code, infrastructure, or shared resources?
+- Could wrong output from this skill cause significant rework?
+
+If **2+ criteria** are true → the skill should include team orchestration. Proceed to the detailed design below.
+If **0-1** → skip team orchestration for this skill. Proceed to Step 4.
+
+### Design Team Perspectives (only when assessment warrants it)
+
+Read `references/skill-design-review-team.md` for the full perspective catalog with prompts, output formats, and cross-skill delegation notes.
+
+From the catalog, select which perspectives apply to the target skill. Include in the target skill's SKILL.md:
+1. The sentence: "Create an agent team to explore this from different angles: [selected perspectives]"
+2. A reference file under the target skill's `references/` with the detailed teammate prompts for the selected perspectives
+
+Do NOT copy all perspectives — only include the ones relevant to the target skill's domain.
+
+## Step 4: Create Skill Files
 
 Create the skill directory at `D:\Shared\agents\my-skills\<skill-name>\`.
 
@@ -111,7 +138,7 @@ git commit -m "feat: add <skill-name> skill"
 git push
 ```
 
-## Step 4: Verify
+## Step 5: Verify
 
 Launch a new CLI session to confirm:
 
@@ -125,10 +152,11 @@ The new skill should appear as `<skill-name>:<skill-name>` in the output.
 
 1. **Write scenarios for the change** — Define Given/When/Then scenarios for new or modified behavior
 2. **Identify the delta** — Compare new scenarios against existing ones; classify as Added, Modified, or Removed
-3. **Edit skill files and install** — Update SKILL.md and supporting files, then always run the install script immediately (it overwrites the previous installation)
-4. **Commit and push** — `git add` the skill source dir, marketplace plugin dir, and marketplace.json, then `git commit -m "chore: update <skill-name> skill"` and `git push`
-5. **Validate coverage** — Confirm each new scenario has corresponding content in SKILL.md
-6. **Verify** — New sessions will pick up the changes automatically
+3. **Team assessment** — Re-evaluate if the updated skill should add, remove, or change team perspectives
+4. **Edit skill files and install** — Update SKILL.md and supporting files, then always run the install script immediately (it overwrites the previous installation)
+5. **Commit and push** — `git add` the skill source dir, marketplace plugin dir, and marketplace.json, then `git commit -m "chore: update <skill-name> skill"` and `git push`
+6. **Validate coverage** — Confirm each new scenario has corresponding content in SKILL.md
+7. **Verify** — New sessions will pick up the changes automatically
 
 ## Behavior Scenarios
 
@@ -136,7 +164,20 @@ The new skill should appear as `<skill-name>:<skill-name>` in the output.
 Scenario: Create a new skill from scratch
   Given the user has a clear idea for a new skill
   When the user says "create a skill for X"
-  Then the skill gathers requirements, writes BDD scenarios, designs structure, creates files, always installs immediately without asking, commits and pushes, and verifies
+  Then the skill gathers requirements, writes BDD scenarios, designs structure,
+       assesses whether team orchestration is needed, includes team perspectives
+       if warranted, creates files, installs, commits and pushes, and verifies
+
+Scenario: Skill assessed as needing team orchestration
+  Given the user wants a skill with a multi-phase workflow touching security and architecture
+  When the assessment finds 2+ criteria are true
+  Then the skill includes a "Create an agent team..." step with selected perspectives
+       and a references file with detailed teammate prompts
+
+Scenario: Skill assessed as NOT needing team orchestration
+  Given the user wants a simple single-step utility skill
+  When the assessment finds 0-1 criteria are true
+  Then team orchestration is skipped and no team review step is included in the skill
 
 Scenario: Update an existing skill
   Given a skill is already installed in the marketplace
@@ -164,3 +205,4 @@ Scenario: Re-install without changes
 - `references/skill-design-guide.md` — Quick reference for skill structure, freedom levels, patterns, and what to include/exclude
 - `references/bdd-skill-scenarios.md` — Given/When/Then templates by skill type, update-delta guidance, and anti-patterns
 - `references/marketplace-structure.md` — Full directory layout, JSON schemas, and config file locations for the local marketplace
+- `references/skill-design-review-team.md` — Perspective catalog: available team angles, prompts, output formats, and cross-skill delegation (loaded only when assessment warrants team orchestration)
