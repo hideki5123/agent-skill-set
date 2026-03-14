@@ -1,0 +1,13 @@
+{
+  "name": "slack-cli",
+  "version": "1.0.0",
+  "description": ">",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "slack-cli"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}
