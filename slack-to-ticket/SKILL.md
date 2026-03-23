@@ -248,13 +248,23 @@ Only proceed if the user approved a Confluence page in Phase 4.
 
 ### Select document format
 
-Based on the conversation type (from Phase 2 classification), select the appropriate template. Read `references/confluence-template.md` for all three templates:
+Suggest a format based on the conversation type, but **always let the user choose**. Present the three options with a recommendation:
 
-| Conversation Type | Document Format |
-|---|---|
-| Bug / Incident | **Postmortem** — timeline, impact, root cause, remediation, lessons learned |
-| Feature / Story | **PRD** — problem statement, goals, requirements, constraints, open questions |
-| Task / General | **Slim Summary** — context, decisions, action items |
+```
+Confluence page format?
+→ Postmortem (recommended) — timeline, impact, root cause, remediation, lessons learned
+→ PRD — problem statement, goals, requirements, constraints, open questions
+→ Slim Summary — context, decisions, action items
+```
+
+Recommend based on conversation type:
+- Bug / Incident → recommend **Postmortem**
+- Feature / Story → recommend **PRD**
+- Task / General → recommend **Slim Summary**
+
+But the user may override — e.g., an incident investigation that leads to a feature request may be better as a PRD.
+
+Read `references/confluence-template.md` for all three templates.
 
 **All formats MUST include a "Messages" section** that preserves the original Slack conversation messages chronologically. This is the raw data — analysis sections above are interpretation, this section is the source of truth.
 
@@ -359,20 +369,15 @@ Scenario 4: Long conversation triggers Confluence recommendation
   Given the conversation has more than 15 messages
   When the skill finishes analyzing
   Then it recommends creating a Confluence page alongside the Jira ticket(s)
-  And selects the appropriate format (postmortem for bugs, PRD for features, slim summary for tasks)
-  And always includes a Messages section preserving the original conversation
+  And presents format options (Postmortem, PRD, Slim Summary) with a recommendation
+  And the user chooses the format
+  And the page always includes a Messages section preserving the original conversation
 
-Scenario 5: Bug conversation produces postmortem Confluence page
+Scenario 5: User overrides recommended Confluence format
   Given the conversation is classified as a Bug/incident
-  And the user approves a Confluence page
-  When the skill creates the Confluence page
-  Then it uses the postmortem format with timeline, impact, root cause, remediation, and lessons
-
-Scenario 6: Feature conversation produces PRD Confluence page
-  Given the conversation is classified as a Story/feature request
-  And the user approves a Confluence page
-  When the skill creates the Confluence page
-  Then it uses the PRD format with problem statement, goals, requirements, and constraints
+  And the skill recommends Postmortem format
+  When the user chooses PRD format instead
+  Then the skill creates the Confluence page using the PRD template
 
 Scenario 7: Missing prerequisites
   Given one or more required CLIs are not installed
