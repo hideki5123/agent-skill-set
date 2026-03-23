@@ -6,13 +6,44 @@ A collection of agent skills and tools for Claude Code and Cursor.
 
 | Skill | Description |
 |-------|-------------|
+| [confluence](confluence/) | Read, search, create, update, move, and delete Confluence pages via `confluence-cli` |
+| [dev-workflow](dev-workflow/) | End-to-end TDD development workflow with multi-agent team review |
+| [jira-cli](jira-cli/) | View, search, create, update, and delete Jira issues, comments, sprints via `@pchuri/jira-cli` |
+| [e2e-test](e2e-test/) | Run frontend E2E tests using Playwright MCP browser tools with screenshot evidence |
 | [multi-agent-council](multi-agent-council/) | Multi-LLM council for architecture decisions and code reviews (submodule) |
-| [dev-workflow](dev-workflow/) | End-to-end development workflow: plan, implement, commit, and PR (supports multi-agent team) |
-| [tdd-team-workflow](tdd-team-workflow/) | Test-Driven Development workflow with multi-agent team discussion |
-| [review-pr](review-pr/) | Detailed code review on GitHub pull requests |
-| [my-skill-factory](my-skill-factory/) | Create, build, and install custom skills |
-| [my-marketplace](my-marketplace/) | Local skill marketplace |
+| [my-skill-factory](my-skill-factory/) | Create, build, and install custom skills into the local marketplace |
+| [orch-qa](orch-qa/) | QA/QC engineer that evaluates codebases for test quality and writes missing tests |
+| [playwright-cli](playwright-cli/) | Run Playwright CLI commands for test execution, codegen, reporting, and debugging |
+| [playwright-codegen](playwright-codegen/) | Record browser interactions with Playwright codegen and transform into test suites |
+| [pm-review](pm-review/) | Review local changes from a PMBOK-based product management perspective |
+| [pr-review](pr-review/) | Review a teammate's pull request from multiple expert perspectives |
+| [review-local](review-local/) | Review local git changes from 8 expert perspectives as a pre-commit quality gate |
+| [scenario-gen](scenario-gen/) | Generate test scenarios from git branch changes with screenshot evidence |
+| [self-pr-review](self-pr-review/) | Self-review loop: request AI reviews (Copilot + Gemini), apply fixes, repeat until clean |
 | [session-handover](session-handover/) | Auto-generate session handover via PreCompact hook (install once, works forever) |
+| [slack-cli](slack-cli/) | Operate Slack from the terminal via `slack-cli` — messages, unreads, search, uploads |
+| [subagent-gen](subagent-gen/) | Generate PROJECT-KNOWLEDGE.md profiles for subagent deep domain expertise |
+| [address-pr-comments](address-pr-comments/) | Autonomously fetch and apply AI reviewer comments on a GitHub PR |
+
+### Supporting directories
+
+| Directory | Description |
+|-----------|-------------|
+| [my-marketplace](my-marketplace/) | Local skill marketplace (generated plugin artifacts) |
+| [scripts](scripts/) | Sync, install, and hook scripts |
+
+## Dependencies
+
+Some skills require external CLI tools. Install them before use.
+
+| Tool | Install | Required by |
+|------|---------|-------------|
+| [Node.js / npm](https://nodejs.org/) | OS package manager | All npm-based tools below |
+| [confluence-cli](https://github.com/pchuri/confluence-cli) | `npm install -g confluence-cli` | confluence |
+| [@pchuri/jira-cli](https://github.com/pchuri/jira-cli) | `npm install -g @pchuri/jira-cli` | jira-cli |
+| [slack-cli](https://github.com/urugus/slack-cli) | `npm install -g @urugus/slack-cli` | slack-cli |
+| [Playwright](https://playwright.dev/) | `npx playwright install` | playwright-cli, playwright-codegen, e2e-test, scenario-gen |
+| [GitHub CLI (gh)](https://cli.github.com/) | OS package manager | dev-workflow, pr-review, self-pr-review, address-pr-comments |
 
 ## Authoring Workflow
 
@@ -72,3 +103,11 @@ python scripts/sync_skills.py --targets codex --codex-home "D:/path/to/.codex"
 ```
 
 `scripts/sync_skills.py` syncs marketplace artifacts under `my-marketplace/` and Codex skills under `$CODEX_HOME/skills` (fallback: `~/.codex/skills`). It does not update `~/.claude` install state.
+
+### Install a Single Skill Globally
+
+```bash
+python my-skill-factory/scripts/install_skill.py <skill-dir>/
+```
+
+This handles the full pipeline: marketplace structure, plugin cache, `installed_plugins.json`, and `settings.json`. A pre-push hook also auto-installs changed skills on `git push`.

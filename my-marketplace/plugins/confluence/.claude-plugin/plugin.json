@@ -1,0 +1,13 @@
+{
+  "name": "confluence",
+  "version": "1.0.0",
+  "description": ">",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "confluence"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}

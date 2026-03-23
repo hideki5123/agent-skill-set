@@ -83,6 +83,16 @@
       "name": "slack-cli",
       "source": "./plugins/slack-cli",
       "description": ">"
+    },
+    {
+      "name": "confluence",
+      "source": "./plugins/confluence",
+      "description": ">"
+    },
+    {
+      "name": "jira-cli",
+      "source": "./plugins/jira-cli",
+      "description": ">"
     }
   ]
 }
