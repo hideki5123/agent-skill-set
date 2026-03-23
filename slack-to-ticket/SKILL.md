@@ -3,10 +3,12 @@ name: slack-to-ticket
 description: >
   Create Jira tickets from Slack conversations, optionally with Confluence documentation pages.
   Reads Slack threads/channels/search results via slack-cli, analyzes the conversation to extract
-  problems, participants, decisions, and action items, then creates a Jira issue via jira-cli
-  with the conversation context. For long or complex conversations (>15 messages), recommends
-  creating a Confluence documentation page via confluence-cli. Supports input as Slack permalink
-  URL, channel name, thread timestamp, or search query. Presents a draft for interactive review
+  problems, participants, decisions, and action items, then creates Jira issue(s) via jira-cli
+  with the conversation context. A single conversation may produce multiple tickets if it covers
+  distinct topics. For long or complex conversations (>15 messages), recommends creating a
+  Confluence documentation page via confluence-cli with a context-aware format (postmortem for
+  bugs, PRD for features, slim summary for tasks). Supports input as Slack permalink URL,
+  channel name, thread timestamp, or search query. Presents drafts for interactive review
   before creating. Trigger phrases include "slack to ticket", "slack-to-ticket",
   "create ticket from slack", "jira ticket from slack", "create ticket from #channel",
   "create ticket from thread", "slack conversation to jira", "ticket from slack thread",
@@ -24,6 +26,10 @@ Create Jira tickets from Slack conversations with optional Confluence documentat
 - Always offer to post a summary back to the Slack thread after ticket creation
 - Recommend Confluence page when conversation exceeds 15 messages, but always ask for approval
 - Use `--format json` for all slack-cli output and pipe through `jq` when filtering
+- **Never create new Jira labels**. Only use labels that already exist on the target project. If a new label seems truly necessary, ask the user for approval first.
+- **Always leave the assignee field unassigned**. Do not suggest assignees from conversation participants.
+- Use display names (not @account handles) when referencing people in ticket descriptions
+- Write ticket content in English unless the user explicitly requests otherwise
 
 ## Phase 0: Preflight
 
@@ -94,7 +100,7 @@ Extract the first message's permalink as the canonical Slack link for the ticket
 Analyze the fetched messages to extract:
 
 1. **Problem / Request**: The core issue or ask
-2. **Key Participants**: Who is involved (names from messages)
+2. **Key Participants**: Who is involved (display names from messages)
 3. **Decisions**: Any conclusions or agreements reached
 4. **Action Items**: Explicit or implied next steps with owners
 5. **Urgency Signals**: Keywords that indicate priority
@@ -105,23 +111,56 @@ Auto-classify:
 - **Issue Type**: Bug, Story, Task, or Epic based on conversation keywords
 - **Priority**: Highest, High, Medium (default), Low, or Lowest based on urgency signals
 
-## Phase 3: Draft Ticket
+### Multi-topic analysis
 
-Compose the ticket draft. Read `references/description-template.md` for the description template.
+After initial extraction, determine whether the conversation covers **multiple distinct issues or topics**. Signs of multiple topics:
+- Conversation shifts from one problem to another ("also...", "separate issue...", "by the way...")
+- Different root causes are identified for different symptoms
+- Different owners or teams are involved for different action items
+- Investigation reveals distinct sub-problems (e.g., DS7 coordinate drift vs DS4 empty lane issue)
 
-Present to the user:
+If multiple topics are found:
+- Group related messages by topic
+- Each topic group becomes a separate ticket candidate
+- Each ticket gets its own type/priority classification
+- Note relationships between tickets (e.g., "discovered during investigation of...")
+
+If only one topic → single ticket (default behavior).
+
+## Phase 3: Draft Ticket(s)
+
+Compose the ticket draft(s). Read `references/description-template.md` for the description template.
+
+### Fetch existing labels
+
+Before drafting, fetch the project's existing labels so you only suggest valid ones:
+
+```bash
+# Via Atlassian MCP (preferred)
+# Use searchJiraIssuesUsingJql to get labels from existing issues
+
+# Via CLI fallback
+jira issue list -p <KEY> --plain --columns labels --paginate 0:50 | tr ',' '\n' | sort -u
+```
+
+### Present draft(s)
+
+For each ticket candidate, present:
 
 ```
-## Draft Jira Ticket
+## Draft Jira Ticket [N of M]
 
 **Project**: [ask user if unknown — run `jira project list` to show options]
 **Type**: <auto-detected> (detected: "<keywords>")
 **Priority**: <auto-detected> (detected: "<keywords>")
 **Summary**: <generated — under 80 chars>
-**Assignee**: [suggest from participants, or leave blank]
+**Labels**: <selected from existing project labels, or "none">
 
 ### Description Preview
 [rendered description from template]
+
+### Why this is a separate ticket
+[only if M > 1 — brief explanation of why this was split out]
 
 ---
 [Confluence recommended — conversation has NN messages] ← only if > 15 messages
@@ -129,19 +168,48 @@ Present to the user:
 
 If the Jira project is unknown, run `jira project list` and present options to the user.
 
+If no existing labels fit and a new one seems appropriate, ask:
+```
+No existing labels match this topic. Create new label "<suggested>"? (y/n)
+```
+
 ## Phase 4: User Review
 
-Ask the user to review the draft. They can:
-1. **Approve** as-is
-2. **Modify** any field (type, priority, summary, description, project, assignee)
-3. **Add/skip Confluence page** (if recommended or requested)
-4. **Cancel** — clean exit, nothing created
+Ask the user to review the draft(s). They can:
+1. **Approve** all tickets as-is
+2. **Modify** any field on any ticket (type, priority, summary, description, project, labels)
+3. **Remove** a ticket from the batch
+4. **Merge** tickets back together if they disagree with the split
+5. **Add** another ticket manually
+6. **Add/skip Confluence page** (if recommended or requested)
+7. **Cancel** — clean exit, nothing created
 
 Loop on modifications until the user approves or cancels.
 
-## Phase 5: Create Jira Ticket
+## Phase 5: Create Jira Ticket(s)
 
-Write the description to a temp file and create the issue:
+For each approved ticket, write the description to a temp file and create the issue.
+
+Prefer using the Atlassian MCP tool (`createJiraIssue`) over the CLI, as it handles custom fields (Impact, Frequency, Sprint) more reliably. Fall back to CLI if MCP is unavailable.
+
+### Via Atlassian MCP (preferred)
+
+```
+createJiraIssue:
+  projectKey: <KEY>
+  issueTypeName: <TYPE>
+  summary: <SUMMARY>
+  contentFormat: markdown
+  description: <DESCRIPTION>
+  additional_fields:
+    priority: { name: <PRIORITY> }
+    labels: [<existing-labels>]
+    # Include required custom fields (Impact, Frequency, Sprint) based on project schema
+```
+
+Note: Do NOT set `assignee_account_id`. Always leave unassigned.
+
+### Via CLI (fallback)
 
 ```bash
 cat > /tmp/slack-ticket-desc.md << 'JIRA_DESC'
@@ -154,34 +222,58 @@ jira issue create \
   --summary "<SUMMARY>" \
   --description-file /tmp/slack-ticket-desc.md \
   --priority <PRIORITY> \
-  [--assignee <EMAIL>]
+  --label <EXISTING_LABEL> \
+  --no-input
 ```
+
+Note: Do NOT include `--assignee`. Always leave unassigned.
 
 Capture the returned issue key (e.g., `PROJ-456`).
 
-If the command fails, report the error and preserve the draft so the user can retry or fix.
+If the command fails due to required custom fields, check the project's field requirements using `getJiraIssueTypeMetaWithFields` and retry with the required fields populated.
+
+### Cross-references (multi-ticket only)
+
+If multiple tickets were created from the same conversation, add a comment to each linking to the others:
+
+```
+Related tickets from the same Slack conversation:
+- PROJ-456 — <summary>
+- PROJ-457 — <summary>
+```
 
 ## Phase 6: Create Confluence Page (Optional)
 
 Only proceed if the user approved a Confluence page in Phase 4.
 
-Read `references/confluence-template.md` for the page template.
+### Select document format
+
+Based on the conversation type (from Phase 2 classification), select the appropriate template. Read `references/confluence-template.md` for all three templates:
+
+| Conversation Type | Document Format |
+|---|---|
+| Bug / Incident | **Postmortem** — timeline, impact, root cause, remediation, lessons learned |
+| Feature / Story | **PRD** — problem statement, goals, requirements, constraints, open questions |
+| Task / General | **Slim Summary** — context, decisions, action items |
+
+**All formats MUST include a "Messages" section** that preserves the original Slack conversation messages chronologically. This is the raw data — analysis sections above are interpretation, this section is the source of truth.
+
+### Create the page
 
 ```bash
 cat > /tmp/slack-ticket-confluence.md << 'CONF_PAGE'
-<generated page content from template>
+<generated page content from selected template>
 CONF_PAGE
 
 confluence create "[ISSUE-KEY] <Summary>" <SPACEKEY> \
   --file /tmp/slack-ticket-confluence.md --format markdown
 ```
 
-If Confluence space key is unknown, run `confluence spaces` and present options.
+If Confluence space key is unknown, ask the user (they may provide a URL like `https://site.atlassian.net/wiki/spaces/KEY/overview`).
 
 After creating the page, update the Jira ticket to include the Confluence link:
 
 ```bash
-# Append Confluence link to description
 echo -e "\n\n## Documentation\n[Confluence Page](<confluence-url>)" >> /tmp/slack-ticket-desc.md
 
 jira issue edit <ISSUE-KEY> --description-file /tmp/slack-ticket-desc.md
@@ -195,6 +287,7 @@ Report the results:
 ## Created
 
 - **Jira**: [PROJ-456](<jira-url>) — <summary>
+- **Jira**: [PROJ-457](<jira-url>) — <summary>  ← if multiple
 - **Confluence**: [Page title](<confluence-url>) ← only if created
 - **Source**: [Slack thread](<permalink>)
 ```
@@ -203,14 +296,17 @@ Then **always offer** to post a summary back to the Slack thread:
 
 ```
 Post summary to the Slack thread?
-→ "Jira ticket created: PROJ-456 — <summary>"
+→ "Jira ticket(s) created:
+  PROJ-456 — <summary>
+  PROJ-457 — <summary>
+  <jira-urls>"
 ```
 
 If the user approves:
 
 ```bash
 slack-cli send -c <channel> \
-  -m "Jira ticket created: <ISSUE-KEY> — <summary>\n<jira-url>" \
+  -m "Jira ticket(s) created:\n<ISSUE-KEY> — <summary>\n<jira-url>" \
   --thread <thread_ts>
 ```
 
@@ -223,11 +319,14 @@ slack-cli send -c <channel> \
 | >100 messages | Summarize in chunks, strongly recommend Confluence |
 | Messages with file attachments | Note attachment references in description (files cannot transfer) |
 | Private channel access denied | Report the permission error, suggest checking bot token scopes |
-| User cancels at review | Clean exit, no ticket created |
+| User cancels at review | Clean exit, nothing created |
 | Jira project unknown | Run `jira project list`, present options |
-| Confluence space unknown | Run `confluence spaces`, present options |
-| jira create fails | Report error, preserve draft for retry |
+| Confluence space unknown | Ask user for space URL or key |
+| jira create fails | Report error, preserve draft for retry. Check required custom fields |
 | Unrecognized URL format | Ask user to provide channel + thread TS manually |
+| Conversation covers multiple topics | Split into multiple ticket candidates, present all for review |
+| No existing labels match | Ask user before creating any new label |
+| Required custom fields (Impact, Frequency, Sprint) | Fetch field metadata, prompt user or use sensible defaults |
 
 ## Behavior Scenarios
 
@@ -238,28 +337,44 @@ Scenario 1: Create ticket from a Slack permalink (primary path)
   When the user invokes the skill
   Then it parses the URL, fetches the thread via slack-cli
   And analyzes the conversation, presents a draft ticket for review
+  And the ticket is always unassigned with only existing labels
   And after user approval, creates the Jira issue with Slack permalink in description
   And offers to post a summary back to the Slack thread
 
-Scenario 2: Create ticket from channel name (secondary)
-  Given the user says "create ticket from #channel-name"
-  When the skill fetches recent channel history
-  Then it summarizes, auto-suggests type/priority, presents draft for review
-  And upon approval creates the Jira issue
+Scenario 2: Multiple tickets from one conversation
+  Given a Slack conversation covers two or more distinct issues
+  When the skill finishes analyzing
+  Then it identifies each distinct issue as a separate ticket candidate
+  And presents all drafts numbered (1 of N, 2 of N) for review
+  And the user can approve, modify, merge, or remove any of them
+  And approved tickets are created with cross-reference comments
 
-Scenario 3: Long conversation triggers Confluence recommendation
+Scenario 3: Labels — only existing labels used
+  Given the target Jira project has a set of existing labels
+  When the skill composes a ticket draft
+  Then it only selects from existing project labels
+  And if no label fits, it asks the user before creating a new one
+
+Scenario 4: Long conversation triggers Confluence recommendation
   Given the conversation has more than 15 messages
   When the skill finishes analyzing
-  Then it recommends creating a Confluence page alongside the Jira ticket
-  And if user approves, creates both with cross-links
+  Then it recommends creating a Confluence page alongside the Jira ticket(s)
+  And selects the appropriate format (postmortem for bugs, PRD for features, slim summary for tasks)
+  And always includes a Messages section preserving the original conversation
 
-Scenario 4: Create ticket with Confluence documentation
-  Given confluence-cli is installed and the user requests a Confluence page
-  When the skill creates the Jira ticket
-  Then it also creates a Confluence documentation page
-  And cross-links them (Confluence link in Jira, Jira key in Confluence)
+Scenario 5: Bug conversation produces postmortem Confluence page
+  Given the conversation is classified as a Bug/incident
+  And the user approves a Confluence page
+  When the skill creates the Confluence page
+  Then it uses the postmortem format with timeline, impact, root cause, remediation, and lessons
 
-Scenario 5: Missing prerequisites
+Scenario 6: Feature conversation produces PRD Confluence page
+  Given the conversation is classified as a Story/feature request
+  And the user approves a Confluence page
+  When the skill creates the Confluence page
+  Then it uses the PRD format with problem statement, goals, requirements, and constraints
+
+Scenario 7: Missing prerequisites
   Given one or more required CLIs are not installed
   When the user invokes the skill
   Then it reports which tools are missing with install instructions and stops
@@ -268,6 +383,6 @@ Scenario 5: Missing prerequisites
 ## References
 
 - `references/description-template.md` — Read when composing the Jira ticket description
-- `references/confluence-template.md` — Read when creating a Confluence documentation page
+- `references/confluence-template.md` — Read when creating a Confluence documentation page (contains postmortem, PRD, and slim summary templates)
 - `references/input-parsing.md` — Read when parsing the user's Slack URL or input
 - `references/classification-heuristics.md` — Read when auto-classifying issue type and priority

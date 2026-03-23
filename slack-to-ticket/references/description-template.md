@@ -10,7 +10,7 @@ Adapt sections based on what the conversation actually contains — omit empty s
 **Source**: [Slack thread](<permalink-url>)
 **Channel**: #<channel-name>
 **Date**: <YYYY-MM-DD>
-**Participants**: @user1, @user2, @user3
+**Participants**: Name1, Name2, Name3
 
 ## Problem / Request
 [Clear statement of the issue or request extracted from conversation.
@@ -26,13 +26,13 @@ Focus on the core ask — what needs to happen and why.]
 - [Decision 2]
 
 ## Action Items
-- [ ] [Action 1] — Owner: @user
-- [ ] [Action 2] — Owner: @user
+- [ ] [Action 1] — Owner: Name
+- [ ] [Action 2] — Owner: Name
 
 ## Conversation Excerpt
-> **@user1** (14:02): [key message]
-> **@user2** (14:15): [key response]
-> **@user3** (14:30): [key conclusion]
+> **Name1** (14:02): [key message]
+> **Name2** (14:15): [key response]
+> **Name3** (14:30): [key conclusion]
 ```
 
 ## Section Guidelines
@@ -50,6 +50,7 @@ Focus on the core ask — what needs to happen and why.]
 
 - Keep the description under 2000 characters for readability
 - Use bullet points over paragraphs
-- Attribute quotes to speakers using `@username`
+- Use display names (e.g., "Miyazaki", "Koike") — NOT @account handles
 - Use ISO dates (YYYY-MM-DD)
 - The Slack permalink must always appear in the Context section
+- Do NOT include an Assignee field — tickets are always created unassigned
