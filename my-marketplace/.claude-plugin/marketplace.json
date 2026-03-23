@@ -93,6 +93,11 @@
       "name": "jira-cli",
       "source": "./plugins/jira-cli",
       "description": ">"
+    },
+    {
+      "name": "slack-to-ticket",
+      "source": "./plugins/slack-to-ticket",
+      "description": ">"
     }
   ]
 }

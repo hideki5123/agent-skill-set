@@ -1,0 +1,13 @@
+{
+  "name": "slack-to-ticket",
+  "version": "1.0.0",
+  "description": ">",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "slack-to-ticket"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}
