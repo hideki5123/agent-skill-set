@@ -98,6 +98,11 @@
       "name": "slack-to-ticket",
       "source": "./plugins/slack-to-ticket",
       "description": ">"
+    },
+    {
+      "name": "test-scenario",
+      "source": "./plugins/test-scenario",
+      "description": ">"
     }
   ]
 }
