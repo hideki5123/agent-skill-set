@@ -1,11 +1,15 @@
 ---
 name: dev-workflow
 description: >
-  End-to-end TDD development workflow with multi-agent team review.
-  Plans, discusses, and implements features using strict RED-GREEN-REFACTOR
-  test-driven development. Handles branch creation, plan-mode exploration,
-  team discussion (architecture, security, resource, devil's advocate),
-  test case design, TDD implementation, conventional commits, and optional PR creation.
+  End-to-end TDD development workflow with multi-agent team review and skill-based
+  quality gates. Plans, discusses, and implements features using strict RED-GREEN-REFACTOR
+  test-driven development. Handles worktree-based branch isolation (from latest remote),
+  PRD and technical requirements creation, plan-mode exploration,
+  embedded team discussion at every deliverable phase,
+  skill-agent quality gates (review-local, orch-qa, scenario-gen, pm-review, e2e-test),
+  mandatory test case design via test-scenario skill, TDD implementation,
+  fresh agent implementation review, conventional commits,
+  optional PR creation with self-pr-review and address-pr-comments.
   Use when the user asks to implement a feature, fix a bug, refactor code, add tests,
   or any multi-step development task.
   Triggers on "implement X", "build Y", "add feature Z", "fix bug", "refactor",
@@ -15,42 +19,137 @@ description: >
 
 # Dev Workflow
 
-End-to-end development with team review and strict TDD discipline.
+End-to-end development with team review, skill agents, and strict TDD discipline.
 
 ## Core Principles
 
-1. **Plan Before Code** — Explore the codebase and get approval before writing anything
-2. **Team Discussion First** — Never implement without multi-agent review
-3. **Tests Before Implementation** — RED -> GREEN -> REFACTOR, always, no exceptions
-4. **Clean Commits & Optional PR** — Focused conventional commits, stash-based grouping
+1. **Requirements First** — PRD and Tech Req before any code
+2. **Team Discussion at Every Deliverable** — Each phase that produces a deliverable gets its own agent team review
+3. **Always Confirm Agents** — Present which agents will run, get user feedback before spawning
+4. **Tests Before Implementation** — RED -> GREEN -> REFACTOR, always, no exceptions
+5. **Clean Commits & Optional PR** — Focused conventional commits, stash-based grouping
 
 ## Arguments
 
-All optional with sensible defaults.
+All optional with sensible defaults. Flags use positive names with boolean values.
 
 | Argument | Default | Description |
 |----------|---------|-------------|
 | `--bdd` | `false` | Use BDD-style (Given/When/Then) test cases |
-| `--skip-team` | `false` | Skip multi-agent team discussion (not recommended) |
-| `--skip-approval` | `false` | Skip owner approval step after implementation |
-| `--base-branch` | repo default branch | Branch to create feature branch from |
-| `--branch` | auto-generated from task | Feature branch name |
+| `--team` | `true` | Run agent team discussion at each deliverable phase |
+| `--approval` | `true` | Run owner approval step after implementation |
+| `--review` | `true` | Run review-local quality gate |
+| `--qa` | `true` | Run orch-qa + scenario-gen quality gate |
+| `--pm-review` | `false` | Run pm-review alongside review-local (opt-in) |
+| `--e2e` | `false` | Run e2e-test for frontend changes (opt-in) |
+| `--self-review` | `true` | Run self-pr-review after PR creation |
+| `--address-comments` | `false` | Run address-pr-comments after self-pr-review (opt-in) |
+| `--quality-gate` | `standard` | Preset: `none` / `standard` / `full` |
+| `--base-branch` | repo default | Branch to create feature branch from |
+| `--branch` | auto-generated | Feature branch name (also worktree directory name) |
 | `--pr` | `false` | Create a PR after commits |
+
+**Quality gate presets** (override individual flags):
+- `none` = `--review false --qa false --self-review false`
+- `standard` = default (review + qa + self-review enabled)
+- `full` = enables everything (pm-review, e2e, address-comments also enabled)
 
 ## Workflow Overview
 
 ```
-Setup -> Plan -> Team Discussion -> Test Design -> RED -> GREEN -> REFACTOR -> Approval -> Commit & PR
+Phase 0a: PRD [+team review]
+  -> Phase 0b: Tech Req [+team review]
+  -> Phase 1: Branch Setup
+  -> Phase 2: Plan [+team review]
+  -> Phase 3: Test Design [+test-scenario agents]
+  -> Phase 4: RED -> Phase 5: GREEN -> Phase 6: REFACTOR
+  -> Phase 6a: Quality Gates (skill agents)
+  -> Phase 7: Approval
+  -> Phase 7a: Implementation Review (fresh agent)
+  -> Phase 8: Commit & PR
+  -> Phase 8a: Post-PR Review (skill agents)
 ```
 
 ---
 
-### Phase 1: Setup
+### Phase 0a: PRD (Product Requirements Document)
+
+Before any technical work, create a PRD from the user's request.
+
+1. Analyze the user's task description, requirements, and context
+2. Draft a PRD covering:
+   - **Problem Statement** — What problem does this solve?
+   - **Goals & Non-Goals** — What's in scope and explicitly out of scope
+   - **User Stories / Use Cases** — Who benefits and how
+   - **Acceptance Criteria** — Measurable conditions for success
+   - **Constraints & Assumptions** — Known limitations
+   - **Success Metrics** — How to measure if this was done right
+
+3. **Team Discussion on PRD** (skip if `--team false`):
+
+   Present agent team to user:
+   > **PRD Review Agents:**
+   > - pm-review — product management perspective, scope validation
+   > - Devil's Advocate — challenge assumptions, find gaps
+   > - [additional agents based on task domain]
+   >
+   > **Proceed with these agents?**
+
+   Spawn confirmed agents. Synthesize findings (Critical/Important/Nice-to-have). Update PRD.
+
+4. Present the final PRD to the user for approval
+5. Iterate until approved
+
+The PRD drives all subsequent phases.
+
+### Phase 0b: Technical Requirements Document
+
+Based on the approved PRD, create a Technical Requirements Document.
+
+Present agent team to user:
+> **Tech Req Agents:**
+> - Architecture — system design, component boundaries, data flow
+> - Security — threat model, auth requirements, data protection
+> - Resource — memory, CPU, network constraints
+> - Devil's Advocate — challenge assumptions
+> - [additional agents based on PRD scope]
+>
+> **Proceed with these agents?**
+
+1. Spawn confirmed agents in parallel to analyze the PRD
+2. Synthesize into a Technical Requirements Document:
+   - **Architecture Overview** — Components, interfaces, data flow
+   - **Technical Constraints** — Language, framework, performance requirements
+   - **API / Interface Contracts** — Inputs, outputs, error handling
+   - **Data Model Changes** — Schema updates, migrations needed
+   - **Security Requirements** — Authentication, authorization, validation rules
+   - **Testing Strategy** — What types of tests are needed, coverage targets
+   - **Dependencies** — External services, libraries, tools needed
+3. Present to user for approval
+
+The Tech Req Doc informs all subsequent phases.
+
+### Phase 1: Branch Setup
 
 1. Detect repo's default branch via `git remote show origin | grep 'HEAD branch'` (fallback to `develop`/`main`)
 2. Use `--base-branch` if provided, otherwise use the detected default
-3. Create feature branch: `git checkout -b <branch-name> <base-branch>`
-   - If `--branch` not provided, derive from task description (e.g. `feat/short-description`)
+3. **Fetch the latest base branch from remote:**
+   ```bash
+   git fetch origin <base-branch>
+   ```
+   - If fetch fails (network error, auth failure), warn and continue with local branch
+4. If `--branch` not provided, derive from task description (e.g. `feat/short-description`)
+5. Record the main repo root: `REPO_ROOT=$(git rev-parse --show-toplevel)`
+6. Create worktree with feature branch from the fetched remote ref:
+   ```bash
+   git worktree add "$REPO_ROOT/.worktrees/<branch-name>" -b <branch-name> origin/<base-branch>
+   ```
+   - If fetch failed in step 3, fall back to local `<base-branch>` instead of `origin/<base-branch>`
+   - If the worktree path already exists (stale), clean up first: `git worktree remove <path>` then retry
+   - If the branch already exists, omit `-b`: `git worktree add "$REPO_ROOT/.worktrees/<branch-name>" <branch-name>`
+7. Change working directory to the worktree: `cd "$REPO_ROOT/.worktrees/<branch-name>"`
+   - **All subsequent phases operate inside the worktree directory**
+   - The main checkout remains on its original branch, undisturbed
 
 ### Phase 2: Plan
 
@@ -59,71 +158,69 @@ Setup -> Plan -> Team Discussion -> Test Design -> RED -> GREEN -> REFACTOR -> A
 3. Explore the codebase: existing patterns, conventions, dependencies, related tests
 4. Document acceptance criteria and edge cases
 5. Write a clear implementation plan
-6. Present the plan via `ExitPlanMode` for user approval
-7. If rejected, iterate on the plan until approved
 
-### Phase 3: Team Discussion
+6. **Team Discussion on Plan** (skip if `--team false`):
 
-Skip if `--skip-team` is set.
+   Present agent team to user:
+   > **Plan Review Agents:**
+   > - Architecture — design patterns, modularity, testability
+   > - Security — input validation, injection risks, data exposure
+   > - Resource — memory, CPU, network constraints
+   > - Devil's Advocate — challenge assumptions, find flaws
+   > - [additional agents based on task]
+   >
+   > **Proceed with these agents?**
 
-Create an agent team to explore this from different angles: one teammate on architecture, one on security, one considering edge device resource, one playing devil's advocate and any other team mate who need to be on this task.
+   Spawn confirmed agents. Read `references/team-roles.md` for detailed prompts.
+   Synthesize findings (Critical/Important/Nice-to-have). Update plan.
 
-**Setup:**
-1. Use `TeamCreate` to create a team named after the feature (e.g. `review-health-check`)
-2. Use `SendMessage` to spawn teammates with their role-specific prompts
-3. Include the approved plan and relevant codebase context in each spawn prompt
+7. Present the plan via `ExitPlanMode` for user approval
+8. If rejected, iterate until approved
 
-**Teammates:**
-
-| Teammate | Focus |
-|----------|-------|
-| **Architecture** | Design patterns, modularity, extensibility, existing conventions |
-| **Security** | Input validation, injection risks, auth/authz, data exposure |
-| **Resource** | Memory, CPU, network constraints, offline scenarios |
-| **Devil's Advocate** | Challenge assumptions, find flaws, suggest alternatives |
-
-Add any other teammates needed based on the specific task (e.g. database, UX, performance).
-
-Read `references/team-roles.md` for detailed teammate prompts and output formats.
-
-**Team Discussion Protocol:**
-1. Each teammate reviews the plan from their perspective
-2. Teammates communicate with each other to challenge findings and debate trade-offs
-3. The lead (you) collects and synthesizes all findings
-4. Categorize by severity:
-   - **Critical** — Blocks implementation, security risk, architectural flaw -> Must address before proceeding
-   - **Important** — Should address for quality, but not blocking -> Address during implementation
-   - **Nice-to-have** — Improvements that can be deferred -> Document for future
-5. Deduplicate overlapping concerns
-6. Update the plan with concrete action items
-7. Present consolidated feedback to user for approval
-8. Clean up the team after discussion is complete
-
-### Phase 4: Test Case Design
+### Phase 3: Test Case Design
 
 Design comprehensive test cases **before writing any implementation code**.
 
-Read `references/test-design.md` for the 9 test categories:
-1. Happy Path — Normal expected behavior
-2. Edge Cases — Boundary conditions, empty inputs, nulls
-3. Error Handling — Invalid inputs, failures, exceptions
-4. Input Validation — Sanitization, injection prevention
-5. Integration Points — External service interactions
-6. Output Format — Structure, schema, encoding
-7. Security — Escaping, error sanitization, auth
-8. Ordering & Determinism — Consistent, reproducible output
-9. Resource Limits — Pagination, truncation, timeouts
+**Step 3a: Automated Test Outline** (mandatory)
 
-**If `--bdd` is set:** Write test cases in Given/When/Then Gherkin format. Read `references/bdd-guide.md` for writing effective scenarios, tables, and backgrounds.
+Present to user:
+> **Test Design Agent:** /test-scenario — generate rough test outline from plan
+> **Proceed?**
+
+Invoke `/test-scenario` skill to generate a test outline from the approved plan.
+**Always show the generated test cases to the user.**
+- Pass the feature description, acceptance criteria, and `--bdd` flag if set
+- The skill generates structured test cases covering happy path, edge cases, error handling, constraints, and data integrity
+- Merge with team discussion findings from prior phases
+
+Read `references/skill-agents.md` for invocation details.
+
+**Step 3b: Manual Test Design** (always)
+
+Read `references/test-design.md` for the 9 test categories. Fill gaps not covered by the test-scenario outline, particularly categories 5-9 (Integration Points, Output Format, Security, Ordering, Resource Limits).
+
+If `--bdd` is set, write test cases in Given/When/Then Gherkin format. Read `references/bdd-guide.md`.
+
+**Step 3c: Test Design Verification** (mandatory)
+
+Present to user:
+> **Test Verification Agent:** /test-scenario — verify combined test design for completeness
+> **Proceed?**
+
+Invoke `/test-scenario` again to validate the combined test design.
+**Always show the verified test cases to the user.**
+- Evaluates coverage against acceptance criteria, missing categories, test quality
+- User must approve the test design before proceeding to RED
+- If gaps found, iterate on the test design
 
 **Test-First Checklist** (all must be true before proceeding):
 - [ ] All acceptance criteria have corresponding tests
-- [ ] Edge cases identified by team are covered
-- [ ] Security concerns from review are tested
+- [ ] Edge cases from team discussion are covered
+- [ ] Security concerns are tested
 - [ ] Error handling scenarios are tested
 - [ ] Tests compile but fail (RED state confirmed)
 
-### Phase 5: RED — Write Failing Tests
+### Phase 4: RED — Write Failing Tests
 
 1. Create test file with all designed test cases
 2. Use descriptive test names: `MethodName_StateUnderTest_ExpectedBehavior`
@@ -133,63 +230,96 @@ Read `references/test-design.md` for the 9 test categories:
 6. If any test passes, the stub is too complete — simplify it
 7. Commit: `test: add failing tests for <feature>`
 
-**Anti-patterns to avoid:**
-- Writing tests that pass immediately
-- Testing implementation details instead of behavior
-- Skipping edge cases to save time
-- Writing vague test names
-
-### Phase 6: GREEN — Make Tests Pass
+### Phase 5: GREEN — Make Tests Pass
 
 1. Pick one failing test — start with the simplest
 2. Write the minimum code to pass that test
 3. Run tests: target passes, previous tests pass, remaining still fail
 4. Repeat for each failing test
 5. Do NOT add features not covered by tests
-6. Apply security measures identified in Phase 3
+6. Apply security measures identified in prior phases
 7. Wire up the implementation to the system (CLI, API, UI) as needed
 8. When all tests pass, commit: `feat: implement <feature>`
 
-**Anti-patterns to avoid:**
-- Writing more code than needed
-- Adding features not covered by tests
-- Optimizing prematurely
-- Ignoring failing tests
-
-### Phase 7: REFACTOR — Improve Code Quality
+### Phase 6: REFACTOR — Improve Code Quality
 
 1. Review for: duplication, naming clarity, performance, documentation needs
 2. Make small changes — one refactoring at a time
 3. Run tests after each change — keep them green
 4. If changes warrant it, commit: `refactor: improve <aspect> in <feature>`
 
-**Done when:**
-- [ ] No obvious code duplication
-- [ ] Names clearly express intent
-- [ ] Methods are focused (single responsibility)
-- [ ] No commented-out code
-- [ ] Tests still pass
-- [ ] Code is "good enough" for now
+**Done when:** No duplication, clear names, focused methods, no commented-out code, tests pass.
 
-**Anti-patterns to avoid:**
-- Changing behavior (tests must stay green)
-- Big-bang refactoring (keep changes small)
-- Skipping the refactor phase entirely
-- Adding features during refactoring
+### Phase 6a: Quality Gates
 
-### Phase 8: Approval
+Post-refactor quality checks using skill agents. Read `references/skill-agents.md` for details.
 
-Skip if `--skip-approval` is set.
+Skip all gates if `--quality-gate none` or both `--review false` and `--qa false`.
 
-1. Present a summary of all changes to the user:
+**Step 1: Present agent plan to user**
+
+> **Quality Gate Agents:**
+> - review-local — 8-perspective code review [enabled/disabled]
+> - pm-review — PMBOK analysis [enabled/disabled]
+> - orch-qa — test coverage & gap analysis [enabled/disabled]
+> - scenario-gen — test scenarios from branch diff [enabled/disabled]
+> - e2e-test — frontend E2E tests [enabled/disabled]
+>
+> **Proceed with these agents?** (you can add/remove)
+
+**Gate 1: Code Review** (when user confirms review-local)
+
+Spawn in parallel via Agent tool:
+- `/review-local` — 8-perspective review of worktree changes
+- `/pm-review` (if `--pm-review true`) — PMBOK analysis
+
+**Critical finding gate**: If Critical findings exist, present to user. If user wants to fix, return to Phase 6 (REFACTOR), then re-run gate.
+
+**Gate 2: QA Analysis** (when user confirms orch-qa)
+
+Spawn in parallel via Agent tool:
+- `/orch-qa` — run tests and gap analysis on changed files
+- `/scenario-gen` — generate test scenarios from branch diff
+
+**Gate 3: E2E Testing** (when `--e2e true` AND frontend changes detected)
+
+Invoke `/e2e-test` with CSV scenarios from scenario-gen if available.
+
+### Phase 7: Approval
+
+Skip if `--approval false`.
+
+1. Present a summary of all changes:
    - Tests added (count and categories)
    - Implementation highlights
    - Refactorings applied
-   - Team review items addressed
+   - Quality gate findings addressed
 2. Wait for user approval
 3. If rejected, iterate on changes
 
-### Phase 9: Commit & PR
+### Phase 7a: Implementation Review
+
+**Always spawn a fresh agent to review actual code changes before making the PR.**
+
+Present to user:
+> **Implementation Review Agent:** A fresh agent will review the actual code diff for bugs, missed edge cases, security issues, and code quality.
+> **Proceed?**
+
+Spawn a new general-purpose agent with:
+- The full `git diff` of all worktree changes
+- Original acceptance criteria from PRD
+- Team discussion findings from prior phases
+
+The agent reviews the **actual implementation** (not the plan) and reports:
+- Bugs or logic errors
+- Missed edge cases or security concerns
+- Code quality issues
+- Whether implementation matches acceptance criteria
+
+If Critical issues found: return to Phase 6 (REFACTOR), fix, re-run.
+Proceed only when clean or user explicitly approves.
+
+### Phase 8: Commit & PR
 
 **Commit Strategy:**
 
@@ -218,19 +348,33 @@ Read `references/pr-guide.md` for template detection and filling.
 3. Create PR with `gh pr create`, filling in the template
 4. Return the PR URL to the user
 
+**Post-PR AI Review** (only when PR created successfully):
+
+Present to user:
+> **Post-PR Agents:**
+> - self-pr-review — AI review loop (Copilot + Gemini) [enabled/disabled]
+> - address-pr-comments — auto-apply reviewer comments [enabled/disabled]
+>
+> **Proceed with these agents?**
+
+1. If confirmed: invoke `/self-pr-review` with PR number
+2. If `--address-comments true` and comments remain: invoke `/address-pr-comments`
+3. Report final PR status
+
+Read `references/skill-agents.md` for invocation details.
+
+**Worktree Cleanup** (always, as final step):
+
+1. Change back to the main repo root: `cd "$REPO_ROOT"`
+2. Remove the worktree: `git worktree remove "$REPO_ROOT/.worktrees/<branch-name>"`
+   - If uncommitted changes remain, use `--force`
+3. Verify cleanup: `git worktree list`
+
 ---
 
-## BDD vs TDD Test Format
+## BDD vs TDD
 
-TDD is always enforced. The `--bdd` flag only changes the **test format**:
-
-| Aspect | Default (TDD) | With `--bdd` |
-|--------|---------------|-------------|
-| Test naming | `Method_State_Expected` | Given/When/Then Gherkin |
-| Audience | Developers | Developers + stakeholders |
-| Best for | Technical code, utilities, APIs | Business features, user stories |
-
-Use `--bdd` when: stakeholder communication matters, business requirements drive acceptance criteria, or feature documentation has high value.
+TDD is always enforced. `--bdd` only changes test format: `Method_State_Expected` (TDD) vs Given/When/Then Gherkin (BDD). Use BDD when stakeholder communication matters.
 
 ## Example Invocations
 
@@ -244,67 +388,109 @@ Requirements:
 - Include uptime and version info
 ```
 
-### With BDD for Business Features
+### BDD Mode
 ```
-/dev-workflow --bdd
-
+/dev-workflow --bdd true
 Task: Implement user authentication flow
-Requirements:
-- Email/password login
-- JWT token generation
-- Session management
 ```
 
 ### Quick Solo Mode
 ```
-/dev-workflow --skip-team --skip-approval
-
-Task: Fix date parsing bug in export function
+/dev-workflow --team false --approval false
+Task: Fix date parsing bug
 ```
 
-### Full Pipeline with PR
+### Full Pipeline
 ```
-/dev-workflow --pr --base-branch develop
-
-Task: Add CSV export feature with date range filtering
+/dev-workflow --quality-gate full --pr true --base-branch develop
+Task: Add payment processing integration
 ```
 
 ## Behavior Scenarios
 
 ```gherkin
-Scenario: Full TDD workflow with team review
+Scenario: Full workflow with PRD, tech req, and team review
   Given the user asks to implement a feature
   When the user invokes /dev-workflow
-  Then the skill creates a branch, plans in plan-mode, runs team discussion,
-       designs tests, executes RED-GREEN-REFACTOR, gets approval, and commits
+  Then the skill creates a PRD, gets tech requirements, creates a worktree,
+       plans with team review, designs tests with /test-scenario,
+       executes RED-GREEN-REFACTOR, runs quality gates, gets approval,
+       reviews implementation with a fresh agent, commits, and cleans up
 
-Scenario: BDD mode for business features
-  Given the user needs stakeholder-readable tests
-  When the user invokes /dev-workflow --bdd
-  Then test cases are written in Given/When/Then format
-  And the TDD cycle still applies (RED-GREEN-REFACTOR)
+Scenario: PRD created from user request
+  Given the user invokes /dev-workflow with a task description
+  When Phase 0a runs
+  Then a PRD is created covering problem, goals, user stories, acceptance criteria
+  And the user reviews and approves the PRD before any technical work begins
+
+Scenario: Technical requirements derived from PRD
+  Given the PRD is approved
+  When Phase 0b runs
+  Then the user is shown which agents will analyze the PRD
+  And agents produce a Technical Requirements Document
+  And the user approves the Tech Req Doc
+
+Scenario: Branch created from latest remote
+  Given the user invokes /dev-workflow
+  When Phase 1 runs
+  Then git fetch origin <base-branch> runs before worktree creation
+  And the feature branch is based on origin/<base-branch> (latest remote state)
+
+Scenario: Fetch failure falls back to local branch
+  Given the remote is unreachable
+  When Phase 1 attempts git fetch
+  Then the skill warns and branches from local <base-branch> instead
+
+Scenario: Team discussion embedded in Plan phase
+  Given Phase 2 Plan is drafted
+  When --team true (default)
+  Then agents review the plan from architecture, security, resource, devil's advocate perspectives
+  And findings are synthesized and the plan is updated before user approval
+
+Scenario: Test scenario skill generates and verifies tests
+  Given Phase 2 Plan is approved
+  When Phase 3 runs
+  Then /test-scenario generates a rough test outline (Step 3a, shown to user)
+  And manual test design fills gaps (Step 3b)
+  And /test-scenario verifies the combined design (Step 3c, shown to user)
+  And the user approves before RED
+
+Scenario: Quality gates run with standard preset
+  Given Phase 6 REFACTOR completes
+  When Phase 6a runs (default --quality-gate standard)
+  Then user is shown which agents will run and confirms
+  And review-local and orch-qa+scenario-gen are spawned as parallel agent pairs
+  And Critical findings block progression until addressed
+
+Scenario: Fresh agent reviews actual implementation before PR
+  Given Phase 7 Approval completes
+  When Phase 7a runs
+  Then a new agent reviews the actual code diff (not the plan)
+  And findings are presented to the user before Commit & PR
+
+Scenario: Quality gates skipped with --quality-gate none
+  Given the user invokes /dev-workflow --quality-gate none
+  When Phase 6 completes
+  Then no quality gate skills are invoked
 
 Scenario: Quick fix without team overhead
-  Given the user has a simple bug fix
-  When the user invokes /dev-workflow --skip-team --skip-approval
-  Then team discussion and approval are skipped
-  But TDD is still enforced (tests written before implementation)
+  Given the user invokes /dev-workflow --team false --approval false
+  Then team discussion and approval are skipped but TDD and test-scenario still run
 
-Scenario: Full pipeline with PR creation
-  Given the user wants changes pushed and a PR opened
-  When the user invokes /dev-workflow --pr
-  Then after commits the branch is pushed and a PR is created using the repo's template
+Scenario: Worktree isolation and cleanup
+  Given the workflow completes
+  Then the worktree is removed and git worktree list confirms no orphans
 
-Scenario: Custom branch management
-  Given the user specifies a base branch and branch name
-  When the user invokes /dev-workflow --base-branch develop --branch feat/new-api
-  Then the skill creates the specified branch from the specified base
+Scenario: Agent confirmation at every phase
+  Given any phase is about to spawn agents
+  Then the user is always shown which agents will run and can adjust before confirming
 ```
 
 ## References
 
+- `references/skill-agents.md` — Skill agent invocation guide: Agent tool patterns, context passing, error handling
 - `references/team-roles.md` — Agent prompts, output formats, and synthesis protocol
 - `references/test-design.md` — 9 test categories with examples and mocking strategy
 - `references/bdd-guide.md` — Given/When/Then writing guide and BDD decision criteria
 - `references/commit-guide.md` — Conventional commits, stash-based grouping, HEREDOC format
-- `references/pr-guide.md` — PR template detection and creation with gh CLI
+- `references/pr-guide.md` — PR template detection, creation with gh CLI, post-PR skill agents

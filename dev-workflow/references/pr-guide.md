@@ -40,3 +40,12 @@ EOF
 - Fill in Motivation, Existing Behavior, New Behavior
 - Complete the checklist honestly
 - Keep descriptions concise - reviewers will read the diff
+
+## Post-PR Skill Agents
+
+After PR creation, the workflow may invoke skill agents for automated review:
+- `/self-pr-review` — AI review loop (Copilot + Gemini), iterates until clean
+- `/address-pr-comments` — Auto-apply remaining reviewer comments
+
+These are controlled by `--self-review` and `--address-comments` flags.
+See `references/skill-agents.md` for invocation details.

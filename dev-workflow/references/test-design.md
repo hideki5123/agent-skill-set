@@ -1,5 +1,15 @@
 # Test Case Design Guide
 
+## Integration with test-scenario Skill
+
+When the test-scenario skill is invoked in Phase 3 Step 4a, it generates a rough test outline
+covering happy path, edge cases, error handling, constraints, and data integrity.
+Step 4b (manual test design) should review against the full 9 categories below and fill gaps,
+particularly categories 5-9 (Integration Points, Output Format, Security, Ordering, Resource Limits)
+which the test-scenario skill may not fully cover. Step 4c then verifies the combined design.
+
+---
+
 This guide helps design comprehensive test cases before implementation (TDD RED phase).
 
 ## Test Categories
