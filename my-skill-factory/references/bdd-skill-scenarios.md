@@ -110,6 +110,28 @@ Compare new scenarios against existing ones to identify:
 - **Modified** — existing scenarios whose Then clause changes
 - **Removed** — scenarios that no longer apply
 
+### Self-improving skills (feedback loop)
+
+```gherkin
+Scenario: Skill records feedback after execution
+  Given the skill completed its workflow (success or failure)
+  When the Retrospective step runs
+  Then it reflects on the session (corrections, errors, iterations),
+       asks the user for optional feedback, and appends a structured entry
+       to feedback/log.md if feedback is provided or issues occurred
+
+Scenario: Skill notices recurring feedback pattern
+  Given the skill's feedback/log.md has 5+ entries with a recurring issue
+  When the skill is invoked and the Feedback Check runs
+  Then it warns the user about the pattern and suggests running
+       the factory's improve workflow
+
+Scenario: No feedback recorded when session is clean
+  Given the skill completed successfully with no corrections or errors
+  When the user skips the feedback prompt
+  Then no entry is written to feedback/log.md
+```
+
 ## Anti-Patterns
 
 | Problem | Example | Fix |

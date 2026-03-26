@@ -10,10 +10,11 @@ Create custom Claude Code skills and install them into the local `hideki-plugins
 ## Workflow
 
 1. **Gather requirements** — Understand what the skill should do
-2. **Design the skill** — Plan structure, references, scripts, assets
+2. **Design the skill** — Plan structure, references, scripts, assets, and improvement loop level
 3. **Team orchestration assessment** — Decide if the skill needs multi-agent review; if so, select perspectives
 4. **Create skill files and install** — Write SKILL.md, supporting resources, then always install immediately
 5. **Verify** — Confirm the skill appears in a new session
+6. **Improve** — Analyze feedback and amend a skill based on evidence (improvement loop)
 
 ## Step 1: Gather Requirements
 
@@ -43,6 +44,7 @@ Decide:
 - **References needed?** Detailed checklists, schemas, examples → put in `references/`
 - **Scripts needed?** Deterministic operations → put in `scripts/`
 - **Assets needed?** Templates, images → put in `assets/`
+- **Improvement loop level**: Read `references/skill-improvement-guide.md`. Assess: will this skill be used >5 times? Does it have a complex multi-phase workflow? Choose None / Observe / Full accordingly. If Observe or Full, add the Retrospective and/or Feedback Check sections from the guide's templates.
 - **Scenario mapping**: Map each BDD scenario to SKILL.md sections (trigger context → frontmatter, workflow → body, outputs → format/references)
 
 ## Step 3: Team Orchestration Assessment
@@ -158,6 +160,31 @@ The new skill should appear as `<skill-name>:<skill-name>` in the output.
 6. **Validate coverage** — Confirm each new scenario has corresponding content in SKILL.md
 7. **Verify** — New sessions will pick up the changes automatically
 
+If the update is motivated by feedback patterns, follow "Improving an Existing Skill" instead — it includes evidence-based analysis and amendment tracking.
+
+## Improving an Existing Skill
+
+Use when the user says "improve skill X", "skill X keeps failing", or "fix skill X based on feedback".
+
+Read `references/skill-improvement-guide.md` for the full OIAE protocol, log format, and amendment format.
+
+1. **Read feedback** — Read `<skill-name>/feedback/log.md` in full. If it does not exist or is empty, report no feedback data and suggest running the skill a few more times first.
+2. **Evaluate previous amendments** — If `<skill-name>/feedback/amendments.md` exists with entries in `applied — monitoring` status, check post-amendment log entries and update their status to `effective` or `ineffective`.
+3. **Analyze patterns** — Identify:
+   - Recurring failures (same issue class in 3+ entries)
+   - Low ratings (average below 3 over last 10 entries)
+   - Degradation over time (ratings declining)
+   - Common corrections (user pivots appearing in multiple entries)
+4. **Read current skill** — Read the skill's SKILL.md and relevant references
+5. **Propose amendments** — For each identified pattern, propose a specific change:
+   - What to change (file path, section)
+   - Why (cite specific feedback entries by date as evidence)
+   - The proposed change
+6. **Present to user** — Show all proposed amendments with evidence for approval
+7. **Apply approved changes** — Edit the skill files, bump the version in frontmatter
+8. **Record amendment** — Append to `<skill-name>/feedback/amendments.md`
+9. **Install and commit** — Run install script, commit feedback + amendments + skill changes, push
+
 ## Behavior Scenarios
 
 ```gherkin
@@ -198,6 +225,23 @@ Scenario: Re-install without changes
   Given a skill's files have not changed
   When the user re-runs the install script
   Then the script overwrites the previous installation and the skill remains functional
+
+Scenario: Improve a skill based on feedback
+  Given a skill has feedback/log.md with recurring failure patterns
+  When the user says "improve skill X" or "fix skill X based on feedback"
+  Then the factory reads all feedback, identifies patterns, proposes targeted amendments
+       with evidence, applies approved changes, records in amendments.md, and re-installs
+
+Scenario: Evaluate previous amendments
+  Given a skill has amendments with status "applied — monitoring"
+  When the factory's improve workflow runs
+  Then it checks post-amendment feedback, updates amendment status to effective/ineffective,
+       and suggests rollback for ineffective amendments
+
+Scenario: Skill has no feedback yet
+  Given a skill's feedback/ directory does not exist or log.md is empty
+  When the user asks to improve the skill
+  Then the factory reports no feedback data and suggests running the skill a few times first
 ```
 
 ## References
@@ -206,3 +250,4 @@ Scenario: Re-install without changes
 - `references/bdd-skill-scenarios.md` — Given/When/Then templates by skill type, update-delta guidance, and anti-patterns
 - `references/marketplace-structure.md` — Full directory layout, JSON schemas, and config file locations for the local marketplace
 - `references/skill-design-review-team.md` — Perspective catalog: available team angles, prompts, output formats, and cross-skill delegation (loaded only when assessment warrants team orchestration)
+- `references/skill-improvement-guide.md` — OIAE cycle protocol, feedback log format, amendment format, pattern detection heuristics, and Retrospective/Feedback Check templates for generated skills

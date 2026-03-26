@@ -16,7 +16,8 @@ skill-name/
 ├── SKILL.md           (required — workflow + instructions)
 ├── references/        (optional — loaded on demand)
 ├── scripts/           (optional — deterministic operations)
-└── assets/            (optional — templates, images, fonts)
+├── assets/            (optional — templates, images, fonts)
+└── feedback/          (optional — execution log and amendment history)
 ```
 
 ## Body Guidelines
@@ -86,6 +87,38 @@ Use this structure:
 <content>
 \`\`\`
 ```
+
+## Self-Improvement Support
+
+For skills expected to be used repeatedly, include a feedback loop. Read `references/skill-improvement-guide.md` for the full protocol.
+
+| Opt-in Level | What to add | When to use |
+|-------------|-------------|-------------|
+| **None** | Nothing | One-shot skills, simple utilities, CLI wrappers, <5 expected uses |
+| **Observe** | `### Retrospective` final step only | New skills gathering initial data |
+| **Full** | `### Retrospective` + `### Feedback Check` | Complex workflows, frequent use, known quality issues |
+
+Assess the level during Step 2 (Design the Skill):
+- Will this skill be used more than 5 times? → at least Observe
+- Does this skill have a complex multi-phase workflow? → Full
+- Is this a one-shot install-and-forget skill? → None
+
+### Skill Versioning
+
+Add a `version` field to the SKILL.md frontmatter:
+
+```yaml
+---
+name: skill-name
+description: ...
+version: 1.0.0
+---
+```
+
+- Starts at `1.0.0` on creation
+- Patch bump (`1.0.x`) for minor instruction tweaks
+- Minor bump (`1.x.0`) for workflow changes or new steps
+- Incremented by the factory's "Improve" workflow on each amendment
 
 ## What NOT to Include
 

@@ -91,6 +91,9 @@ def install(skill_dir: Path, version: str, cache_only: bool = False):
 
     print(f"Installing skill: {name} v{version}{' (cache-only)' if cache_only else ''}")
 
+    # Directories to exclude from marketplace copies (authoring-side data only)
+    SKIP_DIRS = {"feedback", ".git", "__pycache__"}
+
     if cache_only:
         # Build plugin structure in a temp directory, cache it, then clean up
         import tempfile
@@ -103,6 +106,8 @@ def install(skill_dir: Path, version: str, cache_only: bool = False):
             plugin_claude.mkdir(parents=True)
 
             for item in skill_dir.iterdir():
+                if item.is_dir() and item.name in SKIP_DIRS:
+                    continue
                 dest = plugin_skills / item.name
                 if item.is_dir():
                     shutil.copytree(item, dest)
@@ -141,8 +146,10 @@ def install(skill_dir: Path, version: str, cache_only: bool = False):
         plugin_skills.mkdir(parents=True)
         plugin_claude.mkdir(parents=True)
 
-        # Copy skill contents
+        # Copy skill contents (excluding authoring-side directories)
         for item in skill_dir.iterdir():
+            if item.is_dir() and item.name in SKIP_DIRS:
+                continue
             dest = plugin_skills / item.name
             if item.is_dir():
                 shutil.copytree(item, dest)
