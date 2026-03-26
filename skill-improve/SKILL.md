@@ -1,0 +1,178 @@
+---
+name: skill-improve
+description: >
+  Retrofit the OIAE self-improvement loop to existing skills and analyze feedback
+  to propose evidence-based amendments. Adds Retrospective, Feedback Check, and
+  version tracking to skills that lack them. Reads feedback/log.md to identify
+  recurring issues and propose targeted skill improvements. Use when the user
+  asks to improve a skill, retrofit feedback to a skill, add the improvement loop,
+  fix a skill based on feedback, or analyze skill performance. Trigger phrases
+  include "improve skill", "retrofit skill", "add feedback loop", "skill keeps failing",
+  "fix skill", "analyze skill feedback", "skill performance", "add retrospective",
+  "skill improvement".
+---
+
+# Skill Improve
+
+Retrofit the OIAE (Observe/Inspect/Amend/Evaluate) self-improvement loop to existing skills and analyze accumulated feedback to propose evidence-based amendments.
+
+## Arguments
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `--skill` | (required) | Skill name or path to the skill directory |
+| `--retrofit-only` | `false` | Only add OIAE components, skip feedback analysis |
+| `--analyze-only` | `false` | Only analyze feedback, skip retrofit |
+
+## Workflow
+
+### Phase 1: Locate and Read the Skill
+
+1. Resolve skill path:
+   - If a name is given, check `D:\Shared\agents\my-skills\<skill-name>\`
+   - If a path is given, use it directly
+   - Read the skill's SKILL.md
+
+2. Check for existing OIAE components:
+   - `version:` field in frontmatter
+   - `### Retrospective` section in body
+   - `### Feedback Check` section in body
+   - `feedback/` directory existence
+
+3. Check for existing feedback:
+   - `feedback/log.md` — does it exist? How many entries?
+   - `feedback/amendments.md` — any pending amendments?
+
+4. Report current state to user:
+   > "Skill `<name>`: version [present/missing], Retrospective [present/missing], Feedback Check [present/missing], feedback entries: N"
+
+### Phase 2: Retrofit (if components missing)
+
+Skip this phase if `--analyze-only` is set or all OIAE components are already present.
+
+Read `references/retrofit-checklist.md` for the step-by-step process and placement rules.
+
+1. Assess opt-in level (None / Observe / Full):
+   - **Full**: Skill has a multi-phase workflow, expected >5 uses, complex output
+   - **Observe**: Uncertain usage frequency, simpler workflow
+   - **None**: One-shot skill, CLI wrapper, deterministic utility
+
+2. Present assessment to user:
+   > "I recommend [level] for this skill because [reason]. Proceed?"
+
+3. Add missing components using templates from `my-skill-factory/references/skill-improvement-guide.md`:
+   - Add `version: 1.0.0` to frontmatter if missing
+   - Add `### Feedback Check` section (Full level only)
+   - Add `### Retrospective` section (Observe or Full level)
+
+4. Run the install script:
+   ```bash
+   python "D:\Shared\agents\my-skills\my-skill-factory\scripts\install_skill.py" "D:\Shared\agents\my-skills\<skill-name>"
+   ```
+
+5. Commit and push:
+   ```bash
+   cd D:\Shared\agents\my-skills
+   git add <skill-name>/ my-marketplace/plugins/<skill-name>/ my-marketplace/.claude-plugin/marketplace.json
+   git commit -m "chore: retrofit OIAE improvement loop to <skill-name> skill"
+   git push
+   ```
+
+### Phase 3: Analyze Feedback (if log.md exists)
+
+Skip this phase if `--retrofit-only` is set or no `feedback/log.md` exists.
+
+Read `my-skill-factory/references/skill-improvement-guide.md` for pattern detection heuristics and amendment format.
+
+1. **Evaluate previous amendments** — If `feedback/amendments.md` exists with entries in `applied — monitoring` status:
+   - Read log entries dated after the amendment
+   - Check if the specific issue pattern recurred
+   - Check if ratings improved
+   - Update status to `effective`, `ineffective`, or `insufficient data`
+   - For ineffective amendments, suggest `git revert <commit>`
+
+2. **Read all feedback** — Read `feedback/log.md` in full
+
+3. **Identify patterns** using these heuristics:
+   - Same issue keyword in Corrections/Issues across 3+ entries → recurring problem
+   - Average rating below 3.0 over last 10 entries → general underperformance
+   - Declining ratings over time → skill degrading
+   - Outcome distribution >30% partial-success or failure → structural issues
+   - Issues clustering after a version bump → recent amendment may have caused problems
+
+4. **Read current skill** — SKILL.md + relevant references to understand current instructions
+
+5. **Propose amendments** — For each identified pattern:
+   - What to change (file path, section)
+   - Why (cite specific feedback entries by date as evidence)
+   - The proposed text change
+   - Suggested version bump (patch or minor)
+
+6. **Present to user** — Show all proposed amendments with supporting evidence for approval
+
+7. **Apply approved changes**:
+   - Edit the skill files
+   - Bump version in frontmatter
+
+8. **Record amendment** — Append to `feedback/amendments.md` using format from `my-skill-factory/references/skill-improvement-guide.md`
+
+9. **Install and commit**:
+   ```bash
+   python "D:\Shared\agents\my-skills\my-skill-factory\scripts\install_skill.py" "D:\Shared\agents\my-skills\<skill-name>"
+   cd D:\Shared\agents\my-skills
+   git add <skill-name>/ my-marketplace/plugins/<skill-name>/ my-marketplace/.claude-plugin/marketplace.json
+   git commit -m "fix: improve <skill-name> skill based on feedback (AMD-NNN)"
+   git push
+   ```
+
+### Phase 4: Report
+
+Summarize what was done:
+- OIAE components retrofitted (if any)
+- Previous amendments evaluated (status updates)
+- Patterns found in feedback (if any)
+- Amendments applied (if any)
+- Current skill version
+
+## Behavior Scenarios
+
+```gherkin
+Scenario: Retrofit OIAE to skill without feedback loop
+  Given an existing skill has no Retrospective, Feedback Check, or version field
+  When /skill-improve --skill <name> is invoked
+  Then assess opt-in level, present to user, add missing OIAE components,
+       install, commit, and push
+
+Scenario: Analyze feedback and propose amendments
+  Given a skill has feedback/log.md with recurring issues
+  When /skill-improve --skill <name> is invoked
+  Then read all feedback, identify patterns, propose amendments with evidence,
+       apply approved changes, record in amendments.md, install, commit, and push
+
+Scenario: Skill already has OIAE and no feedback yet
+  Given a skill has Retrospective and Feedback Check but no feedback/log.md
+  When /skill-improve --skill <name> is invoked
+  Then report that OIAE components are present but no feedback data exists yet,
+       and suggest running the skill a few times to collect data
+
+Scenario: Evaluate previous amendments
+  Given a skill has amendments in "applied — monitoring" status
+  When /skill-improve --skill <name> is invoked
+  Then check post-amendment feedback entries, update amendment status
+       to effective or ineffective, and suggest rollback if ineffective
+
+Scenario: Retrofit-only mode
+  Given --retrofit-only flag is set
+  When /skill-improve --skill <name> --retrofit-only is invoked
+  Then only add missing OIAE components, skip feedback analysis
+
+Scenario: Analyze-only mode
+  Given --analyze-only flag is set and feedback exists
+  When /skill-improve --skill <name> --analyze-only is invoked
+  Then only analyze feedback and propose amendments, skip retrofit
+```
+
+## References
+
+- `references/retrofit-checklist.md` — Step-by-step checklist for adding OIAE components with placement rules
+- `my-skill-factory/references/skill-improvement-guide.md` — OIAE protocol, log format, amendment format, templates, pattern detection heuristics

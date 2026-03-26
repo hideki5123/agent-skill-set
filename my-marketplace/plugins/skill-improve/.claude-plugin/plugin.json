@@ -1,0 +1,13 @@
+{
+  "name": "skill-improve",
+  "version": "1.0.0",
+  "description": ">",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "skill-improve"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}

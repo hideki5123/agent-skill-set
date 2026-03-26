@@ -100,6 +100,11 @@
       "description": ">"
     },
     {
+      "name": "skill-improve",
+      "source": "./plugins/skill-improve",
+      "description": ">"
+    },
+    {
       "name": "my-skill-factory",
       "source": "./plugins/my-skill-factory",
       "description": "Create, build, and install custom Claude Code skills into Hideki's local marketplace. End-to-end workflow from requirements gathering to a fully installed and usable skill. Use when the user asks to c"

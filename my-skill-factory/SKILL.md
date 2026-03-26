@@ -164,26 +164,11 @@ If the update is motivated by feedback patterns, follow "Improving an Existing S
 
 ## Improving an Existing Skill
 
-Use when the user says "improve skill X", "skill X keeps failing", or "fix skill X based on feedback".
+Use `/skill-improve` to retrofit OIAE components and analyze feedback for existing skills. The `skill-improve` skill handles the full improvement workflow: retrofitting Retrospective/Feedback Check/version tracking, analyzing accumulated feedback, proposing evidence-based amendments, and evaluating previous amendments.
 
-Read `references/skill-improvement-guide.md` for the full OIAE protocol, log format, and amendment format.
-
-1. **Read feedback** — Read `<skill-name>/feedback/log.md` in full. If it does not exist or is empty, report no feedback data and suggest running the skill a few more times first.
-2. **Evaluate previous amendments** — If `<skill-name>/feedback/amendments.md` exists with entries in `applied — monitoring` status, check post-amendment log entries and update their status to `effective` or `ineffective`.
-3. **Analyze patterns** — Identify:
-   - Recurring failures (same issue class in 3+ entries)
-   - Low ratings (average below 3 over last 10 entries)
-   - Degradation over time (ratings declining)
-   - Common corrections (user pivots appearing in multiple entries)
-4. **Read current skill** — Read the skill's SKILL.md and relevant references
-5. **Propose amendments** — For each identified pattern, propose a specific change:
-   - What to change (file path, section)
-   - Why (cite specific feedback entries by date as evidence)
-   - The proposed change
-6. **Present to user** — Show all proposed amendments with evidence for approval
-7. **Apply approved changes** — Edit the skill files, bump the version in frontmatter
-8. **Record amendment** — Append to `<skill-name>/feedback/amendments.md`
-9. **Install and commit** — Run install script, commit feedback + amendments + skill changes, push
+```
+/skill-improve --skill <skill-name>
+```
 
 ## Behavior Scenarios
 
