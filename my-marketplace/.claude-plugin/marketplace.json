@@ -50,11 +50,6 @@
       "description": ">"
     },
     {
-      "name": "pm-review",
-      "source": "./plugins/pm-review",
-      "description": ">"
-    },
-    {
       "name": "slack-cli",
       "source": "./plugins/slack-cli",
       "description": ">"
@@ -112,6 +107,11 @@
     {
       "name": "slack-to-ticket",
       "source": "./plugins/slack-to-ticket",
+      "description": ">"
+    },
+    {
+      "name": "pm-review",
+      "source": "./plugins/pm-review",
       "description": ">"
     }
   ]
