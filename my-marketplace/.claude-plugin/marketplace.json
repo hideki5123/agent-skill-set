@@ -40,11 +40,6 @@
       "description": "Review a teammate's pull request — Claude reads the diff, analyzes code across multiple perspectives, and stages review comments for user approval before submission. NOT for self-review of your own PR"
     },
     {
-      "name": "orch-qa",
-      "source": "./plugins/orch-qa",
-      "description": ">"
-    },
-    {
       "name": "scenario-gen",
       "source": "./plugins/scenario-gen",
       "description": ">"
@@ -105,14 +100,19 @@
       "description": ">"
     },
     {
+      "name": "self-pr-review",
+      "source": "./plugins/self-pr-review",
+      "description": "Self-review loop for YOUR OWN PR — request AI reviews (Copilot + Gemini), apply their fixes, push, re-request, and repeat until clean. NOT for reviewing someone else's PR. Use when the user asks to se"
+    },
+    {
       "name": "codex-cli",
       "source": "./plugins/codex-cli",
       "description": ">"
     },
     {
-      "name": "self-pr-review",
-      "source": "./plugins/self-pr-review",
-      "description": "Self-review loop for YOUR OWN PR — request AI reviews (Copilot + Gemini), apply their fixes, push, re-request, and repeat until clean. NOT for reviewing someone else's PR. Use when the user asks to se"
+      "name": "orch-qa",
+      "source": "./plugins/orch-qa",
+      "description": ">"
     }
   ]
 }

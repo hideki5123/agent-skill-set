@@ -12,6 +12,7 @@ description: >
   "test coverage", "missing tests", "gap analysis", "quality report",
   "fix failing tests", "diagnose test failures", "quality check",
   "evaluate test quality", "test health".
+version: 1.0.0
 ---
 
 # QA Engineer
@@ -46,6 +47,13 @@ Parse these from the user's invocation. All are optional with defaults:
 | `--app-type` | (auto) | Override auto-detected app type: `terminal`, `browser`, `native`. Affects screenshot capture strategy. |
 
 ## Workflow Phases
+
+### Feedback Check
+
+If `feedback/log.md` exists and has 5 or more entries, read the last 10 entries.
+If a pattern is apparent (same issue in 3+ entries, or average rating below 3):
+- Tell the user: "Recurring feedback detected: [brief pattern]. Consider running `/skill-improve --skill orch-qa`."
+- Continue with normal execution.
 
 ### Phase 1: Reconnaissance
 
@@ -319,6 +327,20 @@ Generate a markdown report following [references/report-template.md](references/
    - `.png` screenshots — keep as-is
 4. Save GIFs to `recordings/gif/`
 5. Output: "Ready for PR: N GIFs saved to `recordings/gif/`"
+
+### Retrospective
+
+After completing the workflow, reflect on the entire execution session:
+
+1. Consider: Were there mid-session corrections? Rejected outputs? Plan changes? Errors?
+2. Ask the user: "Quick feedback on this run? (1-5 rating, note any issues, or press enter to skip)"
+3. If the user provides feedback OR if corrections/issues occurred during this session:
+   a. Create `feedback/` directory if it does not exist
+   b. Read `feedback/log.md` (create with `# Feedback Log` header if it does not exist)
+   c. Prepend a new entry after the header using the log format from `my-skill-factory/references/skill-improvement-guide.md`
+   d. Fill in: current timestamp, skill version from frontmatter, task description, outcome assessment,
+      corrections that occurred during the session, issues encountered, user's note
+4. If the user skips AND no corrections or issues occurred, end without recording.
 
 ## Monorepo Behavior
 
