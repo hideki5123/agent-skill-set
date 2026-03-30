@@ -40,11 +40,6 @@
       "description": ">"
     },
     {
-      "name": "subagent-gen",
-      "source": "./plugins/subagent-gen",
-      "description": ">"
-    },
-    {
       "name": "review-local",
       "source": "./plugins/review-local",
       "description": ">"
@@ -112,6 +107,16 @@
     {
       "name": "pm-review",
       "source": "./plugins/pm-review",
+      "description": ">"
+    },
+    {
+      "name": "dotnet-senior",
+      "source": "./plugins/dotnet-senior",
+      "description": ">"
+    },
+    {
+      "name": "subagent-gen",
+      "source": "./plugins/subagent-gen",
       "description": ">"
     }
   ]

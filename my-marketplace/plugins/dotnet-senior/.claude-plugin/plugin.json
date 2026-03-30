@@ -1,0 +1,13 @@
+{
+  "name": "dotnet-senior",
+  "version": "1.0.0",
+  "description": ">",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "dotnet-senior"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}
