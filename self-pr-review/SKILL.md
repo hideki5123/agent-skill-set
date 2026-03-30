@@ -1,6 +1,7 @@
 ---
 name: self-pr-review
 description: Self-review loop for YOUR OWN PR — request AI reviews (Copilot + Gemini), apply their fixes, push, re-request, and repeat until clean. NOT for reviewing someone else's PR. Use when the user asks to self-review their PR, run the AI review loop, or wants Copilot + Gemini to review their own code. Trigger phrases include "self-review", "self-pr-review", "review my PR", "AI review my PR", "review loop", "copilot + gemini review", "run self-review on my PR".
+version: 1.0.0
 ---
 
 # Self-Review Loop
@@ -15,6 +16,13 @@ Request AI reviews (Copilot + Gemini), apply their fixes, push, re-request revie
 - `--timeout` — Max wait time per review round in minutes. Default: `5`.
 - `--resolve` — Resolve addressed threads on GitHub after replying.
 - `--no-draft` — Don't auto-create a draft PR; error if no PR exists.
+
+### Feedback Check
+
+If `feedback/log.md` exists and has 5 or more entries, read the last 10 entries.
+If a pattern is apparent (same issue in 3+ entries, or average rating below 3):
+- Tell the user: "Recurring feedback detected: [brief pattern]. Consider running `/skill-improve --skill self-pr-review`."
+- Continue with normal execution.
 
 ## Workflow Overview
 
@@ -40,10 +48,22 @@ Request AI reviews (Copilot + Gemini), apply their fixes, push, re-request revie
 ```bash
 BASE=$(gh repo view --json defaultBranchRef --jq '.defaultBranchRef.name')
 BRANCH=$(git branch --show-current)
+```
 
+  Before creating, check for a PR template in the repo (in priority order):
+
+  1. `.github/PULL_REQUEST_TEMPLATE/` directory — if it exists and contains `.md` files, use the default template (e.g. `default.md`, or the first `.md` file found)
+  2. `.github/pull_request_template.md`
+  3. `PULL_REQUEST_TEMPLATE.md` at repo root
+
+  **If a template is found:** read it, then fill in each section based on `git diff $BASE..HEAD` and `git log --oneline $BASE..HEAD`. Fill motivation, describe the changes, and mark checklist items with `[x]` or `[ ]` as appropriate. Use the filled template as the PR body.
+
+  **If no template is found:** fall back to `"Draft PR for AI code review."`.
+
+```bash
 gh pr create --draft --base "$BASE" --head "$BRANCH" \
   --title "$(git log -1 --format=%s)" \
-  --body "Draft PR for AI code review."
+  --body "<filled template or fallback>"
 
 PR_NUMBER=$(gh pr view --json number --jq '.number')
 ```
@@ -76,6 +96,8 @@ Initialize tracking state:
 ```bash
 # Track processed comment IDs across iterations
 PROCESSED_IDS=()
+REPLIED_IDS=()    # comment_id values we already replied to (one reply per comment max)
+OUR_REPLY_IDS=()  # IDs of replies WE posted (to detect reviewer follow-ups)
 ROUND=0
 ```
 
@@ -148,6 +170,21 @@ gh api repos/{owner}/{repo}/pulls/{number}/comments --paginate \
     and (.line != null or .position != null)
   )]'
 ```
+
+### Detect Reviewer Follow-ups
+
+After processing root comments, also fetch reviewer replies to OUR previous replies. These are comments where `in_reply_to_id` matches one of `OUR_REPLY_IDS` (IDs of replies we posted in earlier rounds). This captures cases where a reviewer responds to our fix with further feedback.
+
+```bash
+gh api repos/{owner}/{repo}/pulls/{number}/comments --paginate \
+  | jq --argjson ours '[<comma-separated OUR_REPLY_IDS>]' \
+  '[.[] | select(
+    (.user.login == "copilot-pull-request-reviewer[bot]" or .user.login == "gemini-code-assist[bot]")
+    and (.in_reply_to_id as $rid | $ours | index($rid) | . != null)
+  )]'
+```
+
+Merge these follow-up comments into the processing queue alongside the root comments. Each follow-up is treated as a new actionable comment — process it through Steps 5a–5f as usual.
 
 ### Filter Out Already-Processed Comments
 
@@ -251,16 +288,24 @@ EOF
 git push
 ```
 
-Reply to each processed comment on GitHub:
+Reply to each processed comment on GitHub — **one reply per comment maximum**. Before posting, check `REPLIED_IDS`: if the comment was already replied to in a previous round, skip the reply (the fix is still applied, but no duplicate notification is sent).
 
 - **Fixed**: `"Fixed in {short_sha}. {brief description}."`
 - **Acknowledged** (no code change needed): `"Acknowledged. {explanation}."`
 - **Skipped**: `"Noted — skipping because: {reason}."`
 
 ```bash
-gh api repos/{owner}/{repo}/pulls/{number}/comments/{comment_id}/replies \
-  --method POST \
-  -f body="Fixed in $(git rev-parse --short HEAD). <brief description>."
+# Only reply if we haven't replied to this comment before
+if ! echo "${REPLIED_IDS[@]}" | grep -qw "$COMMENT_ID"; then
+  REPLY_RESPONSE=$(gh api repos/{owner}/{repo}/pulls/{number}/comments/{comment_id}/replies \
+    --method POST \
+    -f body="Fixed in $(git rev-parse --short HEAD). <brief description>.")
+
+  # Track that we replied, and record our reply ID for follow-up detection
+  REPLIED_IDS+=("$COMMENT_ID")
+  OUR_REPLY_ID=$(echo "$REPLY_RESPONSE" | jq '.id')
+  OUR_REPLY_IDS+=("$OUR_REPLY_ID")
+fi
 ```
 
 ### Resolve Threads (when `--resolve`)
@@ -338,6 +383,20 @@ If exiting due to max iterations with remaining comments, list them:
 - **Fork PRs** — `gh pr checkout` handles fork remote setup. Warn if `isCrossRepository` is true (pushing requires write access to fork).
 - **Binary files** — skip comments on binary files with explanation.
 - **Outdated comments on deleted files** — skip with explanation ("File was deleted in this PR").
+
+### Retrospective
+
+After completing the workflow, reflect on the entire execution session:
+
+1. Consider: Were there mid-session corrections? Rejected outputs? Plan changes? Errors?
+2. Ask the user: "Quick feedback on this run? (1-5 rating, note any issues, or press enter to skip)"
+3. If the user provides feedback OR if corrections/issues occurred during this session:
+   a. Create `feedback/` directory if it does not exist
+   b. Read `feedback/log.md` (create with `# Feedback Log` header if it does not exist)
+   c. Prepend a new entry after the header using the log format from `my-skill-factory/references/skill-improvement-guide.md`
+   d. Fill in: current timestamp, skill version from frontmatter, task description, outcome assessment,
+      corrections that occurred during the session, issues encountered, user's note
+4. If the user skips AND no corrections or issues occurred, end without recording.
 
 ## References
 
