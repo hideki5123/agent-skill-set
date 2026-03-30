@@ -1,5 +1,6 @@
 ---
 name: slack-to-ticket
+version: 1.0.0
 description: >
   Create Jira tickets from Slack conversations, optionally with Confluence documentation pages.
   Reads Slack threads/channels/search results via slack-cli, analyzes the conversation to extract
@@ -48,6 +49,13 @@ If a tool is missing, report:
 - `slack-cli`: Install with `npm install -g @urugus/slack-cli`, then configure with `slack-cli config set`
 - `jira`: Install with `npm install -g @pchuri/jira-cli`, then configure with `jira config --server URL --token TOKEN`
 - `confluence`: Install with `npm install -g @urugus/confluence-cli`, then configure with `confluence config set`
+
+### Feedback Check
+
+If `feedback/log.md` exists and has 5 or more entries, read the last 10 entries.
+If a pattern is apparent (same issue in 3+ entries, or average rating below 3):
+- Tell the user: "Recurring feedback detected: [brief pattern]. Consider running `/skill-improve --skill slack-to-ticket`."
+- Continue with normal execution.
 
 ## Phase 1: Parse Input & Fetch Conversation
 
@@ -337,6 +345,20 @@ slack-cli send -c <channel> \
 | Conversation covers multiple topics | Split into multiple ticket candidates, present all for review |
 | No existing labels match | Ask user before creating any new label |
 | Required custom fields (Impact, Frequency, Sprint) | Fetch field metadata, prompt user or use sensible defaults |
+
+### Retrospective
+
+After completing the workflow, reflect on the entire execution session:
+
+1. Consider: Were there mid-session corrections? Rejected outputs? Plan changes? Errors?
+2. Ask the user: "Quick feedback on this run? (1-5 rating, note any issues, or press enter to skip)"
+3. If the user provides feedback OR if corrections/issues occurred during this session:
+   a. Create `feedback/` directory if it does not exist
+   b. Read `feedback/log.md` (create with `# Feedback Log` header if it does not exist)
+   c. Prepend a new entry after the header using the log format from `my-skill-factory/references/skill-improvement-guide.md`
+   d. Fill in: current timestamp, skill version from frontmatter, task description, outcome assessment,
+      corrections that occurred during the session, issues encountered, user's note
+4. If the user skips AND no corrections or issues occurred, end without recording.
 
 ## Behavior Scenarios
 
