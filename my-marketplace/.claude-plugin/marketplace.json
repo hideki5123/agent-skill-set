@@ -108,6 +108,11 @@
       "name": "dev-workflow",
       "source": "./plugins/dev-workflow",
       "description": ">"
+    },
+    {
+      "name": "codex-cli",
+      "source": "./plugins/codex-cli",
+      "description": ">"
     }
   ]
 }

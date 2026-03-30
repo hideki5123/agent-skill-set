@@ -1,0 +1,13 @@
+{
+  "name": "codex-cli",
+  "version": "1.0.0",
+  "description": ">",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "codex-cli"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}
