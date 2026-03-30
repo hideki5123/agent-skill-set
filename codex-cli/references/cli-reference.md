@@ -214,9 +214,12 @@ codex exec "prompt" -c model="o3" -c model_reasoning_effort="low"
 ## Session Storage
 
 - Location: `~/.codex/sessions/YYYY/MM/DD/<timestamp>-<uuid>.jsonl`
-- Format: JSONL with `timestamp`, `type`, `payload` per line
-- First event type: `session_meta` with `payload.id` (session UUID)
+- Format: JSONL with `type` and associated fields per line
+- First event: `{"type":"thread.started","thread_id":"<UUID>"}` — the `thread_id` is the session UUID
+- Subsequent events: `turn.started`, `item.completed` (with `item.text` for agent messages)
 - Sessions are filtered by CWD by default; use `--all` to see all
+- **Do NOT pipe `--json` stdout through `head`** — broken pipe kills the process. Redirect to file first, then extract.
+- Extract thread_id without jq: `head -1 events.jsonl | grep -o '"thread_id":"[^"]*"' | cut -d'"' -f4`
 
 ## Skills Directory
 

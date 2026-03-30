@@ -57,11 +57,17 @@ cat /tmp/codex-out.txt
 For session ID extraction (when you need to resume a specific session later):
 
 ```bash
-codex exec "your prompt" --full-auto --json -o /tmp/codex-out.txt -C "$(pwd)" 2>/dev/null | head -1 | jq -r '.payload.id'
+# Redirect JSONL to file (do NOT pipe through head — broken pipe kills codex)
+codex exec "your prompt" --full-auto --json -o /tmp/codex-out.txt -C "$(pwd)" > /tmp/codex-events.jsonl 2>/dev/null
+
+# Extract thread_id from the first event (jq not required — use grep+cut)
+head -1 /tmp/codex-events.jsonl | grep -o '"thread_id":"[^"]*"' | cut -d'"' -f4
 cat /tmp/codex-out.txt
 ```
 
-The `--json` flag streams JSONL events to stdout. The first line is `session_meta` containing `.payload.id` (the session UUID). The `-o` flag independently captures the final text response.
+The `--json` flag streams JSONL events to stdout. The first event is `thread.started` containing `thread_id` (the session UUID). The `-o` flag independently captures the final text response.
+
+**Important**: Do NOT pipe `--json` output through `head` or other commands that close the pipe early — this causes a broken pipe signal that kills the codex process. Always redirect to a file first, then extract.
 
 ## Quick Reference
 
@@ -113,7 +119,13 @@ codex exec resume --last "Now suggest improvements to the error handling" --full
 cat /tmp/codex-out.txt
 ```
 
-`--last` picks the most recent session automatically. The follow-up inherits the full conversation context.
+`--last` picks the most recent session **filtered by current working directory**. The follow-up inherits the full conversation context.
+
+**CWD filtering caveat**: `--last` only finds sessions started from the same CWD. If resuming from a different directory, use `--all` to disable CWD filtering, and add `--skip-git-repo-check` if the directory is not a git repo:
+
+```bash
+codex exec resume --last --all "follow-up" --full-auto -o /tmp/codex-out.txt --skip-git-repo-check
+```
 
 ### Resume a specific session by ID
 
@@ -127,11 +139,15 @@ cat /tmp/codex-out.txt
 To capture the session ID when starting a session:
 
 ```bash
-SESSION_ID=$(codex exec "Start analyzing the API layer" --full-auto --json -o /tmp/codex-out.txt -C "$(pwd)" 2>/dev/null | head -1 | jq -r '.payload.id')
+# Start session and capture JSONL events to file
+codex exec "Start analyzing the API layer" --full-auto --json -o /tmp/codex-out.txt -C "$(pwd)" > /tmp/codex-events.jsonl 2>/dev/null
+
+# Extract thread_id (no jq needed)
+SESSION_ID=$(head -1 /tmp/codex-events.jsonl | grep -o '"thread_id":"[^"]*"' | cut -d'"' -f4)
 echo "Session ID: $SESSION_ID"
 cat /tmp/codex-out.txt
 
-# Later, resume with:
+# Later, resume with explicit ID (works across any CWD):
 codex exec resume "$SESSION_ID" "Now check the middleware" --full-auto -o /tmp/codex-out.txt
 cat /tmp/codex-out.txt
 ```
@@ -198,7 +214,9 @@ The standalone `codex review` command (without `exec`) also works but runs inter
 - **`-i` for image input**: Attach screenshots or diagrams: `-i screenshot.png`.
 - **`--search` for web search**: Enable web search capability: `codex exec "what's new in React 19" --search --full-auto -o /tmp/codex-out.txt`.
 - **Pipe from stdin**: Use `-` as prompt to read from stdin: `echo "explain this" | codex exec - --full-auto -o /tmp/codex-out.txt`.
-- **`--json` + `-o` together**: `--json` streams events to stdout (for session ID extraction); `-o` independently captures the final message.
+- **`--json` + `-o` together**: `--json` streams JSONL events to stdout (redirect to file, do NOT pipe through `head`); `-o` independently captures the final message. First event's `thread_id` is the session UUID.
+- **`--all` for cross-CWD resume**: `codex exec resume --last` filters sessions by CWD. Add `--all` to find sessions started from any directory.
+- **`--skip-git-repo-check`**: Required when running codex from a directory that is not a git repository.
 - **Config overrides**: Use `-c key=value` for one-off config changes: `-c model_reasoning_effort="low"`.
 - **`--add-dir`**: Grant write access to additional directories beyond the workspace: `--add-dir /tmp/output`.
 - **`--output-schema`**: Constrain the response shape with a JSON Schema file for structured output.
@@ -209,12 +227,14 @@ The standalone `codex review` command (without `exec`) also works but runs inter
 |-------|-------|-----|
 | `command not found: codex` | codex-cli not installed | Install via npm or check PATH |
 | `Authentication required` / `invalid API key` | OpenAI API key missing or expired | Run `codex login` or set `OPENAI_API_KEY` |
-| `No sessions found` | No previous session to resume | Start a new session first with `codex exec` |
+| `No sessions found` | No session to resume, or CWD mismatch | Start a new session, or add `--all` to disable CWD filtering |
 | `Session not found: <ID>` | Invalid or deleted session UUID | Check `~/.codex/sessions/` for valid IDs |
 | `timed out` / process hangs | Prompt too complex or API issues | Use `run_in_background` with a timeout, or simplify the prompt |
 | `Permission denied` / sandbox error | Sandbox policy too restrictive | Use `--full-auto` or `-s workspace-write` / `-s danger-full-access` |
 | `Not a git repository` | codex exec requires git repo by default | Use `--skip-git-repo-check` or `cd` to a git repo |
 | ANSI escape codes in output | Reading stdout instead of `-o` file | Always use `-o <file>` and read the file |
+| Broken pipe / empty `-o` file | Piping `--json` stdout through `head` or other early-close commands | Redirect `--json` to a file (`> events.jsonl`), then extract from the file |
+| Resume finds wrong session | `--last` filtered by CWD, picked a different session | Use explicit session ID, or add `--all` to search all sessions |
 
 Read `references/cli-reference.md` for the full flag-by-flag reference of all subcommands.
 
@@ -227,10 +247,16 @@ Scenario: One-shot Codex query
   Then run `codex exec "<prompt>" --full-auto --ephemeral -o /tmp/codex-out.txt -C "$(pwd)"`
   And read the output file and present the result
 
-Scenario: Multi-turn session with follow-up
-  Given a Codex session was started with `codex exec`
-  When the user asks to continue or follow up on the previous Codex conversation
+Scenario: Multi-turn session with follow-up (same CWD)
+  Given a Codex session was started with `codex exec` from directory X
+  When the user asks to continue from the same directory X
   Then run `codex exec resume --last "<follow-up>" --full-auto -o /tmp/codex-out.txt`
+  And present the continued conversation result with prior context preserved
+
+Scenario: Multi-turn session with follow-up (different CWD)
+  Given a Codex session was started from directory X
+  When the user asks to continue from a different directory Y
+  Then run `codex exec resume --last --all "<follow-up>" --full-auto --skip-git-repo-check -o /tmp/codex-out.txt`
   And present the continued conversation result
 
 Scenario: Code review via Codex
