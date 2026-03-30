@@ -1,28 +1,43 @@
 ---
 name: e2e-test
-description: Run frontend E2E tests using Playwright MCP browser tools. Takes screenshots at each step as verification evidence and generates a test report. If the test scenario has gaps, recommends updates before proceeding. Does NOT modify application code — only updates documents (markdown, CSV). Use when the user asks to run E2E tests, verify frontend behavior, do end-to-end testing, check UI flows, or test a web app. Trigger phrases include "e2e", "E2E test", "end-to-end test", "e2e testing", "frontend test", "UI test", "playwright test", "browser test", "verify the UI", "test this page".
+description: Run frontend E2E tests with video evidence. Default mode (--video=on) generates a Playwright test from the scenario CSV and runs it via CLI with video recording. Fallback mode (--video=off) uses Playwright MCP tools interactively with step screenshots. Generates a test report with video, screenshots, and trace. Does NOT modify application code — only creates documents (markdown, CSV, test scripts). Use when the user asks to run E2E tests, verify frontend behavior, do end-to-end testing, check UI flows, or test a web app. Trigger phrases include "e2e", "E2E test", "end-to-end test", "e2e testing", "frontend test", "UI test", "playwright test", "browser test", "verify the UI", "test this page".
+version: 1.0.0
 ---
 
 # E2E Test
 
-Run frontend E2E tests interactively using Playwright browser automation. Capture screenshots at every step as verification evidence. Generate a structured test report. Never modify application code.
+Run frontend E2E tests with video and screenshot evidence. Default mode generates a Playwright test script from the scenario CSV and runs it via `npx playwright test` with video recording enabled. Fallback mode uses Playwright MCP tools interactively. Generate a structured test report. Never modify application code.
 
 ## Constraints
 
 - **NO code changes**: Do not modify source code files (.ts, .js, .jsx, .tsx, .py, .html, .css, etc.)
-- **Documents OK**: May create or update markdown (.md), CSV (.csv), JSON test reports, and screenshot files
-- **Evidence-driven**: Take a screenshot after every meaningful action
+- **Documents OK**: May create or update markdown (.md), CSV (.csv), JSON test reports, screenshot files, and generated test scripts
+- **Evidence-driven**: Capture video recording and screenshots of every meaningful action
 - **Ask before gaps**: If the scenario is insufficient for proper verification, stop and recommend additions before continuing
+
+## Arguments
+
+| Argument | Default | Description |
+|----------|---------|-------------|
+| `--video` | `on` | `on`: generate Playwright test script and run via CLI with video recording; `off`: use Playwright MCP tools interactively with screenshots only |
 
 ## Workflow
 
 1. **Understand the scenario** — Get the test target and acceptance criteria
 2. **Evaluate scenario coverage** — Check if the scenario is sufficient; if not, ask user to update
-3. **Set up browser session** — Launch Playwright browser
-4. **Execute test steps** — Navigate, interact, snapshot, and screenshot at each step
-5. **Generate report** — Produce a markdown evidence report with all screenshots
+3. **Generate and run Playwright test** (`--video=on`, default) — Generate test script from CSV, run via CLI with video
+4. **Set up browser session** (`--video=off`) — Launch Playwright MCP browser
+5. **Execute test steps** (`--video=off`) — Navigate, interact, snapshot, and screenshot at each step
+6. **Generate report** — Produce a markdown evidence report with video, screenshots, and trace
 
 ## Step 1: Understand the Scenario
+
+### Feedback Check
+
+If `feedback/log.md` exists and has 5 or more entries, read the last 10 entries.
+If a pattern is apparent (same issue in 3+ entries, or average rating below 3):
+- Tell the user: "Recurring feedback detected: [brief pattern]. Consider running `/skill-improve --skill e2e-test`."
+- Continue with normal execution.
 
 Determine from the user:
 - **Target URL**: The page or app to test (e.g., `http://localhost:3000`)
@@ -101,7 +116,63 @@ Please update the scenario and I'll proceed with testing.
 
 Do NOT proceed with execution until the scenario is adequate or the user explicitly says to continue anyway.
 
-## Step 3: Set Up Browser Session
+## Step 3: Generate and Run Playwright Test (--video=on)
+
+When `--video=on` (default), generate a Playwright test script from the CSV scenario and run it via CLI with video recording. Read `references/video-recording.md` for the full reference.
+
+### 3.1 Create evidence directory
+
+```bash
+mkdir -p ./e2e-evidence/<test-name>-<YYYY-MM-DD-HHMM>
+```
+
+### 3.2 Generate playwright.config.js
+
+Create `playwright.config.js` in the evidence directory using the template from `references/video-recording.md`:
+- Set `baseURL` to the target URL from the scenario config
+- Set `viewport` from scenario config (default `{ width: 1280, height: 720 }`)
+- Set `video: 'on'`, `screenshot: 'on'`, `trace: 'on'`
+- Set `outputDir` and reporter paths within the evidence directory
+
+### 3.3 Generate test spec
+
+Create `<test-name>.spec.js` in the evidence directory:
+
+1. Import `{ test, expect }` from `@playwright/test`
+2. Wrap all steps in a single `test('<test-name>', async ({ page }) => { ... })` block
+3. Add setup preconditions (e.g., `localStorage.clear()`) after the first `page.goto()`
+4. For each CSV step, generate the corresponding Playwright API call:
+   - Use Playwright locators (`getByRole`, `getByLabel`, `getByText`, `getByPlaceholder`) to resolve human-readable targets — see `references/video-recording.md` for the mapping
+   - Add `await page.screenshot({ path: 'step-<NN>-<action>.png' })` after each action
+   - Add `await expect(...)` assertions for each `expected_result`
+5. Handle `dialog` actions by registering `page.on('dialog', ...)` before the triggering action
+
+### 3.4 Run the test
+
+```bash
+cd <evidence-dir>
+npx playwright test <test-name>.spec.js --config=playwright.config.js --headed
+```
+
+If `npx playwright` is not available, warn the user and offer to fall back to `--video=off` (MCP mode).
+
+If the test run fails, Playwright still captures video and screenshots up to the failure point.
+
+### 3.5 Collect artifacts
+
+After the test run:
+1. Find `video.webm` in `test-results/<test-title>/` and copy to evidence root as `recording.webm`
+2. Find `trace.zip` in `test-results/<test-title>/` and copy to evidence root
+3. Step screenshots (`step-*.png`) are already in the evidence root
+4. HTML report is in `html-report/`
+
+Proceed to Step 6 (Generate Report).
+
+---
+
+## Step 4: Set Up Browser Session (--video=off)
+
+**This step is only used when `--video=off`.** When `--video=on`, skip to Step 3 above.
 
 Use the Playwright MCP tools to launch a browser. Read `references/playwright-commands.md` for the full tool reference.
 
@@ -120,7 +191,9 @@ mkdir -p ./e2e-evidence/<test-name>-<YYYY-MM-DD-HHMM>
 
 Save all screenshots and accessibility snapshots to this directory.
 
-## Step 4: Execute Test Steps
+## Step 5: Execute Test Steps (--video=off)
+
+**This step is only used when `--video=off`.** When `--video=on`, test execution is handled in Step 3.
 
 For each step in the scenario:
 
@@ -196,7 +269,7 @@ If a step fails (expected result doesn't match actual):
 5. Log the discrepancy in the report
 6. Ask the user whether to continue with remaining steps or stop
 
-## Step 5: Generate Report
+## Step 6: Generate Report
 
 After all steps complete, generate a markdown evidence report.
 
@@ -214,6 +287,7 @@ Save to: `./e2e-evidence/<test-name>-<YYYY-MM-DD-HHMM>/REPORT.md`
 **Viewport**: <width>x<height>
 **OS**: <platform>
 **Scenario file**: `<path>` (modified: <date>)
+**Recording mode**: video | screenshots-only
 **Preconditions**: <setup actions taken>
 **Result**: PASS | FAIL | PARTIAL
 
@@ -224,6 +298,16 @@ Save to: `./e2e-evidence/<test-name>-<YYYY-MM-DD-HHMM>/REPORT.md`
 - Failed: <N>
 - Skipped: <N>
 - Retried: <N>
+
+## Video Evidence
+
+*(Include this section when --video=on)*
+
+- **Video**: [recording.webm](recording.webm)
+- **Trace**: [trace.zip](trace.zip) — open with `npx playwright show-trace trace.zip`
+- **HTML Report**: [Full Report](html-report/index.html) — open with `npx playwright show-report html-report`
+
+*(If video was requested but recording failed, note: "Video recording was requested but Playwright tracing failed. Screenshots are available as step evidence below.")*
 
 ## Test Steps
 
@@ -258,9 +342,32 @@ Save to: `./e2e-evidence/<test-name>-<YYYY-MM-DD-HHMM>/REPORT.md`
 ## Cleanup
 
 After generating the report:
+
+**When --video=on:**
+1. Tell the user where the evidence is saved, including:
+   - Video: `recording.webm`
+   - Trace: `npx playwright show-trace <evidence-dir>/trace.zip`
+   - HTML report: `npx playwright show-report <evidence-dir>/html-report`
+2. If there were failures, offer to help diagnose the root cause (by examining the app, NOT by modifying code)
+
+**When --video=off:**
 1. Close the browser with `mcp__playwright__browser_close`
 2. Tell the user where the evidence is saved
 3. If there were failures, offer to help diagnose the root cause (by examining the app, NOT by modifying code)
+
+### Retrospective
+
+After completing the workflow, reflect on the entire execution session:
+
+1. Consider: Were there mid-session corrections? Rejected outputs? Plan changes? Errors?
+2. Ask the user: "Quick feedback on this run? (1-5 rating, note any issues, or press enter to skip)"
+3. If the user provides feedback OR if corrections/issues occurred during this session:
+   a. Create `feedback/` directory if it does not exist
+   b. Read `feedback/log.md` (create with `# Feedback Log` header if it does not exist)
+   c. Prepend a new entry after the header using the log format from `my-skill-factory/references/skill-improvement-guide.md`
+   d. Fill in: current timestamp, skill version from frontmatter, task description, outcome assessment,
+      corrections that occurred during the session, issues encountered, user's note
+4. If the user skips AND no corrections or issues occurred, end without recording.
 
 ## Re-running a Test Scenario
 
@@ -268,3 +375,50 @@ After generating the report:
 2. Invoke: "Run e2e test with scenario test-scenarios/todomvc-sample.csv"
 3. A new timestamped evidence directory is created each run
 4. Compare reports across runs with diff to detect regressions
+
+## Behavior Scenarios
+
+```gherkin
+Scenario: Default execution with video evidence
+  Given a test scenario CSV and --video=on (default)
+  When /e2e-test is invoked
+  Then generate playwright.config.js with video: 'on',
+       generate test spec from CSV scenario mapping actions to Playwright API,
+       run via npx playwright test --headed,
+       collect recording.webm, step screenshots, and trace.zip,
+       generate REPORT.md with Video Evidence section
+
+Scenario: Execution without video (MCP mode)
+  Given --video=off is specified
+  When /e2e-test is invoked
+  Then use Playwright MCP tools for interactive step-by-step testing,
+       capture screenshots at each step,
+       generate REPORT.md without Video Evidence section
+
+Scenario: Generated test encounters a failure
+  Given --video=on and a step assertion fails during the Playwright test run
+  When the test finishes (Playwright still captures video up to failure)
+  Then collect partial video and failure screenshots,
+       report shows which step failed with evidence,
+       offer to diagnose the root cause
+
+Scenario: Playwright CLI not available
+  Given --video=on but npx playwright is not installed
+  When /e2e-test is invoked
+  Then warn user that Playwright CLI is required for video mode,
+       suggest running npm install -D @playwright/test && npx playwright install chromium,
+       offer to fall back to --video=off (MCP mode)
+
+Scenario: Scenario has gaps before execution
+  Given a test scenario with missing steps or ambiguous expected results
+  When /e2e-test evaluates the scenario (Step 2)
+  Then stop and recommend specific additions,
+       do not proceed until user updates the scenario or says to continue
+
+Scenario: Re-running a previous test scenario
+  Given a previously used scenario CSV file
+  When /e2e-test is invoked with the same scenario
+  Then create a new timestamped evidence directory,
+       run the test fresh, generate new report,
+       user can diff reports across runs to detect regressions
+```
