@@ -1,0 +1,13 @@
+{
+  "name": "local-skill-factory",
+  "version": "1.0.0",
+  "description": ">",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "local-skill-factory"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}

@@ -118,6 +118,11 @@
       "name": "subagent-gen",
       "source": "./plugins/subagent-gen",
       "description": ">"
+    },
+    {
+      "name": "local-skill-factory",
+      "source": "./plugins/local-skill-factory",
+      "description": ">"
     }
   ]
 }
