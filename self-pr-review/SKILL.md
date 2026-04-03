@@ -1,7 +1,7 @@
 ---
 name: self-pr-review
 description: Self-review loop for YOUR OWN PR — request AI reviews (Copilot + Gemini), apply their fixes, push, re-request, and repeat until clean. NOT for reviewing someone else's PR. Use when the user asks to self-review their PR, run the AI review loop, or wants Copilot + Gemini to review their own code. Trigger phrases include "self-review", "self-pr-review", "review my PR", "AI review my PR", "review loop", "copilot + gemini review", "run self-review on my PR".
-version: 1.0.0
+version: 1.0.1
 ---
 
 # Self-Review Loop
@@ -50,15 +50,18 @@ BASE=$(gh repo view --json defaultBranchRef --jq '.defaultBranchRef.name')
 BRANCH=$(git branch --show-current)
 ```
 
-  Before creating, check for a PR template in the repo (in priority order):
+  Before creating, check for a PR template in the repo:
 
-  1. `.github/PULL_REQUEST_TEMPLATE/` directory — if it exists and contains `.md` files, use the default template (e.g. `default.md`, or the first `.md` file found)
-  2. `.github/pull_request_template.md`
-  3. `PULL_REQUEST_TEMPLATE.md` at repo root
+  1. Read `.github/pull_request_template.md` (or `PULL_REQUEST_TEMPLATE.md` at repo root)
+  2. **Detect selector templates** — if the file contains `?template=<name>.md` links instead of actual form sections (Motivation, Description, etc.), it is a selector pointing to sub-templates in `.github/PULL_REQUEST_TEMPLATE/`
+  3. **If selector detected:** read the selector text to understand which sub-template maps to which scenario. Check `git diff --name-only $BASE..HEAD` to determine which sub-template applies, then read and use that sub-template.
+  4. **If not a selector:** use it directly as the template.
+  5. **If no template file exists:** check `.github/PULL_REQUEST_TEMPLATE/` for `.md` files and use `default.md` or the first one found.
+  6. **If no template at all:** fall back to `"Draft PR for AI code review."`.
 
-  **If a template is found:** read it, then fill in each section based on `git diff $BASE..HEAD` and `git log --oneline $BASE..HEAD`. Fill motivation, describe the changes, and mark checklist items with `[x]` or `[ ]` as appropriate. Use the filled template as the PR body.
-
-  **If no template is found:** fall back to `"Draft PR for AI code review."`.
+  **Filling the template:** read the template, then populate each section based on `git diff $BASE..HEAD` and `git log --oneline $BASE..HEAD`.
+  - Fill Motivation, Existing/New Behavior, or Description sections with concise explanations of the changes.
+  - **Checklists: preserve the exact structure verbatim** — same items, same sub-bullets, same order, same wording. Only change `[ ]` to `[x]` where the item is satisfied. Never add, remove, reword, or restructure checklist items.
 
 ```bash
 gh pr create --draft --base "$BASE" --head "$BRANCH" \
