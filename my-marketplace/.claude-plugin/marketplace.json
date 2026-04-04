@@ -80,11 +80,6 @@
       "description": ">"
     },
     {
-      "name": "self-pr-review",
-      "source": "./plugins/self-pr-review",
-      "description": "Self-review loop for YOUR OWN PR — request AI reviews (Copilot + Gemini), apply their fixes, push, re-request, and repeat until clean. NOT for reviewing someone else's PR. Use when the user asks to se"
-    },
-    {
       "name": "codex-cli",
       "source": "./plugins/codex-cli",
       "description": ">"
@@ -93,11 +88,6 @@
       "name": "orch-qa",
       "source": "./plugins/orch-qa",
       "description": ">"
-    },
-    {
-      "name": "e2e-test",
-      "source": "./plugins/e2e-test",
-      "description": "Run frontend E2E tests with video evidence. Default mode (--video=on) generates a Playwright test from the scenario CSV and runs it via CLI with video recording. Fallback mode (--video=off) uses Playw"
     },
     {
       "name": "slack-to-ticket",
@@ -123,6 +113,16 @@
       "name": "local-skill-factory",
       "source": "./plugins/local-skill-factory",
       "description": ">"
+    },
+    {
+      "name": "self-pr-review",
+      "source": "./plugins/self-pr-review",
+      "description": "Self-review loop for YOUR OWN PR — request AI reviews (Copilot + Gemini), apply their fixes, push, re-request, and repeat until clean. NOT for reviewing someone else's PR. Use when the user asks to se"
+    },
+    {
+      "name": "e2e-test",
+      "source": "./plugins/e2e-test",
+      "description": "Run frontend E2E tests with video evidence. Generates a Playwright test from the scenario CSV and runs it via CLI with video recording. Supports Chrome profile reuse (--chrome-profile) for testing wit"
     }
   ]
 }

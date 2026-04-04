@@ -1,12 +1,12 @@
 ---
 name: e2e-test
-description: Run frontend E2E tests with video evidence. Default mode (--video=on) generates a Playwright test from the scenario CSV and runs it via CLI with video recording. Fallback mode (--video=off) uses Playwright MCP tools interactively with step screenshots. Generates a test report with video, screenshots, and trace. Does NOT modify application code — only creates documents (markdown, CSV, test scripts). Use when the user asks to run E2E tests, verify frontend behavior, do end-to-end testing, check UI flows, or test a web app. Trigger phrases include "e2e", "E2E test", "end-to-end test", "e2e testing", "frontend test", "UI test", "playwright test", "browser test", "verify the UI", "test this page".
-version: 1.0.0
+description: Run frontend E2E tests with video evidence. Generates a Playwright test from the scenario CSV and runs it via CLI with video recording. Supports Chrome profile reuse (--chrome-profile) for testing with existing cookies, sessions, and extensions via launchPersistentContext. Generates a test report with video, screenshots, and trace. Does NOT modify application code — only creates documents (markdown, CSV, test scripts). Use when the user asks to run E2E tests, verify frontend behavior, do end-to-end testing, check UI flows, or test a web app. Trigger phrases include "e2e", "E2E test", "end-to-end test", "e2e testing", "frontend test", "UI test", "playwright test", "browser test", "verify the UI", "test this page".
+version: 1.1.0
 ---
 
 # E2E Test
 
-Run frontend E2E tests with video and screenshot evidence. Default mode generates a Playwright test script from the scenario CSV and runs it via `npx playwright test` with video recording enabled. Fallback mode uses Playwright MCP tools interactively. Generate a structured test report. Never modify application code.
+Run frontend E2E tests with video and screenshot evidence. Generates a Playwright test script from the scenario CSV and runs it via `npx playwright test` with video recording enabled. Supports Chrome profile reuse for testing authenticated flows. Generate a structured test report. Never modify application code.
 
 ## Constraints
 
@@ -19,16 +19,14 @@ Run frontend E2E tests with video and screenshot evidence. Default mode generate
 
 | Argument | Default | Description |
 |----------|---------|-------------|
-| `--video` | `on` | `on`: generate Playwright test script and run via CLI with video recording; `off`: use Playwright MCP tools interactively with screenshots only |
+| `--chrome-profile` | `off` | `off`: normal isolated Chromium context; `on`: use system Chrome with `Default` profile; `<name>`: use named profile (e.g., `Profile 1`). Chrome must be closed before running. |
 
 ## Workflow
 
 1. **Understand the scenario** — Get the test target and acceptance criteria
 2. **Evaluate scenario coverage** — Check if the scenario is sufficient; if not, ask user to update
-3. **Generate and run Playwright test** (`--video=on`, default) — Generate test script from CSV, run via CLI with video
-4. **Set up browser session** (`--video=off`) — Launch Playwright MCP browser
-5. **Execute test steps** (`--video=off`) — Navigate, interact, snapshot, and screenshot at each step
-6. **Generate report** — Produce a markdown evidence report with video, screenshots, and trace
+3. **Generate and run Playwright test** — Generate test script from CSV, run via CLI with video
+4. **Generate report** — Produce a markdown evidence report with video, screenshots, and trace
 
 ## Step 1: Understand the Scenario
 
@@ -70,8 +68,10 @@ step,action,target,input,expected_result
 
 - `url` — The target URL for the test
 - `viewport` — Browser viewport dimensions (default: `1280x720`)
-- `setup` — Precondition action. Maps to `browser_run_code` (e.g., `Clear localStorage` → `async (page) => { await page.evaluate(() => localStorage.clear()); }`)
+- `setup` — Precondition action (e.g., `Clear localStorage` → `await page.evaluate(() => localStorage.clear())`)
 - `timeout` — Default seconds per wait step (default: `10`)
+- `chrome_profile` — Chrome profile directory name (e.g., `Default`, `Profile 1`). When set, uses `launchPersistentContext` with system Chrome. Overrides `--chrome-profile` argument
+- `chrome_profile_path` — Full path to Chrome User Data directory. Optional; auto-detected per platform if omitted
 
 #### Target field
 
@@ -116,9 +116,25 @@ Please update the scenario and I'll proceed with testing.
 
 Do NOT proceed with execution until the scenario is adequate or the user explicitly says to continue anyway.
 
-## Step 3: Generate and Run Playwright Test (--video=on)
+## Step 3: Generate and Run Playwright Test
 
-When `--video=on` (default), generate a Playwright test script from the CSV scenario and run it via CLI with video recording. Read `references/video-recording.md` for the full reference.
+Generate a Playwright test script from the CSV scenario and run it via CLI with video recording. Read `references/video-recording.md` for the full reference.
+
+### 3.0 Chrome profile mode detection
+
+Determine if Chrome profile mode is active:
+1. Check `--chrome-profile` argument (CLI)
+2. Check `chrome_profile` field in CSV config (overrides CLI)
+3. If either is set (and not `off`), activate Chrome profile mode
+
+If Chrome profile mode is active:
+- Profile directory = the value (`Default` if `on` was specified without a name)
+- User data path = `chrome_profile_path` from CSV, or auto-detect per platform:
+  - Windows: `%LOCALAPPDATA%\Google\Chrome\User Data`
+  - macOS: `~/Library/Application Support/Google/Chrome`
+  - Linux: `~/.config/google-chrome`
+
+> **Privacy warning**: Chrome profile mode exposes real accounts, personal data, and extensions in test evidence (video, screenshots, trace). Extensions and service workers from the profile may affect test determinism.
 
 ### 3.1 Create evidence directory
 
@@ -129,16 +145,33 @@ mkdir -p ./e2e-evidence/<test-name>-<YYYY-MM-DD-HHMM>
 ### 3.2 Generate playwright.config.js
 
 Create `playwright.config.js` in the evidence directory using the template from `references/video-recording.md`:
+
+**Normal mode:**
 - Set `baseURL` to the target URL from the scenario config
 - Set `viewport` from scenario config (default `{ width: 1280, height: 720 }`)
 - Set `video: 'on'`, `screenshot: 'on'`, `trace: 'on'`
 - Set `outputDir` and reporter paths within the evidence directory
 
+**Chrome profile mode:**
+- Use the Chrome Profile Config Template from `references/video-recording.md`
+- Set `workers: 1` (shared profile cannot parallelize)
+- Set `retries: 0` (shared state makes retries unreliable)
+- Do NOT set `use.video`, `use.trace`, `use.screenshot` (handled by `chrome-fixture.js`)
+- Do NOT set `projects` (fixture handles browser selection)
+
+### 3.2b Generate chrome-fixture.js (Chrome profile mode only)
+
+When Chrome profile mode is active, generate `chrome-fixture.js` in the evidence directory using the Chrome Fixture Template from `references/video-recording.md`:
+- Replace `<chrome-user-data-dir>` with the resolved user data path
+- Replace `<profile-directory>` with the profile directory name
+- Replace `<width>`, `<height>` from scenario config viewport
+
 ### 3.3 Generate test spec
 
 Create `<test-name>.spec.js` in the evidence directory:
 
-1. Import `{ test, expect }` from `@playwright/test`
+1. **Normal mode**: `const { test, expect } = require('@playwright/test');`
+   **Chrome profile mode**: `const { test, expect } = require('./chrome-fixture');`
 2. Wrap all steps in a single `test('<test-name>', async ({ page }) => { ... })` block
 3. Add setup preconditions (e.g., `localStorage.clear()`) after the first `page.goto()`
 4. For each CSV step, generate the corresponding Playwright API call:
@@ -154,122 +187,29 @@ cd <evidence-dir>
 npx playwright test <test-name>.spec.js --config=playwright.config.js --headed
 ```
 
-If `npx playwright` is not available, warn the user and offer to fall back to `--video=off` (MCP mode).
+If `npx playwright` is not available, warn the user. Suggest: `npm install -D @playwright/test && npx playwright install chromium`.
 
 If the test run fails, Playwright still captures video and screenshots up to the failure point.
 
 ### 3.5 Collect artifacts
 
 After the test run:
+
+**Normal mode:**
 1. Find `video.webm` in `test-results/<test-title>/` and copy to evidence root as `recording.webm`
 2. Find `trace.zip` in `test-results/<test-title>/` and copy to evidence root
+
+**Chrome profile mode:**
+1. Find the video file (`.webm`) in `test-results/videos/` and copy to evidence root as `recording.webm`
+2. Find `trace.zip` in `test-results/` (saved by fixture) and copy to evidence root
+
+**Both modes:**
 3. Step screenshots (`step-*.png`) are already in the evidence root
 4. HTML report is in `html-report/`
 
-Proceed to Step 6 (Generate Report).
+Proceed to Step 4 (Generate Report).
 
----
-
-## Step 4: Set Up Browser Session (--video=off)
-
-**This step is only used when `--video=off`.** When `--video=on`, skip to Step 3 above.
-
-Use the Playwright MCP tools to launch a browser. Read `references/playwright-commands.md` for the full tool reference.
-
-```
-1. Install browser if needed: mcp__playwright__browser_install
-2. Use mcp__playwright__browser_navigate to open the target URL
-3. Execute any setup preconditions (e.g., clear localStorage via browser_run_code)
-4. Take an initial screenshot with mcp__playwright__browser_take_screenshot (type: "png")
-5. Take an initial browser_snapshot to get the accessibility tree
-```
-
-Create a directory for evidence artifacts:
-```bash
-mkdir -p ./e2e-evidence/<test-name>-<YYYY-MM-DD-HHMM>
-```
-
-Save all screenshots and accessibility snapshots to this directory.
-
-## Step 5: Execute Test Steps (--video=off)
-
-**This step is only used when `--video=off`.** When `--video=on`, test execution is handled in Step 3.
-
-For each step in the scenario:
-
-1. **Take a snapshot** — Call `mcp__playwright__browser_snapshot` before every interaction to get the current accessibility tree
-2. **Find the target** — Parse the accessibility tree to find the element matching the human-readable `target` description. Extract its `ref` identifier
-3. **Perform the action** — Use the appropriate Playwright MCP tool, passing the `ref`
-4. **Take a screenshot** — Save with descriptive filename: `step-<NN>-<action>.png`
-5. **Capture console messages** — Call `mcp__playwright__browser_console_messages` (include in report only when non-empty)
-6. **Verify the expected result** — Use `mcp__playwright__browser_snapshot` to read page state
-7. **Record pass/fail** — Note the actual result
-
-### Snapshot rules
-
-- **Snapshot before every interaction**: Always call `browser_snapshot` before any action that needs a `ref`. This is the ONLY way to get valid element references
-- **Snapshot caching**: Reuse the most recent snapshot if no navigation or DOM-altering action has occurred since the last snapshot (saves tokens on complex pages)
-- **Ambiguity resolution**: If multiple elements match the target description, prefer the first visible/in-viewport match. If still ambiguous, present candidates to the user and let them pick
-- **No match fallback**: If the target is not found in the accessibility tree, report it as a test infrastructure issue (not a test failure). Suggest the app needs better a11y markup, or offer `browser_run_code` as an escape hatch
-- **Stale ref recovery**: If an action fails with a stale ref, take a fresh snapshot, re-locate the element, and retry once
-
-### Retry-on-flaky
-
-Before recording a step as FAIL:
-1. Wait 2 seconds (`browser_wait_for` with `time: 2`)
-2. Retry the step once
-3. If the retry passes, mark as `PASS (retried)`
-4. If the retry also fails, record as FAIL with evidence
-
-### Critical steps
-
-If a step is marked as critical and fails, skip subsequent dependent steps and note them as SKIPPED in the report.
-
-### Action-to-Tool Mapping
-
-| Action | Playwright MCP Tool | Notes |
-|--------|---------------------|-------|
-| `navigate` | `browser_navigate` | Follow with `browser_wait_for` (text) to confirm load |
-| `fill` / `type` | `browser_type` | Needs `ref` + `text`. Use `submit: true` for type-then-Enter. `slowly: true` for apps with key handlers |
-| `fill_form` | `browser_fill_form` | For multi-field batch fills, checkboxes, radios, comboboxes, sliders (the ONLY tool for non-text fields) |
-| `click` | `browser_click` | Needs `ref` |
-| `dblclick` | `browser_click` | With `doubleClick: true` (e.g., edit-in-place) |
-| `hover` | `browser_hover` | Needs `ref` |
-| `keypress` | `browser_press_key` | Global key press (no ref). For standalone keys only (Escape, Tab, arrows). NOT for type-then-Enter |
-| `select` | `browser_select_option` | Needs `ref` |
-| `upload` | `browser_file_upload` | Needs `paths[]` |
-| `wait` | `browser_wait_for` | **Only** supports `text`, `textGone`, `time` (seconds). NOT selectors or URL. For complex waits use `run_code` |
-| `verify` | `browser_snapshot` | Read accessibility tree to check page state |
-| `screenshot` | `browser_take_screenshot` | **`type` is required** ("png" or "jpeg"). Use `filename` for evidence naming. `fullPage: true` for full page |
-| `dialog` | `browser_handle_dialog` | `accept: boolean`, optional `promptText` |
-| `url_check` | `browser_evaluate` | `window.location.href` to verify navigation |
-| `run_code` | `browser_run_code` | Escape hatch: `async (page) => { ... }`. For localStorage setup, complex waits, iframe interactions, computed style checks |
-| `evaluate` | `browser_evaluate` | Run JS in browser context (DOM reads, data checks). Different from `run_code` (which is Node.js/Playwright API) |
-| `console` | `browser_console_messages` | Read console log/error |
-| `tab` | `browser_tabs` | List, new, close, select tabs |
-
-### Screenshot naming convention
-
-```
-step-01-navigate-homepage.png
-step-02-type-email.png
-step-03-type-password.png
-step-04-click-submit.png
-step-05-verify-dashboard.png
-step-04-click-submit-FAIL.png    (failure screenshot)
-```
-
-### On failure
-
-If a step fails (expected result doesn't match actual):
-1. Take a screenshot named `step-<NN>-<action>-FAIL.png`
-2. Capture the current page URL with `browser_evaluate` (`window.location.href`)
-3. Capture console messages with `browser_console_messages`
-4. Save the accessibility snapshot as `step-<NN>-a11y.md`
-5. Log the discrepancy in the report
-6. Ask the user whether to continue with remaining steps or stop
-
-## Step 6: Generate Report
+## Step 4: Generate Report
 
 After all steps complete, generate a markdown evidence report.
 
@@ -283,11 +223,11 @@ Save to: `./e2e-evidence/<test-name>-<YYYY-MM-DD-HHMM>/REPORT.md`
 **Date**: <YYYY-MM-DD HH:MM>
 **Duration**: <total time>
 **Target**: <URL>
-**Browser**: Chromium (Playwright)
+**Browser**: Chromium (Playwright) | Chrome (profile: <name>)
 **Viewport**: <width>x<height>
 **OS**: <platform>
 **Scenario file**: `<path>` (modified: <date>)
-**Recording mode**: video | screenshots-only
+**Recording mode**: video
 **Preconditions**: <setup actions taken>
 **Result**: PASS | FAIL | PARTIAL
 
@@ -300,8 +240,6 @@ Save to: `./e2e-evidence/<test-name>-<YYYY-MM-DD-HHMM>/REPORT.md`
 - Retried: <N>
 
 ## Video Evidence
-
-*(Include this section when --video=on)*
 
 - **Video**: [recording.webm](recording.webm)
 - **Trace**: [trace.zip](trace.zip) — open with `npx playwright show-trace trace.zip`
@@ -343,17 +281,11 @@ Save to: `./e2e-evidence/<test-name>-<YYYY-MM-DD-HHMM>/REPORT.md`
 
 After generating the report:
 
-**When --video=on:**
 1. Tell the user where the evidence is saved, including:
    - Video: `recording.webm`
    - Trace: `npx playwright show-trace <evidence-dir>/trace.zip`
    - HTML report: `npx playwright show-report <evidence-dir>/html-report`
 2. If there were failures, offer to help diagnose the root cause (by examining the app, NOT by modifying code)
-
-**When --video=off:**
-1. Close the browser with `mcp__playwright__browser_close`
-2. Tell the user where the evidence is saved
-3. If there were failures, offer to help diagnose the root cause (by examining the app, NOT by modifying code)
 
 ### Retrospective
 
@@ -380,7 +312,7 @@ After completing the workflow, reflect on the entire execution session:
 
 ```gherkin
 Scenario: Default execution with video evidence
-  Given a test scenario CSV and --video=on (default)
+  Given a test scenario CSV
   When /e2e-test is invoked
   Then generate playwright.config.js with video: 'on',
        generate test spec from CSV scenario mapping actions to Playwright API,
@@ -388,26 +320,35 @@ Scenario: Default execution with video evidence
        collect recording.webm, step screenshots, and trace.zip,
        generate REPORT.md with Video Evidence section
 
-Scenario: Execution without video (MCP mode)
-  Given --video=off is specified
+Scenario: Chrome profile mode with persistent context
+  Given --chrome-profile is set (or chrome_profile in CSV) and Chrome is not running
   When /e2e-test is invoked
-  Then use Playwright MCP tools for interactive step-by-step testing,
-       capture screenshots at each step,
-       generate REPORT.md without Video Evidence section
+  Then generate chrome-fixture.js with launchPersistentContext using the specified profile,
+       generate playwright.config.js with workers: 1, retries: 0, no video/trace config,
+       generate test spec importing from ./chrome-fixture instead of @playwright/test,
+       run via npx playwright test --headed,
+       collect video from test-results/videos/ and trace from test-results/trace.zip,
+       generate REPORT.md with Chrome profile noted in Browser field
+
+Scenario: Chrome profile is locked by running Chrome instance
+  Given --chrome-profile is active and Chrome is open with the same profile
+  When /e2e-test launches the persistent context
+  Then the fixture catches the profile lock error,
+       displays a clear message: "Chrome profile is locked. Close all Chrome windows and retry.",
+       the test fails with an actionable error (not a cryptic Playwright internal error)
 
 Scenario: Generated test encounters a failure
-  Given --video=on and a step assertion fails during the Playwright test run
+  Given a step assertion fails during the Playwright test run
   When the test finishes (Playwright still captures video up to failure)
   Then collect partial video and failure screenshots,
        report shows which step failed with evidence,
        offer to diagnose the root cause
 
 Scenario: Playwright CLI not available
-  Given --video=on but npx playwright is not installed
+  Given npx playwright is not installed
   When /e2e-test is invoked
-  Then warn user that Playwright CLI is required for video mode,
-       suggest running npm install -D @playwright/test && npx playwright install chromium,
-       offer to fall back to --video=off (MCP mode)
+  Then warn user that Playwright CLI is required,
+       suggest running npm install -D @playwright/test && npx playwright install chromium
 
 Scenario: Scenario has gaps before execution
   Given a test scenario with missing steps or ambiguous expected results

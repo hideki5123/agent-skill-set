@@ -1,8 +1,12 @@
 # Video Recording Reference
 
-Record E2E test execution as video using Playwright CLI. When `--video=on` (default),
-the skill generates a Playwright test script from the CSV scenario, configures video
-recording, and runs it via `npx playwright test`.
+Record E2E test execution as video using Playwright CLI. The skill generates a Playwright
+test script from the CSV scenario, configures video recording, and runs it via
+`npx playwright test`.
+
+When `--chrome-profile` is active, the workflow additionally generates a `chrome-fixture.js`
+that uses `launchPersistentContext` to reuse an existing Chrome profile (cookies, sessions,
+extensions, localStorage, IndexedDB).
 
 ## Playwright Config Template
 
@@ -34,6 +38,110 @@ module.exports = defineConfig({
 
 Replace `<target-url>`, `<width>`, `<height>` from the CSV config section.
 
+## Playwright Config Template — Chrome Profile Mode
+
+When Chrome profile mode is active (`--chrome-profile`), generate a stripped-down config.
+Video, trace, and screenshot are handled by `chrome-fixture.js`, not by config.
+
+```javascript
+const { defineConfig } = require('@playwright/test');
+
+module.exports = defineConfig({
+  testDir: '.',
+  timeout: 120000,
+  expect: { timeout: 10000 },
+  workers: 1,       // Required: shared profile cannot parallelize
+  retries: 0,       // Shared profile state makes retries unreliable
+  use: {
+    baseURL: '<target-url>',
+    actionTimeout: 15000,
+    // video, screenshot, trace — handled by chrome-fixture.js persistent context
+    // viewport — handled by chrome-fixture.js launchPersistentContext options
+  },
+  reporter: [
+    ['list'],
+    ['html', { open: 'never', outputFolder: './html-report' }],
+  ],
+  outputDir: './test-results',
+});
+```
+
+## Chrome Fixture Template (`chrome-fixture.js`)
+
+Generated when Chrome profile mode is active. Overrides `context` and `page` fixtures
+to use `launchPersistentContext` with the system Chrome installation.
+
+```javascript
+const { test: base, expect } = require('@playwright/test');
+const { chromium } = require('playwright');
+const path = require('path');
+
+const USER_DATA_DIR = '<chrome-user-data-dir>';
+const PROFILE_DIR = '<profile-directory>';
+const VIEWPORT = { width: <width>, height: <height> };
+const VIDEO_DIR = './test-results/videos';
+
+const test = base.extend({
+  context: async ({}, use) => {
+    const launchOptions = {
+      channel: 'chrome',
+      headless: false,
+      viewport: VIEWPORT,
+      args: [`--profile-directory=${PROFILE_DIR}`],
+      recordVideo: { dir: VIDEO_DIR, size: VIEWPORT },
+    };
+
+    let context;
+    try {
+      context = await chromium.launchPersistentContext(USER_DATA_DIR, launchOptions);
+    } catch (error) {
+      if (error.message.includes('lock') || error.message.includes('already running')
+          || error.message.includes('user data directory is already in use')) {
+        throw new Error(
+          'Chrome profile is locked. Close all Chrome windows and retry.\n'
+          + `Profile: ${USER_DATA_DIR} (${PROFILE_DIR})\n`
+          + `Original error: ${error.message}`
+        );
+      }
+      throw error;
+    }
+
+    await context.tracing.start({ screenshots: true, snapshots: true });
+    await use(context);
+    await context.tracing.stop({ path: path.join('test-results', 'trace.zip') });
+    await context.close();
+  },
+
+  page: async ({ context }, use) => {
+    const pages = context.pages();
+    const page = pages.length > 0 ? pages[0] : await context.newPage();
+    await use(page);
+  },
+});
+
+module.exports = { test, expect };
+```
+
+### Template Placeholders
+
+| Placeholder | Source | Example |
+|-------------|--------|---------|
+| `<chrome-user-data-dir>` | CSV `chrome_profile_path` or platform default | `C:\\Users\\Hideki\\AppData\\Local\\Google\\Chrome\\User Data` |
+| `<profile-directory>` | CSV `chrome_profile` or `--chrome-profile` value | `Default`, `Profile 1` |
+| `<width>`, `<height>` | CSV `viewport` (default: 1280, 720) | `1280`, `720` |
+
+### Platform Default Chrome User Data Paths
+
+| Platform | Default Path |
+|----------|-------------|
+| Windows | `%LOCALAPPDATA%\Google\Chrome\User Data` (e.g., `C:\Users\<user>\AppData\Local\Google\Chrome\User Data`) |
+| macOS | `~/Library/Application Support/Google/Chrome` |
+| Linux | `~/.config/google-chrome` |
+
+The profile directory (`Default`, `Profile 1`, `Profile 2`, etc.) is a subdirectory within
+the user data path. Use `--profile-directory` Chrome arg to select it — do NOT append it
+to `userDataDir`.
+
 ## Test Script Generation
 
 Generate `<test-name>.spec.js` in the evidence directory. Wrap all steps in a
@@ -41,6 +149,7 @@ single `test()` block.
 
 ### Template
 
+**Normal mode:**
 ```javascript
 const { test, expect } = require('@playwright/test');
 
@@ -54,6 +163,16 @@ test('<test-name>', async ({ page }) => {
   // <assertion for expected_result>
 
   // Step 2: ...
+});
+```
+
+**Chrome profile mode** — change only the import line:
+```javascript
+const { test, expect } = require('./chrome-fixture');
+
+test('<test-name>', async ({ page }) => {
+  // Identical test body — page.goto, locators, assertions, screenshots
+  // The page fixture comes from chrome-fixture.js persistent context
 });
 ```
 
@@ -126,14 +245,16 @@ Add `--headed` so the browser is visible during execution. Omit for headless run
 
 After the test run, artifacts are in `<evidence-dir>/test-results/`:
 
-| Artifact | Path | Description |
-|----------|------|-------------|
-| Video | `test-results/<test-title>/video.webm` | Full test execution recording |
-| Trace | `test-results/<test-title>/trace.zip` | Interactive trace (screenshots + DOM + timing) |
-| Screenshots | `step-*.png` in evidence root | Per-step screenshots taken during test |
-| HTML report | `html-report/index.html` | Playwright HTML report with embedded video |
+| Artifact | Normal Mode Path | Chrome Profile Mode Path |
+|----------|------------------|--------------------------|
+| Video | `test-results/<test-title>/video.webm` | `test-results/videos/<guid>.webm` |
+| Trace | `test-results/<test-title>/trace.zip` | `test-results/trace.zip` |
+| Screenshots | `step-*.png` in evidence root | Same |
+| HTML report | `html-report/index.html` | Same |
 
-Copy `video.webm` to the evidence root as `recording.webm` for easy access.
+Copy the video file to the evidence root as `recording.webm` for easy access.
+In Chrome profile mode, the video has a GUID filename — copy the most recent `.webm`
+from `test-results/videos/`.
 
 ## Viewing Evidence
 
@@ -157,3 +278,7 @@ npx playwright show-report <evidence-dir>/html-report
 | Video file is 0 bytes | Ensure the test completed (even with failures) — video is finalized on context close |
 | Locator not found | Check the target description; try a different locator strategy (getByText instead of getByRole) |
 | Timeout on action | Increase `actionTimeout` in config or add explicit waits before the action |
+| Chrome profile locked | Close all Chrome windows using this profile before running the test |
+| `channel: 'chrome'` not found | Install Google Chrome (not Chromium). Bundled Chromium does not have profile compatibility |
+| Extensions not loading | Extensions only load in headed mode with `channel: 'chrome'`; verify `headless: false` |
+| Profile data not persisting | Ensure `userDataDir` points to the Chrome User Data root, NOT the profile subdirectory. Profile is selected via `--profile-directory` arg |
