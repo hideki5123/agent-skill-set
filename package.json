@@ -1,0 +1,27 @@
+{
+  "name": "agent-skill-set",
+  "version": "1.0.0",
+  "description": "A collection of agent skills and tools for Claude Code and Cursor.",
+  "scripts": {
+    "postinstall": "playwright install"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/hideki5123/agent-skill-set.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/hideki5123/agent-skill-set/issues"
+  },
+  "homepage": "https://github.com/hideki5123/agent-skill-set#readme",
+  "dependencies": {
+    "@pchuri/jira-cli": "^2.3.3",
+    "@playwright/test": "^1.59.1",
+    "@urugus/slack-cli": "^0.20.21",
+    "confluence-cli": "^1.29.1",
+    "playwright": "^1.59.1"
+  }
+}

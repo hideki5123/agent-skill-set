@@ -39,11 +39,8 @@ Some skills require external CLI tools. Install them before use.
 | Tool | Install | Required by |
 |------|---------|-------------|
 | [Node.js / npm](https://nodejs.org/) | OS package manager | All npm-based tools below |
-| [confluence-cli](https://github.com/pchuri/confluence-cli) | `npm install -g confluence-cli` | confluence |
-| [@pchuri/jira-cli](https://github.com/pchuri/jira-cli) | `npm install -g @pchuri/jira-cli` | jira-cli |
-| [slack-cli](https://github.com/urugus/slack-cli) | `npm install -g @urugus/slack-cli` | slack-cli |
-| [Playwright](https://playwright.dev/) | `npx playwright install` | playwright-cli, playwright-codegen, e2e-test, scenario-gen |
 | [GitHub CLI (gh)](https://cli.github.com/) | OS package manager | dev-workflow, pr-review, self-pr-review, address-pr-comments |
+| npm dependencies | `npm install` | confluence, jira-cli, slack-cli, playwright-cli, playwright-codegen, e2e-test, scenario-gen |
 
 ## Authoring Workflow
 
