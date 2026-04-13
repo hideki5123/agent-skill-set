@@ -204,7 +204,7 @@ def install(skill_dir: Path, version: str, cache_only: bool = False):
     installed = read_json(INSTALLED_JSON)
     installed["plugins"][plugin_key] = [{
         "scope": "user",
-        "installPath": str(cache_dir).replace("/", "\\"),
+        "installPath": str(cache_dir),
         "version": version,
         "installedAt": now,
         "lastUpdated": now,

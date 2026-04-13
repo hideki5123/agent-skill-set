@@ -41,7 +41,7 @@ codex --version
 
 If this fails:
 - **"command not found"** — codex-cli is not installed.
-  Suggest: `npm install -g @anthropic-ai/codex` or check the Codex CLI installation docs.
+  Suggest: `npm install -g @openai/codex` or check the Codex CLI installation docs.
 - **Authentication errors** — API key not configured.
   Suggest: `codex login` (interactive) or set `OPENAI_API_KEY` env var.
 
