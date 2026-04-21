@@ -6,7 +6,7 @@
 - **Change**: Phase 3 now fetches the project's per-issue-type default description via `getJiraIssueTypeMetaWithFields` (reading `fields[description].defaultValue`) and uses it as the outer skeleton. Generic `references/description-template.md` is explicitly marked fallback-only.
 - **Files Modified**: `SKILL.md` (Phase 3, References), `references/description-template.md` (fallback framing, formatting notes).
 - **Version Bump**: 1.0.0 → 1.1.0
-- **Git Commit**: <pending>
+- **Git Commit**: 58a55d4
 - **Status**: applied — monitoring
 ---
 
@@ -16,7 +16,7 @@
 - **Change**: New `references/slack-mention-resolution.md` spells out resolution rules for `<@U…>` / `<#C…>` / `<!subteam^S…>` / broadcast mentions / URLs. Phase 2 now requires resolution before Phase 3 and instructs the skill to prompt for a user-group handle when the placeholder is bot-unresolvable. `description-template.md` formatting notes forbid raw IDs in ticket text.
 - **Files Modified**: new `references/slack-mention-resolution.md`; `SKILL.md` (Phase 2, References); `references/description-template.md` (formatting notes).
 - **Version Bump**: covered by AMD-001 bump (1.0.0 → 1.1.0)
-- **Git Commit**: <pending>
+- **Git Commit**: 58a55d4
 - **Status**: applied — monitoring
 ---
 
@@ -26,7 +26,7 @@
 - **Change**: Phase 3 now annotates every proposed label inline as `(existing)` or `(NEW — needs approval)`. The pre-existing "approval before creating a new label" constraint is preserved; this amendment only surfaces it at draft time.
 - **Files Modified**: `SKILL.md` (Phase 3 "Present draft(s)" and label-approval block).
 - **Version Bump**: covered by AMD-001 bump (1.0.0 → 1.1.0)
-- **Git Commit**: <pending>
+- **Git Commit**: 58a55d4
 - **Status**: applied — monitoring
 ---
 
@@ -36,6 +36,6 @@
 - **Change**: `Conversation Excerpt` removed from the default template skeleton and reclassified as opt-in — only included when a specific quote captures a non-obvious decision, trade-off, or nuance Decisions / Action Items cannot convey.
 - **Files Modified**: `references/description-template.md` (template skeleton, Section Guidelines row).
 - **Version Bump**: covered by AMD-001 bump (1.0.0 → 1.1.0)
-- **Git Commit**: <pending>
+- **Git Commit**: 58a55d4
 - **Status**: applied — monitoring
 ---
