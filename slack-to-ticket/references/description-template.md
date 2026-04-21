@@ -1,7 +1,10 @@
-# Jira Ticket Description Template
+# Jira Ticket Description Template (fallback)
 
-Use this template when composing the Jira ticket description from Slack conversation analysis.
-Adapt sections based on what the conversation actually contains — omit empty sections.
+**This template is the fallback.** Always prefer the target Jira project's configured default description — fetched in Phase 3 via `getJiraIssueTypeMetaWithFields` as `fields[description].defaultValue`. Only use the template below when the project has no default description for the chosen issue type.
+
+When the project has a default, map Slack-derived content into its existing heading sections and keep all project headings (even ones with nothing to fill) so the ticket matches project conventions.
+
+## Fallback template
 
 ```markdown
 ## Context
@@ -28,11 +31,6 @@ Focus on the core ask — what needs to happen and why.]
 ## Action Items
 - [ ] [Action 1] — Owner: Name
 - [ ] [Action 2] — Owner: Name
-
-## Conversation Excerpt
-> **Name1** (14:02): [key message]
-> **Name2** (14:15): [key response]
-> **Name3** (14:30): [key conclusion]
 ```
 
 ## Section Guidelines
@@ -44,13 +42,17 @@ Focus on the core ask — what needs to happen and why.]
 | Key Discussion Points | 3+ distinct topics discussed | Single-topic, short thread |
 | Decisions | Explicit agreement or conclusion reached | No decisions made yet |
 | Action Items | Explicit or implied next steps exist | Pure discussion, no actions |
-| Conversation Excerpt | Thread has key quotes worth preserving | Very short (1-3 messages) — full text is already in Problem section |
+| Conversation Excerpt | **Default: omit.** Include only when a specific quote captures a non-obvious decision, trade-off, or nuance that Decisions / Action Items cannot convey on their own. | Anything else — Decisions and Action Items already summarize the thread. |
+
+Conversation Excerpt is opt-in, not opt-out. It is not part of the default template skeleton; add it only when a quote adds something the summarized sections genuinely cannot.
 
 ## Formatting Notes
 
 - Keep the description under 2000 characters for readability
 - Use bullet points over paragraphs
+- **All Slack placeholders (`<@UXXX>`, `<#CXXX>`, `<!subteam^SXXX>`) must be resolved before inclusion — no raw IDs in ticket text.** See `references/slack-mention-resolution.md`.
 - Use display names (e.g., "Miyazaki", "Koike") — NOT @account handles
+- For user-group mentions, render as `` `@handle` user group (Slack ID `SXXX`) `` on first mention, then `@handle` thereafter
 - Use ISO dates (YYYY-MM-DD)
-- The Slack permalink must always appear in the Context section
+- The Slack permalink must always appear in the Context section (or the equivalent context section of the project's template)
 - Do NOT include an Assignee field — tickets are always created unassigned

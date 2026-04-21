@@ -1,6 +1,6 @@
 ---
 name: slack-to-ticket
-version: 1.0.0
+version: 1.1.0
 description: >
   Create Jira tickets from Slack conversations, optionally with Confluence documentation pages.
   Reads Slack threads/channels/search results via slack-cli, analyzes the conversation to extract
@@ -105,7 +105,15 @@ Extract the first message's permalink as the canonical Slack link for the ticket
 
 ## Phase 2: Analyze Conversation
 
-Analyze the fetched messages to extract:
+### Resolve Slack mention syntax first
+
+Before extracting anything else, scan every fetched message body for Slack placeholders — `<@UXXX>`, `<#CXXX>`, `<!subteam^SXXX>`, `<!here>`/`<!channel>`/`<!everyone>`, and URL placeholders — and resolve them to human-readable names per `references/slack-mention-resolution.md`. Raw Slack IDs must not reach Phase 3.
+
+For user-group mentions (`<!subteam^SXXX>`) that do not carry a `|@handle` form, ask the user for the handle (e.g., `@biz-cx-team`) once and cache it for reuse.
+
+### Extract
+
+Analyze the resolved messages to extract:
 
 1. **Problem / Request**: The core issue or ask
 2. **Key Participants**: Who is involved (display names from messages)
@@ -137,11 +145,30 @@ If only one topic → single ticket (default behavior).
 
 ## Phase 3: Draft Ticket(s)
 
-Compose the ticket draft(s). Read `references/description-template.md` for the description template.
+Compose the ticket draft(s). Before writing, fetch two things from the target Jira project: the project's description template, and its existing labels.
+
+### Fetch the project's description template
+
+Different Jira projects configure different default descriptions per issue type (for example, ROMS Engineering Tasks use `# Motivation / # Requirement / # Acceptance Criterias`). Jira exposes this default directly — always prefer it over the generic template.
+
+Use the Atlassian MCP tool `getJiraIssueTypeMetaWithFields` for the chosen project + issue type:
+
+```
+getJiraIssueTypeMetaWithFields:
+  cloudId: <CLOUD_ID>
+  projectIdOrKey: <PROJECT_KEY>
+  issueTypeId: <ISSUE_TYPE_ID>
+```
+
+Read `fields[description]`:
+- If `hasDefaultValue: true`, take `defaultValue` (ADF JSON), convert to markdown, and use it as the outer skeleton. Map Slack-derived content into the existing heading sections — for example, the user story goes under `# Motivation`, functional requirements under `# Requirement`, acceptance criteria under `# Acceptance Criterias`. Keep all headings from the project default, even ones you have nothing to fill in, so the ticket matches project expectations.
+- If `hasDefaultValue` is false or the default is empty, fall back to the generic template in `references/description-template.md`.
+
+Fetch once per run and cache in-memory. Do not repeat the call for each draft.
 
 ### Fetch existing labels
 
-Before drafting, fetch the project's existing labels so you only suggest valid ones:
+Fetch the project's existing labels so you only suggest valid ones:
 
 ```bash
 # Via Atlassian MCP (preferred)
@@ -150,6 +177,8 @@ Before drafting, fetch the project's existing labels so you only suggest valid o
 # Via CLI fallback
 jira issue list -p <KEY> --plain --columns labels --paginate 0:50 | tr ',' '\n' | sort -u
 ```
+
+Keep the set of existing labels in-memory — the draft presentation annotates each proposed label as `(existing)` or `(NEW — needs approval)` against this set.
 
 ### Present draft(s)
 
@@ -162,7 +191,7 @@ For each ticket candidate, present:
 **Type**: <auto-detected> (detected: "<keywords>")
 **Priority**: <auto-detected> (detected: "<keywords>")
 **Summary**: <generated — under 80 chars>
-**Labels**: <selected from existing project labels, or "none">
+**Labels**: <label> (existing), <other-label> (NEW — needs approval)  ← annotate each
 
 ### Description Preview
 [rendered description from template]
@@ -176,9 +205,13 @@ For each ticket candidate, present:
 
 If the Jira project is unknown, run `jira project list` and present options to the user.
 
-If no existing labels fit and a new one seems appropriate, ask:
+Each proposed label must carry a provenance tag:
+- `(existing)` — the label appears in the project's existing-label set.
+- `(NEW — needs approval)` — the label is not in the existing set and requires explicit user approval before the ticket is created.
+
+If any `(NEW — needs approval)` labels appear, confirm with the user before creating the ticket:
 ```
-No existing labels match this topic. Create new label "<suggested>"? (y/n)
+Label "<suggested>" does not exist in the project. Create it? (y/n)
 ```
 
 ## Phase 4: User Review
@@ -409,7 +442,8 @@ Scenario 7: Missing prerequisites
 
 ## References
 
-- `references/description-template.md` — Read when composing the Jira ticket description
+- `references/description-template.md` — Fallback ticket description template, used when the Jira project has no configured default description
+- `references/slack-mention-resolution.md` — Read at the start of Phase 2 to resolve `<@UXXX>`, `<#CXXX>`, `<!subteam^SXXX>`, and URL placeholders before drafting
 - `references/confluence-template.md` — Read when creating a Confluence documentation page (contains postmortem, PRD, and slim summary templates)
 - `references/input-parsing.md` — Read when parsing the user's Slack URL or input
 - `references/classification-heuristics.md` — Read when auto-classifying issue type and priority

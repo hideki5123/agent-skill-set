@@ -13,7 +13,7 @@
         "type": "local",
         "path": "."
       },
-      "description": ">",
+      "description": "Create Jira tickets from Slack conversations, optionally with Confluence documentation pages. Reads Slack threads/channels/search results via slack-cli, analyzes the conversation to extract problems, ",
       "version": "1.0.0"
     }
   ]

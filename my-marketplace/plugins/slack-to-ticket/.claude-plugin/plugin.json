@@ -1,7 +1,7 @@
 {
   "name": "slack-to-ticket",
   "version": "1.0.0",
-  "description": ">",
+  "description": "Create Jira tickets from Slack conversations, optionally with Confluence documentation pages. Reads Slack threads/channels/search results via slack-cli, analyzes the conversation to extract problems, ",
   "author": {
     "name": "Hideki"
   },
