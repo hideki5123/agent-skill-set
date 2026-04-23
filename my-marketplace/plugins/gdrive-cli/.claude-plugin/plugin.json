@@ -1,0 +1,13 @@
+{
+  "name": "gdrive-cli",
+  "version": "1.0.0",
+  "description": "Operate Google Drive from the terminal via `rclone` — list, upload, download, search, sync, mount, check quota, export Google Docs/Sheets/Slides, browse Shared Drives, and manage trash. Use whenever t",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "gdrive-cli"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}

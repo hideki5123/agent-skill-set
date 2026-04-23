@@ -5,69 +5,49 @@
   },
   "plugins": [
     {
-      "name": "multi-agent-council",
-      "source": "./plugins/multi-agent-council",
-      "description": "Multi-LLM council for architecture decisions and code reviews. Use when needing diverse AI perspectives, design validation, cross-model critique, or thorough review of project state. Invokes Claude + "
-    },
-    {
-      "name": "session-handover",
-      "source": "./plugins/session-handover",
-      "description": ">"
-    },
-    {
-      "name": "playwright-codegen",
-      "source": "./plugins/playwright-codegen",
-      "description": ">"
-    },
-    {
-      "name": "playwright-cli",
-      "source": "./plugins/playwright-cli",
-      "description": ">"
-    },
-    {
       "name": "address-pr-comments",
       "source": "./plugins/address-pr-comments",
       "description": "Autonomously fetch and apply AI reviewer comments on a GitHub PR — creating a draft PR and requesting reviewers if needed. Default mode processes Copilot/Gemini bot comments without human intervention"
     },
     {
-      "name": "pr-review",
-      "source": "./plugins/pr-review",
-      "description": "Review a teammate's pull request — Claude reads the diff, analyzes code across multiple perspectives, and stages review comments for user approval before submission. NOT for self-review of your own PR"
-    },
-    {
-      "name": "scenario-gen",
-      "source": "./plugins/scenario-gen",
-      "description": ">"
-    },
-    {
-      "name": "review-local",
-      "source": "./plugins/review-local",
-      "description": ">"
-    },
-    {
-      "name": "slack-cli",
-      "source": "./plugins/slack-cli",
-      "description": ">"
+      "name": "codex-cli",
+      "source": "./plugins/codex-cli",
+      "description": "Run OpenAI Codex CLI from the terminal for AI-powered coding tasks. Execute one-shot prompts, maintain multi-turn sessions with follow-ups, run code reviews, and resume previous conversations — all th"
     },
     {
       "name": "confluence",
       "source": "./plugins/confluence",
-      "description": ">"
+      "description": "Use confluence-cli to read, search, create, update, move, and delete Confluence pages and attachments from the terminal. Prefer this skill over `mcp__claude_ai_Atlassian__*` MCP tools when you need: p"
+    },
+    {
+      "name": "dev-workflow",
+      "source": "./plugins/dev-workflow",
+      "description": "End-to-end TDD development workflow with multi-agent team review and skill-based quality gates. Plans, discusses, and implements features using strict RED-GREEN-REFACTOR test-driven development. Handl"
+    },
+    {
+      "name": "dotnet-senior",
+      "source": "./plugins/dotnet-senior",
+      "description": "Senior-level .NET development guidance for architecture, code review, scaffolding, EF Core, ASP.NET Core, Blazor, and MAUI targeting .NET 8 and .NET 10. Provides opinionated best practices, modern C# "
+    },
+    {
+      "name": "e2e-test",
+      "source": "./plugins/e2e-test",
+      "description": "Run frontend E2E tests with video evidence. Generates a Playwright test from the scenario CSV and runs it via CLI with video recording. Supports Chrome profile reuse (--chrome-profile) for testing wit"
     },
     {
       "name": "jira-cli",
       "source": "./plugins/jira-cli",
-      "description": ">"
+      "description": "Use @pchuri/jira-cli to view, search, create, update, and delete Jira issues, comments, sprints, and projects from the terminal. Prefer this skill over `mcp__claude_ai_Atlassian__*` MCP tools when you"
     },
     {
-      "name": "test-scenario",
-      "source": "./plugins/test-scenario",
-      "description": ">"
+      "name": "local-skill-factory",
+      "source": "./plugins/local-skill-factory",
+      "description": "Create project-local Claude Code skills (.claude/commands/) in any project directory. Analyzes the project's tech stack, structure, and conventions, then generates tailored local skills (custom slash "
     },
     {
-      "name": "skill-improve",
-      "source": "./plugins/skill-improve",
-      "description": ">"
+      "name": "multi-agent-council",
+      "source": "./plugins/multi-agent-council",
+      "description": "Multi-LLM council for architecture decisions and code reviews. Use when needing diverse AI perspectives, design validation, cross-model critique, or thorough review of project state. Invokes Claude + "
     },
     {
       "name": "my-skill-factory",
@@ -75,44 +55,39 @@
       "description": "Create, build, and install custom Claude Code skills into Hideki's local marketplace. End-to-end workflow from requirements gathering to a fully installed and usable skill. Use when the user asks to c"
     },
     {
-      "name": "dev-workflow",
-      "source": "./plugins/dev-workflow",
-      "description": ">"
-    },
-    {
-      "name": "codex-cli",
-      "source": "./plugins/codex-cli",
-      "description": ">"
-    },
-    {
       "name": "orch-qa",
       "source": "./plugins/orch-qa",
-      "description": ">"
+      "description": "Senior QA/QC engineer that evaluates existing codebases for test quality. Runs existing tests, diagnoses failures, identifies missing test coverage, and writes missing tests. Framework-agnostic — work"
     },
     {
-      "name": "slack-to-ticket",
-      "source": "./plugins/slack-to-ticket",
-      "description": ">"
+      "name": "playwright-cli",
+      "source": "./plugins/playwright-cli",
+      "description": "Run Playwright CLI commands via Bash for test execution, code generation, browser management, reporting, and debugging. Covers the full `npx playwright` surface: test, codegen, install, show-report, s"
+    },
+    {
+      "name": "playwright-codegen",
+      "source": "./plugins/playwright-codegen",
+      "description": "Guided workflow for recording browser interactions with Playwright codegen and transforming the raw output into production-quality test suites. Handles the full lifecycle: planning the recording sessi"
     },
     {
       "name": "pm-review",
       "source": "./plugins/pm-review",
-      "description": ">"
+      "description": "Review local git changes from a PMBOK-based product management perspective. Analyzes changes against 7 PMBOK knowledge areas: Scope, Risk, Stakeholder, Quality, Integration, Schedule, and Resource man"
     },
     {
-      "name": "dotnet-senior",
-      "source": "./plugins/dotnet-senior",
-      "description": ">"
+      "name": "pr-review",
+      "source": "./plugins/pr-review",
+      "description": "Review a teammate's pull request — Claude reads the diff, analyzes code across multiple perspectives, and stages review comments for user approval before submission. NOT for self-review of your own PR"
     },
     {
-      "name": "subagent-gen",
-      "source": "./plugins/subagent-gen",
-      "description": ">"
+      "name": "review-local",
+      "source": "./plugins/review-local",
+      "description": "Review local git changes from 8 expert perspectives using multi-agent team orchestration. Produces a consolidated report with Critical/Important/Nice-to-have severity levels. Lightweight pre-commit or"
     },
     {
-      "name": "local-skill-factory",
-      "source": "./plugins/local-skill-factory",
-      "description": ">"
+      "name": "scenario-gen",
+      "source": "./plugins/scenario-gen",
+      "description": "Generate test scenarios from git branch changes. Compares current branch to main/master, identifies changed files, classifies them by type (frontend, API, backend, config), and generates test scenario"
     },
     {
       "name": "self-pr-review",
@@ -120,9 +95,39 @@
       "description": "Self-review loop for YOUR OWN PR — request AI reviews (Copilot + Gemini), apply their fixes, push, re-request, and repeat until clean. NOT for reviewing someone else's PR. Use when the user asks to se"
     },
     {
-      "name": "e2e-test",
-      "source": "./plugins/e2e-test",
-      "description": "Run frontend E2E tests with video evidence. Generates a Playwright test from the scenario CSV and runs it via CLI with video recording. Supports Chrome profile reuse (--chrome-profile) for testing wit"
+      "name": "session-handover",
+      "source": "./plugins/session-handover",
+      "description": "Install a PreCompact hook that auto-generates .agent/local/HANDOVER.md before context compaction, plus a SessionStart hook that restores context from a previous handover. Run once to install, then it "
+    },
+    {
+      "name": "skill-improve",
+      "source": "./plugins/skill-improve",
+      "description": "Retrofit the OIAE self-improvement loop to existing skills and analyze feedback to propose evidence-based amendments. Adds Retrospective, Feedback Check, and version tracking to skills that lack them."
+    },
+    {
+      "name": "slack-cli",
+      "source": "./plugins/slack-cli",
+      "description": "Operate Slack from the terminal via `slack-cli` (@urugus/slack-cli). Send messages, check unreads, search history, upload files, manage reactions/pins, schedule messages, and manage channels — all thr"
+    },
+    {
+      "name": "slack-to-ticket",
+      "source": "./plugins/slack-to-ticket",
+      "description": "Create Jira tickets from Slack conversations, optionally with Confluence documentation pages. Reads Slack threads/channels/search results via slack-cli, analyzes the conversation to extract problems, "
+    },
+    {
+      "name": "subagent-gen",
+      "source": "./plugins/subagent-gen",
+      "description": "Generate a persistent PROJECT-KNOWLEDGE.md profile for any codebase that gives subagents instant deep domain expertise. Analyzes project structure, architecture, code conventions, tech stack, data flo"
+    },
+    {
+      "name": "test-scenario",
+      "source": "./plugins/test-scenario",
+      "description": "Generate test outlines (living documentation) and test code from natural language feature descriptions. Supports .NET (xUnit/NUnit/MSTest), Python (pytest), TypeScript (Vitest/Jest). Strict mode: no i"
+    },
+    {
+      "name": "gdrive-cli",
+      "source": "./plugins/gdrive-cli",
+      "description": "Operate Google Drive from the terminal via `rclone` — list, upload, download, search, sync, mount, check quota, export Google Docs/Sheets/Slides, browse Shared Drives, and manage trash. Use whenever t"
     }
   ]
 }
