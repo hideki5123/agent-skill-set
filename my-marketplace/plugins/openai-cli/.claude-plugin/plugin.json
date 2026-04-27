@@ -1,0 +1,13 @@
+{
+  "name": "openai-cli",
+  "version": "1.0.0",
+  "description": "Call the OpenAI Platform API from the terminal via TypeScript on deno — chat completions, Responses API, reasoning (o-series), embeddings, image generation, audio (Whisper transcription, TTS), files, ",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "openai-cli"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}

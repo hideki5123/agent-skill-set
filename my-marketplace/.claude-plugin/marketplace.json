@@ -128,6 +128,11 @@
       "name": "gdrive-cli",
       "source": "./plugins/gdrive-cli",
       "description": "Operate Google Drive from the terminal via `rclone` — list, upload, download, search, sync, mount, check quota, export Google Docs/Sheets/Slides, browse Shared Drives, and manage trash. Use whenever t"
+    },
+    {
+      "name": "openai-cli",
+      "source": "./plugins/openai-cli",
+      "description": "Call the OpenAI Platform API from the terminal via TypeScript on deno — chat completions, Responses API, reasoning (o-series), embeddings, image generation, audio (Whisper transcription, TTS), files, "
     }
   ]
 }
