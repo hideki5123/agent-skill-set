@@ -36,10 +36,15 @@ Call OpenAI's Platform API from the terminal. Implementation: TypeScript on **de
 4. **Cross-OS only.** All non-trivial logic lives in `assets/lib/*.ts`. No bash, no PowerShell scripts, no shell heredocs.
 5. **Upgrade prompts are mandatory** even in auto-mode / dangerous-permission mode. When `resolveModel.ts` reports `UPGRADE_NEEDED`, you MUST use `AskUserQuestion`.
 
+## Path conventions
+
+- **Skill cache** (read-only, version-pinned): `${CLAUDE_PLUGIN_ROOT}/skills/openai-cli/assets/lib/*.ts`. Use this only for the very first `setup.ts` invocation. `${CLAUDE_PLUGIN_ROOT}` is set when Claude orchestrates the skill; in a plain user shell, resolve to `~/.claude/plugins/cache/hideki-plugins/openai-cli/<version>/skills/openai-cli/assets/lib/`.
+- **User workspace** (stable, version-independent): `~/.openai-cli/lib/*.ts`. After `setup.ts` runs once, all skill scripts are copied here. Every command after first-time setup runs from this stable path.
+
 ## Preflight (before every call)
 
 ```
-deno run --allow-env=OPENAI_API_KEY --allow-read --allow-run=mise,deno ${CLAUDE_PLUGIN_ROOT}/skills/openai-cli/lib/preflight.ts
+deno run --allow-env=OPENAI_API_KEY --allow-read --allow-run=mise,deno ~/.openai-cli/lib/preflight.ts
 ```
 
 If any check fails:
@@ -48,16 +53,24 @@ If any check fails:
 - `workspace` missing → run setup (below).
 - `OPENAI_API_KEY` missing → instruct user to export it in their shell rc. **Do not** offer a `.env` fallback.
 
-## First-time setup
+## First-time setup (run once)
+
+From inside Claude (uses skill cache):
+```
+deno run --allow-read --allow-write --allow-env --allow-run=mise ${CLAUDE_PLUGIN_ROOT}/skills/openai-cli/assets/lib/setup.ts
+```
+
+From a user shell (manual run, version-pinned path):
+```
+deno run --allow-read --allow-write --allow-env --allow-run=mise ~/.claude/plugins/cache/hideki-plugins/openai-cli/1.0.0/skills/openai-cli/assets/lib/setup.ts
+```
+
+`setup.ts` creates `~/.openai-cli/{lib,.cache,tmp}/`, copies `assets/lib/*.ts` into `~/.openai-cli/lib/`, copies the `mise.toml` template into `~/.openai-cli/.mise.toml`, runs `mise trust && mise install`, and existence-checks `OPENAI_API_KEY`.
+
+Then, once `OPENAI_API_KEY` is set, populate `models.json` (uses the stable workspace path now that setup has copied the scripts):
 
 ```
-deno run --allow-read --allow-write --allow-env --allow-run=mise ${CLAUDE_PLUGIN_ROOT}/skills/openai-cli/lib/setup.ts
-```
-
-Then, once `OPENAI_API_KEY` is set, populate `models.json`:
-
-```
-cd ~/.openai-cli && deno run --allow-env=OPENAI_API_KEY --allow-net=api.openai.com --allow-read --allow-write ${CLAUDE_PLUGIN_ROOT}/skills/openai-cli/lib/resolveModel.ts --init
+deno run --allow-env=OPENAI_API_KEY --allow-net=api.openai.com --allow-read --allow-write ~/.openai-cli/lib/resolveModel.ts --init
 ```
 
 Full details: `references/setup.md`.
@@ -69,13 +82,13 @@ For every API use case:
 1. **Preflight** (above). Bail if anything fails.
 2. **Resolve the model** for the relevant family:
    ```
-   cd ~/.openai-cli && deno run --allow-env=OPENAI_API_KEY --allow-net=api.openai.com --allow-read --allow-write ${CLAUDE_PLUGIN_ROOT}/skills/openai-cli/lib/resolveModel.ts <family>
+   deno run --allow-env=OPENAI_API_KEY --allow-net=api.openai.com --allow-read --allow-write ~/.openai-cli/lib/resolveModel.ts <family>
    ```
    Where `<family>` is one of: `chat`, `reasoning`, `embeddings`, `image`, `transcription`, `tts`, `moderation`.
    - **Exit 0**: stdout is the resolved model id. Capture it.
    - **Exit 2**: stdout is `UPGRADE_NEEDED:<family>:<current>:<newest>`. Use `AskUserQuestion` with options "Upgrade to `<newest>`", "Stay on `<current>`", "Use `<newest>` just-this-once". Then:
-     - On Upgrade: run `lib/resolveModel.ts --set <family> <newest>` and re-run resolve.
-     - On Stay: run `lib/resolveModel.ts --set <family> <current>` (refreshes the prompt-suppress timestamp) and use `<current>`.
+     - On Upgrade: run `deno run --allow-read --allow-write ~/.openai-cli/lib/resolveModel.ts --set <family> <newest>` and re-run resolve.
+     - On Stay: run `deno run --allow-read --allow-write ~/.openai-cli/lib/resolveModel.ts --set <family> <current>` (refreshes the prompt-suppress timestamp) and use `<current>`.
      - On Just-this-once: skip the `--set`; use `<newest>` for this call only.
    - **Exit 1**: fatal — surface the error and stop.
 3. **Write the per-call TS file** under `~/.openai-cli/tmp/<task>-<timestamp>.ts`. Do not invent model names — embed the resolved id from step 2 verbatim. Always include a final log line of the form `# meta: model=<id> usage=<json>` so the user sees what ran.

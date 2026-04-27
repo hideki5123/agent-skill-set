@@ -98,7 +98,7 @@ The skill **never silently upgrades**. The `AskUserQuestion` step is non-negotia
 After the workspace is set up and `OPENAI_API_KEY` is exported:
 
 ```
-deno run --allow-env=OPENAI_API_KEY --allow-net=api.openai.com --allow-read --allow-write ${CLAUDE_PLUGIN_ROOT}/skills/openai-cli/lib/resolveModel.ts --init
+deno run --allow-env=OPENAI_API_KEY --allow-net=api.openai.com --allow-read --allow-write ~/.openai-cli/lib/resolveModel.ts --init
 ```
 
 This calls `models.list()` once, picks the newest stable per family using the heuristics above, and writes `models.json`. No upgrade prompts on init (nothing to compare against).
@@ -115,7 +115,7 @@ If the user says "use exactly `gpt-5.5-2026-04-24` for this call":
 The user can update preferences directly:
 
 ```
-deno run --allow-read --allow-write ${CLAUDE_PLUGIN_ROOT}/skills/openai-cli/lib/resolveModel.ts --set chat gpt-5
+deno run --allow-read --allow-write ~/.openai-cli/lib/resolveModel.ts --set chat gpt-5
 ```
 
 Or by editing `~/.openai-cli/models.json` directly.

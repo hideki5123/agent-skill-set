@@ -45,6 +45,7 @@ const home = homeDir();
 const workspace = join(home, ".openai-cli");
 const cacheDir = join(workspace, ".cache");
 const tmpDir = join(workspace, "tmp");
+const libDir = join(workspace, "lib");
 const miseToml = join(workspace, ".mise.toml");
 
 console.log(`workspace: ${workspace}`);
@@ -64,7 +65,8 @@ console.log(`[ok] mise: ${miseCheck.out.trim()}`);
 await Deno.mkdir(workspace, { recursive: true });
 await Deno.mkdir(cacheDir, { recursive: true });
 await Deno.mkdir(tmpDir, { recursive: true });
-console.log(`[ok] dirs: ${workspace}, .cache, tmp`);
+await Deno.mkdir(libDir, { recursive: true });
+console.log(`[ok] dirs: ${workspace}, .cache, tmp, lib`);
 
 // 3. Copy mise.toml template (skip if user already has one)
 let templateWritten = false;
@@ -78,6 +80,17 @@ try {
   await Deno.writeTextFile(miseToml, template);
   console.log(`[ok] wrote ${miseToml}`);
   templateWritten = true;
+}
+
+// 3b. Copy the lib scripts into ~/.openai-cli/lib/ so subsequent commands
+// don't depend on the version-pinned skill cache path. Always overwrite —
+// these are skill-controlled, not user-edited.
+for (const name of ["setup.ts", "preflight.ts", "resolveModel.ts"]) {
+  const srcUrl = new URL(name, import.meta.url);
+  const dest = join(libDir, name);
+  const src = await Deno.readTextFile(srcUrl);
+  await Deno.writeTextFile(dest, src);
+  console.log(`[ok] wrote ${dest}`);
 }
 
 // 4. mise trust (only needed once after writing the template)
