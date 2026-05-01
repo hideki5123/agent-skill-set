@@ -7,8 +7,9 @@ description: >
   working directory; if multiple are active, asks the user to pick. Can also target a specific
   session by ID. Read-only — never sends messages to the watched session. Use when the user
   says "session監視" / "監視して" / "別のClaudeを観察" / "他のセッションを見ていて" /
-  "Aliseを観察" / "watch session" / "observe claude" / "/session-watch" / "セッションウォッチ" /
-  "他のセッション解説" / "別Claudeをモニタ".
+  "Aliseを観察" / "watch session" / "observe" / "observe claude" / "observe session" /
+  "observe the session" / "Observe" / "/session-watch" / "セッションウォッチ" /
+  "オブザーブ" / "他のセッション解説" / "別Claudeをモニタ".
 ---
 
 # session-watch
