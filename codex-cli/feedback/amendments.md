@@ -1,5 +1,23 @@
 # Amendment History
 
+## AMD-002 — 2026-05-02
+- **Pattern**: Self-evaluation of AMD-001 surfaced two implementation gaps:
+  1. `### Retrospective` was h3 placed AFTER Behavior Scenarios; the retrofit-checklist mandates h2 BEFORE Behavior Scenarios.
+  2. Pattern A polling loop was unbounded: `until [ -s /tmp/codex-out.txt ]; do sleep 5; done` runs forever if codex crashes silently (network drop, OOM, killed) — recreating the original "agent gives up" failure mode under a different cause.
+- **Evidence**: 2026-05-02 self-evaluation triggered by user ("evaluate the update"), confirmed and approved by user ("Apply the fixes now").
+- **Change**:
+  - Promoted Retrospective from `### Retrospective` (h3, after Behavior Scenarios) to `## Retrospective` (h2, before Behavior Scenarios) per retrofit-checklist option 1
+  - Replaced unbounded `until [ -s file ]; do sleep 5; done` with bounded `for i in $(seq 1 120); do [ -s file ] && break; sleep 5; done` + post-loop crash check that surfaces a clear error if codex produced no output within 10 minutes
+  - Updated Pattern A docs to explicitly state why the bound matters and warn against unbounded waits
+  - Added a `pgrep` caveat noting that `pgrep -f "codex exec"` matches all running codex processes (concurrent-call edge case)
+  - Updated the "Long-running Codex query" Behavior Scenario to use the bounded pattern
+- **Files Modified**:
+  - `codex-cli/SKILL.md` — Pattern A polling loop, Behavior Scenario, Retrospective section placement and heading level
+- **Version Bump**: 1.1.0 → 1.1.1
+- **Git Commit**: <to-be-filled-after-commit>
+- **Status**: applied — monitoring
+---
+
 ## AMD-001 — 2026-05-02
 - **Pattern**: Codex CLI calls take 2–10 minutes, exceeding the Bash tool's 2-minute default timeout. The previous SKILL.md treated `run_in_background` as a niche tip "for long tasks", so the agent defaulted to foreground execution and got killed by the timeout, giving up before any response arrived.
 - **Evidence**: 2026-05-02 user feedback — "the response was always really slow then the agent always give up to receive response"

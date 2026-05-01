@@ -15,7 +15,7 @@ description: >
   resume/continue/fork + {codex, gpt, openai, chatgpt} session /
   "second opinion" / "cross-check" / "ai pair programming" / "another AI" / "external AI" /
   "ask another model" / "get GPT's take" / "what does openai think"
-version: 1.1.0
+version: 1.1.1
 ---
 
 # Codex CLI Skill
@@ -87,20 +87,29 @@ rm -f /tmp/codex-out.txt   # clear stale output if reusing the path
 codex exec "your prompt" --full-auto -o /tmp/codex-out.txt -C "$(pwd)"
 ```
 
-Then use the **Monitor tool** with an `until` loop to wait for completion without polling burn:
+Then use the **Monitor tool** with a **bounded** `for` loop to wait for completion without polling burn AND without infinite-looping if codex crashes:
 
 ```bash
-# Monitor tool: waits, fires a notification each iteration of the until loop
-until [ -s /tmp/codex-out.txt ]; do sleep 5; done
+# Monitor tool: 120 iterations × 5s = 10 minutes max
+for i in $(seq 1 120); do
+  [ -s /tmp/codex-out.txt ] && break
+  sleep 5
+done
+[ -s /tmp/codex-out.txt ] || { echo "ERROR: codex produced no output within 10 min" >&2; exit 1; }
 ```
 
-`-s` is true once the file exists and is non-empty (codex writes the final message at the end). When the loop exits, read `/tmp/codex-out.txt`.
+`-s` is true once the file exists and is non-empty (codex writes the final message at the end). The bound matters: an unbounded `until` loop will hang forever if codex crashes silently (network drop, OOM, killed) — same "agent gives up" failure mode in disguise. Always bound the wait.
 
-If you also need to confirm the codex process has fully exited (e.g., before resuming), pair it with a `pgrep` check:
+If you also need to confirm the codex process has fully exited (e.g., before resuming), pair the success check with a `pgrep` check:
 
 ```bash
-until [ -s /tmp/codex-out.txt ] && ! pgrep -f "codex exec" >/dev/null; do sleep 5; done
+for i in $(seq 1 120); do
+  [ -s /tmp/codex-out.txt ] && ! pgrep -f "codex exec" >/dev/null && break
+  sleep 5
+done
 ```
+
+Caveat: `pgrep -f "codex exec"` matches **all** running codex processes. If you have concurrent codex calls in flight, scope it tighter (`pgrep -f "codex exec.*<unique-marker>"`) or skip the pgrep check.
 
 ### Pattern B — Foreground with extended timeout (only for short, simple prompts)
 
@@ -313,6 +322,20 @@ The standalone `codex review` command (without `exec`) also works but runs inter
 
 Read `references/cli-reference.md` for the full flag-by-flag reference of all subcommands.
 
+## Retrospective
+
+After completing the workflow, reflect on the entire execution session:
+
+1. Consider: Were there mid-session corrections? Rejected outputs? Plan changes? Errors? Did codex calls time out or hang?
+2. Ask the user: "Quick feedback on this run? (1-5 rating, note any issues, or press enter to skip)"
+3. If the user provides feedback OR if corrections/issues occurred during this session:
+   a. Create `feedback/` directory if it does not exist
+   b. Read `feedback/log.md` (create with `# Feedback Log` header if it does not exist)
+   c. Prepend a new entry after the header using the log format from `my-skill-factory/references/skill-improvement-guide.md`
+   d. Fill in: current timestamp, skill version from frontmatter, task description, outcome assessment,
+      corrections that occurred during the session, issues encountered, user's note
+4. If the user skips AND no corrections or issues occurred, end without recording.
+
 ## Behavior Scenarios
 
 ```gherkin
@@ -355,8 +378,9 @@ Scenario: Long-running Codex query without timing out
   Given a Codex prompt is expected to take longer than 2 minutes
   When the user asks to run any non-trivial codex command
   Then launch with the Bash tool's `run_in_background: true` and `-o /tmp/codex-out.txt`
-  And use the Monitor tool with `until [ -s /tmp/codex-out.txt ]; do sleep 5; done`
-  And read /tmp/codex-out.txt only after the loop exits
+  And use the Monitor tool with a bounded `for i in $(seq 1 120); do [ -s /tmp/codex-out.txt ] && break; sleep 5; done`
+  And after the loop, verify the file is non-empty (codex may have crashed) and surface an error if not
+  And read /tmp/codex-out.txt only after the loop exits with a non-empty file
   And never rely on the default 2-minute Bash timeout
 
 Scenario: Latency-sensitive Codex query
@@ -365,17 +389,3 @@ Scenario: Latency-sensitive Codex query
   Then add `-c model_reasoning_effort="low"` and consider a smaller `-m` model
   And still use background execution (Pattern A) unless the prompt is trivially short
 ```
-
-### Retrospective
-
-After completing the workflow, reflect on the entire execution session:
-
-1. Consider: Were there mid-session corrections? Rejected outputs? Plan changes? Errors? Did codex calls time out or hang?
-2. Ask the user: "Quick feedback on this run? (1-5 rating, note any issues, or press enter to skip)"
-3. If the user provides feedback OR if corrections/issues occurred during this session:
-   a. Create `feedback/` directory if it does not exist
-   b. Read `feedback/log.md` (create with `# Feedback Log` header if it does not exist)
-   c. Prepend a new entry after the header using the log format from `my-skill-factory/references/skill-improvement-guide.md`
-   d. Fill in: current timestamp, skill version from frontmatter, task description, outcome assessment,
-      corrections that occurred during the session, issues encountered, user's note
-4. If the user skips AND no corrections or issues occurred, end without recording.

@@ -1,6 +1,6 @@
 {
   "name": "codex-cli",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Run OpenAI Codex CLI from the terminal for AI-powered coding tasks. Execute one-shot prompts, maintain multi-turn sessions with follow-ups, run code reviews, and resume previous conversations — all th",
   "author": {
     "name": "Hideki"
