@@ -17,6 +17,6 @@
   - `codex-cli/SKILL.md` — frontmatter, Constraints, new Adaptive Execution section, Quick Reference, Agent Tips, Error Handling, Behavior Scenarios, new Retrospective section
   - `codex-cli/feedback/log.md` — created with seed entry
 - **Version Bump**: (none) → 1.1.0
-- **Git Commit**: <to-be-filled-after-commit>
+- **Git Commit**: fbbb638
 - **Status**: applied — monitoring
 ---
