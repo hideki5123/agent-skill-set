@@ -14,7 +14,7 @@
 - **Files Modified**:
   - `codex-cli/SKILL.md` — Pattern A polling loop, Behavior Scenario, Retrospective section placement and heading level
 - **Version Bump**: 1.1.0 → 1.1.1
-- **Git Commit**: <to-be-filled-after-commit>
+- **Git Commit**: b0ba1a0
 - **Status**: applied — monitoring
 ---
 
