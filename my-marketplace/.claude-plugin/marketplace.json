@@ -45,11 +45,6 @@
       "description": "Multi-LLM council for architecture decisions and code reviews. Use when needing diverse AI perspectives, design validation, cross-model critique, or thorough review of project state. Invokes Claude + "
     },
     {
-      "name": "my-skill-factory",
-      "source": "./plugins/my-skill-factory",
-      "description": "Create, build, and install custom Claude Code skills into Hideki's local marketplace. End-to-end workflow from requirements gathering to a fully installed and usable skill. Use when the user asks to c"
-    },
-    {
       "name": "orch-qa",
       "source": "./plugins/orch-qa",
       "description": "Senior QA/QC engineer that evaluates existing codebases for test quality. Runs existing tests, diagnoses failures, identifies missing test coverage, and writes missing tests. Framework-agnostic — work"
@@ -138,6 +133,11 @@
       "name": "session-watch",
       "source": "./plugins/session-watch",
       "description": "Watch another running Claude Code session in real time and narrate its activity in Japanese with detailed term-by-term explanations. By default targets a session active in the current working director"
+    },
+    {
+      "name": "my-skill-factory",
+      "source": "./plugins/my-skill-factory",
+      "description": "Create, build, and install custom Claude Code skills into Hideki's local marketplace. End-to-end workflow from requirements gathering to a fully installed and usable skill. Use when the user asks to c"
     }
   ]
 }

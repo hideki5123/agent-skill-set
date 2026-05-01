@@ -7,6 +7,20 @@ description: Create, build, and install custom Claude Code skills into Hideki's 
 
 Create custom Claude Code skills and install them into the local `hideki-plugins` marketplace in one workflow.
 
+## Paths
+
+Every example below uses `<repo-root>` as a placeholder for the user's local clone of this
+skill repository. Resolve it once per session:
+
+- macOS / Linux: typically `~/private/repos/agent-skill-set`
+- Windows: typically `D:\Shared\agents\my-skills`
+- Otherwise: ask the user, or run `git -C <any-skill-dir> rev-parse --show-toplevel`.
+
+The install script (`<repo-root>/my-skill-factory/scripts/install_skill.py`) auto-detects the
+repo root via `git rev-parse --show-toplevel`, so when you `cd <repo-root>` first you can use
+forward-slash relative paths (`my-skill-factory/scripts/install_skill.py <skill-name>`) on any
+platform — that is the form used throughout this document.
+
 ## Workflow
 
 1. **Gather requirements** — Understand what the skill should do
@@ -75,7 +89,7 @@ Do NOT copy all perspectives — only include the ones relevant to the target sk
 
 ## Step 4: Create Skill Files
 
-Create the skill directory at `D:\Shared\agents\my-skills\<skill-name>\`.
+Create the skill directory at `<repo-root>/<skill-name>/` (see the "Paths" section above for what `<repo-root>` resolves to on each OS).
 
 ### SKILL.md frontmatter
 
@@ -111,13 +125,15 @@ Place in subdirectories as needed:
 **Always run the install script immediately after creating or updating skill files. Do not ask the user — just install.**
 
 ```bash
-python "D:\Shared\agents\my-skills\my-skill-factory\scripts\install_skill.py" "D:\Shared\agents\my-skills\<skill-name>"
+cd <repo-root>
+python my-skill-factory/scripts/install_skill.py <skill-name>
 ```
 
 For a specific version:
 
 ```bash
-python "D:\Shared\agents\my-skills\my-skill-factory\scripts\install_skill.py" "D:\Shared\agents\my-skills\<skill-name>" --version 1.1.0
+cd <repo-root>
+python my-skill-factory/scripts/install_skill.py <skill-name> --version 1.1.0
 ```
 
 The script handles everything:
@@ -134,7 +150,7 @@ Read `references/marketplace-structure.md` for full details on the file layout a
 **Always commit and push immediately after installing. Do not ask the user — just do it.**
 
 ```bash
-cd D:\Shared\agents\my-skills
+cd <repo-root>
 git add <skill-name>/ my-marketplace/plugins/<skill-name>/ my-marketplace/.claude-plugin/marketplace.json
 git commit -m "feat: add <skill-name> skill"
 git push

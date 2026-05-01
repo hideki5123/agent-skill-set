@@ -3,23 +3,24 @@
 ## Directory Layout
 
 ```
-D:\Shared\agents\my-skills\
-├── <skill-name>\                            # Canonical source (authoring)
+<repo-root>/                                  # macOS/Linux: ~/private/repos/agent-skill-set
+                                              # Windows:     D:\Shared\agents\my-skills
+├── <skill-name>/                            # Canonical source (authoring)
 │   ├── SKILL.md
-│   └── references\
-├── my-marketplace\                          # Local marketplace root
-│   ├── .claude-plugin\
+│   └── references/
+├── my-marketplace/                          # Local marketplace root
+│   ├── .claude-plugin/
 │   │   └── marketplace.json                 # Root registry (lists all plugins)
-│   └── plugins\
-│       └── <plugin-name>\                   # One dir per plugin
-│           ├── .claude-plugin\
+│   └── plugins/
+│       └── <plugin-name>/                   # One dir per plugin
+│           ├── .claude-plugin/
 │           │   ├── plugin.json              # Plugin metadata
 │           │   └── marketplace.json         # Per-plugin marketplace ref
-│           └── skills\
-│               └── <skill-name>\
+│           └── skills/
+│               └── <skill-name>/
 │                   ├── SKILL.md             # Generated from source
-│                   └── references\          # Generated from source
-└── my-skill-factory\                        # This skill
+│                   └── references/          # Generated from source
+└── my-skill-factory/                        # This skill
 ```
 
 ## Source of Truth and Sync
