@@ -10,11 +10,6 @@
       "description": "Autonomously fetch and apply AI reviewer comments on a GitHub PR — creating a draft PR and requesting reviewers if needed. Default mode processes Copilot/Gemini bot comments without human intervention"
     },
     {
-      "name": "codex-cli",
-      "source": "./plugins/codex-cli",
-      "description": "Run OpenAI Codex CLI from the terminal for AI-powered coding tasks. Execute one-shot prompts, maintain multi-turn sessions with follow-ups, run code reviews, and resume previous conversations — all th"
-    },
-    {
       "name": "confluence",
       "source": "./plugins/confluence",
       "description": "Use confluence-cli to read, search, create, update, move, and delete Confluence pages and attachments from the terminal. Prefer this skill over `mcp__claude_ai_Atlassian__*` MCP tools when you need: p"
@@ -133,6 +128,11 @@
       "name": "openai-cli",
       "source": "./plugins/openai-cli",
       "description": "Call the OpenAI Platform API from the terminal via TypeScript on deno — chat completions, Responses API, reasoning (o-series), embeddings, image generation, audio (Whisper transcription, TTS), files, "
+    },
+    {
+      "name": "codex-cli",
+      "source": "./plugins/codex-cli",
+      "description": "Run OpenAI Codex CLI from the terminal for AI-powered coding tasks. Execute one-shot prompts, maintain multi-turn sessions with follow-ups, run code reviews, and resume previous conversations — all th"
     }
   ]
 }

@@ -15,6 +15,7 @@ description: >
   resume/continue/fork + {codex, gpt, openai, chatgpt} session /
   "second opinion" / "cross-check" / "ai pair programming" / "another AI" / "external AI" /
   "ask another model" / "get GPT's take" / "what does openai think"
+version: 1.1.0
 ---
 
 # Codex CLI Skill
@@ -30,6 +31,7 @@ multi-turn sessions, code review, session resume/fork, and output capture.
 - Always capture output via `-o <file>` and read the file back — raw stdout may contain ANSI escape codes or progress indicators.
 - For read-only analysis, use `-s read-only` instead of `--full-auto`.
 - Default model is `gpt-5.4` (from `~/.codex/config.toml`). Override with `-m <model>`.
+- **Default to background execution.** Codex calls routinely take 2–10 minutes — well past the Bash tool's 2-minute default timeout. Launch with `run_in_background: true` and Monitor the `-o` file, OR pass `timeout: 600000` for foreground. Do NOT rely on default timeouts. See [Adaptive Execution](#adaptive-execution).
 
 ## Preflight Check
 
@@ -69,12 +71,84 @@ The `--json` flag streams JSONL events to stdout. The first event is `thread.sta
 
 **Important**: Do NOT pipe `--json` output through `head` or other commands that close the pipe early — this causes a broken pipe signal that kills the codex process. Always redirect to a file first, then extract.
 
+## Adaptive Execution
+
+Codex CLI calls are slow — typically 2–10 minutes, sometimes longer for complex prompts or `high` reasoning effort. The Bash tool's default timeout is 2 minutes. Without explicit handling, the call gets killed mid-flight and the agent gives up before a response arrives.
+
+**Pick a pattern for every codex call:**
+
+### Pattern A — Background + Monitor (preferred for any non-trivial prompt)
+
+Launch the codex command with the Bash tool's `run_in_background: true`, then wait for the `-o` file to be written before reading.
+
+```bash
+# 1. Launch in background — Bash tool param: run_in_background=true
+rm -f /tmp/codex-out.txt   # clear stale output if reusing the path
+codex exec "your prompt" --full-auto -o /tmp/codex-out.txt -C "$(pwd)"
+```
+
+Then use the **Monitor tool** with an `until` loop to wait for completion without polling burn:
+
+```bash
+# Monitor tool: waits, fires a notification each iteration of the until loop
+until [ -s /tmp/codex-out.txt ]; do sleep 5; done
+```
+
+`-s` is true once the file exists and is non-empty (codex writes the final message at the end). When the loop exits, read `/tmp/codex-out.txt`.
+
+If you also need to confirm the codex process has fully exited (e.g., before resuming), pair it with a `pgrep` check:
+
+```bash
+until [ -s /tmp/codex-out.txt ] && ! pgrep -f "codex exec" >/dev/null; do sleep 5; done
+```
+
+### Pattern B — Foreground with extended timeout (only for short, simple prompts)
+
+When you're confident the call will finish quickly (small prompt, `low` reasoning, no tool use), pass an explicit timeout to the Bash tool:
+
+```bash
+# Bash tool param: timeout=600000  (10 minutes — the maximum)
+codex exec "short prompt" --full-auto --ephemeral -o /tmp/codex-out.txt -C "$(pwd)"
+cat /tmp/codex-out.txt
+```
+
+Never rely on the default 2-minute timeout for codex calls.
+
+### Tune for speed
+
+When latency matters more than depth, reduce the work codex does:
+
+| Lever | Flag | Effect |
+|-------|------|--------|
+| Reasoning effort | `-c model_reasoning_effort="low"` | Fastest. Use `medium` (default) or `high` only when needed. |
+| Smaller model | `-m gpt-5.4-mini` (or current mini variant) | Faster, cheaper, less capable. |
+| Disable web search | (omit `--search`) | Search adds round-trips. |
+| Tighter prompt | — | Less to read = less to think about. |
+| Read-only sandbox | `-s read-only` | No tool-use round-trips. Pure analysis. |
+
+Combine for fastest responses:
+
+```bash
+codex exec "quick question" --full-auto --ephemeral \
+  -c model_reasoning_effort="low" \
+  -o /tmp/codex-out.txt -C "$(pwd)"
+```
+
+### Decision rule
+
+- **Default**: Pattern A (background + Monitor). Safe for any prompt length.
+- **Pattern B**: only when the prompt is small AND you've tuned for speed AND you'd rather block than context-switch.
+- **Never**: foreground + default timeout. Codex will outlast it and the agent will give up.
+
 ## Quick Reference
+
+> **Note**: For every command below, the Bash tool should use `run_in_background: true` (default) or `timeout: 600000` (foreground). Codex calls outlast the 2-min default timeout. See [Adaptive Execution](#adaptive-execution).
 
 | Task | Command |
 |------|---------|
 | One-shot (no session) | `codex exec "prompt" --full-auto --ephemeral -o /tmp/codex-out.txt -C "$(pwd)"` |
 | Persistent session | `codex exec "prompt" --full-auto -o /tmp/codex-out.txt -C "$(pwd)"` |
+| Fast/low-latency query | `codex exec "prompt" --full-auto --ephemeral -c model_reasoning_effort="low" -o /tmp/codex-out.txt -C "$(pwd)"` |
 | Follow-up (last session) | `codex exec resume --last "follow-up" --full-auto -o /tmp/codex-out.txt` |
 | Resume by ID | `codex exec resume <SESSION_ID> "follow-up" --full-auto -o /tmp/codex-out.txt` |
 | Fork last session | `codex fork --last "new direction" --full-auto` |
@@ -208,7 +282,8 @@ The standalone `codex review` command (without `exec`) also works but runs inter
 - **Always `-o <file>`**: Captures clean text output. Parsing raw stdout is unreliable due to ANSI codes and progress indicators.
 - **`--ephemeral` for throwaway**: Use when context persistence isn't needed — avoids cluttering session history.
 - **`-C "$(pwd)"` for CWD**: Pass the current working directory explicitly so codex operates on the right files.
-- **`run_in_background` for long tasks**: If a codex exec is expected to take a while, use the Bash tool's `run_in_background` parameter and read the `-o` file when the background task completes.
+- **`run_in_background` by default**: Codex routinely takes 2–10 minutes, exceeding the Bash tool's 2-minute default timeout. Launch every non-trivial codex call with `run_in_background: true` and use the Monitor tool to wait on the `-o` file. Foreground calls require explicit `timeout: 600000`. See [Adaptive Execution](#adaptive-execution).
+- **Tune reasoning effort for latency**: For quick queries, pass `-c model_reasoning_effort="low"`. The default (`medium`) is balanced; reserve `high` for genuinely hard problems where you're willing to wait.
 - **`-s read-only` for safe analysis**: When codex only needs to read and analyze (not write), use read-only sandbox mode.
 - **`-m` for model override**: Switch models per-query without changing config: `-m o3`, `-m gpt-5.4`, etc.
 - **`-i` for image input**: Attach screenshots or diagrams: `-i screenshot.png`.
@@ -229,7 +304,7 @@ The standalone `codex review` command (without `exec`) also works but runs inter
 | `Authentication required` / `invalid API key` | OpenAI API key missing or expired | Run `codex login` or set `OPENAI_API_KEY` |
 | `No sessions found` | No session to resume, or CWD mismatch | Start a new session, or add `--all` to disable CWD filtering |
 | `Session not found: <ID>` | Invalid or deleted session UUID | Check `~/.codex/sessions/` for valid IDs |
-| `timed out` / process hangs | Prompt too complex or API issues | Use `run_in_background` with a timeout, or simplify the prompt |
+| `timed out` / agent gives up before response | Bash 2-min default timeout shorter than typical codex latency (2–10 min) | Default to `run_in_background: true` + Monitor on the `-o` file. For foreground, set `timeout: 600000`. Tune speed via `-c model_reasoning_effort="low"` or a smaller `-m`. See Adaptive Execution. |
 | `Permission denied` / sandbox error | Sandbox policy too restrictive | Use `--full-auto` or `-s workspace-write` / `-s danger-full-access` |
 | `Not a git repository` | codex exec requires git repo by default | Use `--skip-git-repo-check` or `cd` to a git repo |
 | ANSI escape codes in output | Reading stdout instead of `-o` file | Always use `-o <file>` and read the file |
@@ -275,4 +350,32 @@ Scenario: Codex CLI not installed or not authenticated
   Given codex CLI is not installed or not logged in
   When the user asks to perform any Codex operation
   Then check with `codex --version`, guide installation or `codex login` as needed
+
+Scenario: Long-running Codex query without timing out
+  Given a Codex prompt is expected to take longer than 2 minutes
+  When the user asks to run any non-trivial codex command
+  Then launch with the Bash tool's `run_in_background: true` and `-o /tmp/codex-out.txt`
+  And use the Monitor tool with `until [ -s /tmp/codex-out.txt ]; do sleep 5; done`
+  And read /tmp/codex-out.txt only after the loop exits
+  And never rely on the default 2-minute Bash timeout
+
+Scenario: Latency-sensitive Codex query
+  Given the user wants a fast answer and depth is not critical
+  When running codex exec
+  Then add `-c model_reasoning_effort="low"` and consider a smaller `-m` model
+  And still use background execution (Pattern A) unless the prompt is trivially short
 ```
+
+### Retrospective
+
+After completing the workflow, reflect on the entire execution session:
+
+1. Consider: Were there mid-session corrections? Rejected outputs? Plan changes? Errors? Did codex calls time out or hang?
+2. Ask the user: "Quick feedback on this run? (1-5 rating, note any issues, or press enter to skip)"
+3. If the user provides feedback OR if corrections/issues occurred during this session:
+   a. Create `feedback/` directory if it does not exist
+   b. Read `feedback/log.md` (create with `# Feedback Log` header if it does not exist)
+   c. Prepend a new entry after the header using the log format from `my-skill-factory/references/skill-improvement-guide.md`
+   d. Fill in: current timestamp, skill version from frontmatter, task description, outcome assessment,
+      corrections that occurred during the session, issues encountered, user's note
+4. If the user skips AND no corrections or issues occurred, end without recording.
