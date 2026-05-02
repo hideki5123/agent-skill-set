@@ -90,11 +90,6 @@
       "description": "Install a PreCompact hook that auto-generates .agent/local/HANDOVER.md before context compaction, plus a SessionStart hook that restores context from a previous handover. Run once to install, then it "
     },
     {
-      "name": "skill-improve",
-      "source": "./plugins/skill-improve",
-      "description": "Retrofit the OIAE self-improvement loop to existing skills and analyze feedback to propose evidence-based amendments. Adds Retrospective, Feedback Check, and version tracking to skills that lack them."
-    },
-    {
       "name": "slack-cli",
       "source": "./plugins/slack-cli",
       "description": "Operate Slack from the terminal via `slack-cli` (@urugus/slack-cli). Send messages, check unreads, search history, upload files, manage reactions/pins, schedule messages, and manage channels — all thr"
@@ -138,6 +133,11 @@
       "name": "my-skill-factory",
       "source": "./plugins/my-skill-factory",
       "description": "Create, build, and install custom Claude Code skills into Hideki's local marketplace. End-to-end workflow from requirements gathering to a fully installed and usable skill. Use when the user asks to c"
+    },
+    {
+      "name": "skill-improve",
+      "source": "./plugins/skill-improve",
+      "description": "Retrofit the OIAE self-improvement loop to existing skills and analyze feedback to propose evidence-based amendments. Adds Retrospective, Feedback Check, and version tracking to skills that lack them."
     }
   ]
 }

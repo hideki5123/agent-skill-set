@@ -13,7 +13,7 @@
         "type": "local",
         "path": "."
       },
-      "description": ">",
+      "description": "Retrofit the OIAE self-improvement loop to existing skills and analyze feedback to propose evidence-based amendments. Adds Retrospective, Feedback Check, and version tracking to skills that lack them.",
       "version": "1.0.0"
     }
   ]

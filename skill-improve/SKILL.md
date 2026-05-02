@@ -16,6 +16,18 @@ description: >
 
 Retrofit the OIAE (Observe/Inspect/Amend/Evaluate) self-improvement loop to existing skills and analyze accumulated feedback to propose evidence-based amendments.
 
+## Paths
+
+Examples below use `<repo-root>` for the user's local clone of the skill repository.
+Resolve once per session:
+
+- macOS / Linux: typically `~/private/repos/agent-skill-set`
+- Windows: typically `D:\Shared\agents\my-skills`
+- Otherwise: ask the user, or run `git -C <any-skill-dir> rev-parse --show-toplevel`.
+
+`install_skill.py` auto-detects the repo via `git rev-parse --show-toplevel`, so once you
+`cd <repo-root>` you can invoke it with forward-slash relative paths on any platform.
+
 ## Arguments
 
 | Argument | Default | Description |
@@ -29,7 +41,7 @@ Retrofit the OIAE (Observe/Inspect/Amend/Evaluate) self-improvement loop to exis
 ### Phase 1: Locate and Read the Skill
 
 1. Resolve skill path:
-   - If a name is given, check `D:\Shared\agents\my-skills\<skill-name>\`
+   - If a name is given, check `<repo-root>/<skill-name>/`
    - If a path is given, use it directly
    - Read the skill's SKILL.md
 
@@ -67,12 +79,13 @@ Read `references/retrofit-checklist.md` for the step-by-step process and placeme
 
 4. Run the install script:
    ```bash
-   python "D:\Shared\agents\my-skills\my-skill-factory\scripts\install_skill.py" "D:\Shared\agents\my-skills\<skill-name>"
+   cd <repo-root>
+   python my-skill-factory/scripts/install_skill.py <skill-name>
    ```
 
 5. Commit and push:
    ```bash
-   cd D:\Shared\agents\my-skills
+   cd <repo-root>
    git add <skill-name>/ my-marketplace/plugins/<skill-name>/ my-marketplace/.claude-plugin/marketplace.json
    git commit -m "chore: retrofit OIAE improvement loop to <skill-name> skill"
    git push
@@ -118,8 +131,8 @@ Read `my-skill-factory/references/skill-improvement-guide.md` for pattern detect
 
 9. **Install and commit**:
    ```bash
-   python "D:\Shared\agents\my-skills\my-skill-factory\scripts\install_skill.py" "D:\Shared\agents\my-skills\<skill-name>"
-   cd D:\Shared\agents\my-skills
+   cd <repo-root>
+   python my-skill-factory/scripts/install_skill.py <skill-name>
    git add <skill-name>/ my-marketplace/plugins/<skill-name>/ my-marketplace/.claude-plugin/marketplace.json
    git commit -m "fix: improve <skill-name> skill based on feedback (AMD-NNN)"
    git push
