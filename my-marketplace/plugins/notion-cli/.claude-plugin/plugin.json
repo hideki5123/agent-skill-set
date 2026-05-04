@@ -1,0 +1,13 @@
+{
+  "name": "notion-cli",
+  "version": "1.0.0",
+  "description": "Operate Notion from the terminal via the official Notion REST API on TypeScript + deno — search workspace, get/create/update/archive pages, query databases with filters and sorts, list/append/delete b",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "notion-cli"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}

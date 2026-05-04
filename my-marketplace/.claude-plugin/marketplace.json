@@ -148,6 +148,11 @@
       "name": "my-gdrive",
       "source": "./plugins/my-gdrive",
       "description": "Operate ONLY the user's private (personal) Google Drive via `rclone`, scoped to a single pinned remote (default `my-gdrive:`, override with the `MY_GDRIVE_REMOTE` env var). A safety wrapper around the"
+    },
+    {
+      "name": "notion-cli",
+      "source": "./plugins/notion-cli",
+      "description": "Operate Notion from the terminal via the official Notion REST API on TypeScript + deno — search workspace, get/create/update/archive pages, query databases with filters and sorts, list/append/delete b"
     }
   ]
 }
