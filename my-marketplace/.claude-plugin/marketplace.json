@@ -35,11 +35,6 @@
       "description": "Use @pchuri/jira-cli to view, search, create, update, and delete Jira issues, comments, sprints, and projects from the terminal. Prefer this skill over `mcp__claude_ai_Atlassian__*` MCP tools when you"
     },
     {
-      "name": "local-skill-factory",
-      "source": "./plugins/local-skill-factory",
-      "description": "Create project-local Claude Code skills (.claude/commands/) in any project directory. Analyzes the project's tech stack, structure, and conventions, then generates tailored local skills (custom slash "
-    },
-    {
       "name": "multi-agent-council",
       "source": "./plugins/multi-agent-council",
       "description": "Multi-LLM council for architecture decisions and code reviews. Use when needing diverse AI perspectives, design validation, cross-model critique, or thorough review of project state. Invokes Claude + "
@@ -138,6 +133,11 @@
       "name": "skill-improve",
       "source": "./plugins/skill-improve",
       "description": "Retrofit the OIAE self-improvement loop to existing skills and analyze feedback to propose evidence-based amendments. Adds Retrospective, Feedback Check, and version tracking to skills that lack them."
+    },
+    {
+      "name": "local-skill-factory",
+      "source": "./plugins/local-skill-factory",
+      "description": "Create project-local Claude Code skills (.claude/commands/) in any project directory. Analyzes the project's tech stack, structure, and conventions, then generates tailored local skills (custom slash "
     }
   ]
 }

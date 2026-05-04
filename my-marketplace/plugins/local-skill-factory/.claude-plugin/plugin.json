@@ -1,7 +1,7 @@
 {
   "name": "local-skill-factory",
   "version": "1.0.0",
-  "description": ">",
+  "description": "Create project-local Claude Code skills (.claude/commands/) in any project directory. Analyzes the project's tech stack, structure, and conventions, then generates tailored local skills (custom slash ",
   "author": {
     "name": "Hideki"
   },
