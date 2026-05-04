@@ -1,0 +1,13 @@
+{
+  "name": "gdrive-private",
+  "version": "1.0.0",
+  "description": "Operate ONLY the user's private (personal) Google Drive via `rclone`, scoped to a single pinned remote (default `gdrive-private:`, override with the `GDRIVE_PRIVATE_REMOTE` env var). A safety wrapper ",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "gdrive-private"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}
