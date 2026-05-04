@@ -1,5 +1,6 @@
 ---
 name: my-skill-factory
+version: 1.0.0
 description: Create, build, and install custom Claude Code skills into Hideki's local marketplace. End-to-end workflow from requirements gathering to a fully installed and usable skill. Use when the user asks to create a new skill, build a skill, make a plugin, add a new capability, or says "make me a skill for X". Also use when updating or reinstalling an existing custom skill. Trigger phrases include "create skill", "make skill", "new skill", "build plugin", "skill for X", "update skill".
 ---
 
@@ -65,6 +66,19 @@ Anything else is a bug.
 4. **Create skill files and install** — Write SKILL.md, supporting resources, then always install immediately
 5. **Verify** — Confirm the skill appears in a new session
 6. **Improve** — Analyze feedback and amend a skill based on evidence (improvement loop)
+
+## Feedback Check
+
+Before starting Step 1, look for accumulated feedback on this factory skill itself:
+
+- If `feedback/log.md` exists next to this SKILL.md and has 5 or more entries, read the
+  last 10.
+- If a pattern is apparent (the same issue keyword in 3+ entries, or average rating
+  below 3), tell the user (in Japanese):
+  「過去のフィードバックで類似パターンを検出: [簡潔に]。`/skill-improve --skill my-skill-factory` で改善案を分析できます。」
+- Continue with normal execution either way.
+
+If `feedback/log.md` does not exist, skip silently.
 
 ## Step 1: Gather Requirements
 
@@ -209,6 +223,41 @@ echo "List all available skills. Just list the skill names as a bullet list." | 
 
 The new skill should appear as `<skill-name>:<skill-name>` in the output.
 
+## Retrospective
+
+After completing Step 5 (Verify) of either the Create or Update workflow, reflect on the
+session:
+
+1. Consider: were there mid-session corrections (rejected designs, dropped scope,
+   plan changes), errors during install, missing pre-install checks, or scenarios
+   discovered late?
+2. Ask the user (in Japanese): 「今回の作成/更新のフィードバック (1-5の評価、気になった点、または何もなければEnter)」
+3. If the user provides feedback OR if corrections/issues actually occurred:
+   a. Create `feedback/` next to this SKILL.md if it does not exist (resolve the
+      directory via `git rev-parse --show-toplevel` from this skill's source dir,
+      then append `/my-skill-factory/feedback/`).
+   b. Read `feedback/log.md` (create with `# Feedback Log` header followed by a
+      blank line and the comment
+      `<!-- Append new entries at the top. Do not edit previous entries. -->`
+      if it does not exist).
+   c. Prepend a new entry directly after the header, using the format from
+      `references/skill-improvement-guide.md`:
+
+      ```markdown
+      ## <ISO-8601 timestamp>
+      - **Skill Version**: <version from this file's frontmatter>
+      - **Task**: <which target skill, create or update, brief description>
+      - **Outcome**: success | partial-success | failure | error
+      - **Rating**: <N>/5 (or "—" if not provided)
+      - **Corrections**: <mid-session corrections, or "none">
+      - **Issues**: <specific problems, or "none">
+      - **User Note**: <user's verbatim feedback, or "—">
+      ---
+      ```
+
+   d. Confirm in one short Japanese sentence.
+4. If the user skips AND no corrections or issues occurred, end without recording.
+
 ## Updating an Existing Skill
 
 1. **Write scenarios for the change** — Define Given/When/Then scenarios for new or modified behavior
@@ -269,6 +318,23 @@ Scenario: Re-install without changes
   Given a skill's files have not changed
   When the user re-runs the install script
   Then the script overwrites the previous installation and the skill remains functional
+
+Scenario: Feedback Check surfaces a recurring pattern in the factory itself
+  Given my-skill-factory/feedback/log.md has 5+ entries with a common issue keyword in 3+
+  When the factory is invoked
+  Then it tells the user about the pattern and suggests
+       /skill-improve --skill my-skill-factory, then continues normally
+
+Scenario: Retrospective recorded after a run with corrections
+  Given the user rejected the initial design and asked for a different approach mid-run
+  When the workflow completes
+  Then the factory asks for a 1-5 rating in Japanese, creates feedback/log.md if missing,
+       and prepends an entry capturing the corrections, the user's note, and the outcome
+
+Scenario: Retrospective skipped on a clean run
+  Given the run had no corrections, no issues, and the user provides no feedback
+  When the workflow completes
+  Then the factory ends without writing to feedback/log.md
 
 Scenario: New skill must not contain hardcoded absolute paths
   Given the user is creating or editing a skill

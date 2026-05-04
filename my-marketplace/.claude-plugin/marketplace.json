@@ -125,6 +125,11 @@
       "description": "Watch another running Claude Code session in real time and narrate its activity in Japanese with detailed term-by-term explanations. By default targets a session active in the current working director"
     },
     {
+      "name": "local-skill-factory",
+      "source": "./plugins/local-skill-factory",
+      "description": "Create project-local Claude Code skills (.claude/commands/) in any project directory. Analyzes the project's tech stack, structure, and conventions, then generates tailored local skills (custom slash "
+    },
+    {
       "name": "my-skill-factory",
       "source": "./plugins/my-skill-factory",
       "description": "Create, build, and install custom Claude Code skills into Hideki's local marketplace. End-to-end workflow from requirements gathering to a fully installed and usable skill. Use when the user asks to c"
@@ -133,11 +138,6 @@
       "name": "skill-improve",
       "source": "./plugins/skill-improve",
       "description": "Retrofit the OIAE self-improvement loop to existing skills and analyze feedback to propose evidence-based amendments. Adds Retrospective, Feedback Check, and version tracking to skills that lack them."
-    },
-    {
-      "name": "local-skill-factory",
-      "source": "./plugins/local-skill-factory",
-      "description": "Create project-local Claude Code skills (.claude/commands/) in any project directory. Analyzes the project's tech stack, structure, and conventions, then generates tailored local skills (custom slash "
     }
   ]
 }

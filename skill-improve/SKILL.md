@@ -1,5 +1,6 @@
 ---
 name: skill-improve
+version: 1.0.0
 description: >
   Retrofit the OIAE self-improvement loop to existing skills and analyze feedback
   to propose evidence-based amendments. Adds Retrospective, Feedback Check, and
@@ -61,6 +62,19 @@ retrofit Phase 2 or from an evidence-driven amendment in Phase 3.
 | `--analyze-only` | `false` | Only analyze feedback, skip retrofit |
 
 ## Workflow
+
+### Feedback Check
+
+Before starting Phase 1, look for accumulated feedback on this skill itself:
+
+- If `feedback/log.md` exists next to this SKILL.md and has 5 or more entries, read the
+  last 10.
+- If a pattern is apparent (the same issue keyword in 3+ entries, or average rating
+  below 3), tell the user (in Japanese):
+  「過去のフィードバックで類似パターンを検出: [簡潔に]。`/skill-improve --skill skill-improve` で改善案を分析できます (=自分自身を分析)。」
+- Continue with normal execution either way.
+
+If `feedback/log.md` does not exist, skip silently.
 
 ### Phase 1: Locate and Read the Skill
 
@@ -176,6 +190,39 @@ Summarize what was done:
 - Amendments applied (if any)
 - Current skill version
 
+### Retrospective
+
+After Phase 4 (Report) completes, reflect on this run of skill-improve itself:
+
+1. Consider: were there mid-session corrections (rejected amendments, scope changes,
+   wrong target skill, install/commit failures, missed path leaks)?
+2. Ask the user (in Japanese): 「今回の改善作業のフィードバック (1-5の評価、気になった点、または何もなければEnter)」
+3. If the user provides feedback OR if corrections/issues actually occurred:
+   a. Create `feedback/` next to this SKILL.md if it does not exist (resolve the
+      directory via `git rev-parse --show-toplevel` from this skill's source dir,
+      then append `/skill-improve/feedback/`).
+   b. Read `feedback/log.md` (create with `# Feedback Log` header followed by a
+      blank line and the comment
+      `<!-- Append new entries at the top. Do not edit previous entries. -->`
+      if it does not exist).
+   c. Prepend a new entry directly after the header, using the format from
+      `my-skill-factory/references/skill-improvement-guide.md`:
+
+      ```markdown
+      ## <ISO-8601 timestamp>
+      - **Skill Version**: <version from this file's frontmatter>
+      - **Task**: <which target skill, retrofit / analyze / both>
+      - **Outcome**: success | partial-success | failure | error
+      - **Rating**: <N>/5 (or "—" if not provided)
+      - **Corrections**: <mid-session corrections, or "none">
+      - **Issues**: <specific problems, or "none">
+      - **User Note**: <user's verbatim feedback, or "—">
+      ---
+      ```
+
+   d. Confirm in one short Japanese sentence.
+4. If the user skips AND no corrections or issues occurred, end without recording.
+
 ## Behavior Scenarios
 
 ```gherkin
@@ -212,6 +259,23 @@ Scenario: Analyze-only mode
   Given --analyze-only flag is set and feedback exists
   When /skill-improve --skill <name> --analyze-only is invoked
   Then only analyze feedback and propose amendments, skip retrofit
+
+Scenario: Feedback Check surfaces a recurring pattern in skill-improve itself
+  Given skill-improve/feedback/log.md has 5+ entries with a common issue keyword in 3+
+  When /skill-improve is invoked on any target
+  Then it tells the user about the pattern and suggests
+       /skill-improve --skill skill-improve, then continues normally on the requested target
+
+Scenario: Retrospective recorded after a run with corrections
+  Given the user rejected a proposed amendment or course-corrected mid-run
+  When Phase 4 (Report) completes
+  Then skill-improve asks for a 1-5 rating in Japanese, creates feedback/log.md if missing,
+       and prepends an entry capturing the corrections, the user's note, and the outcome
+
+Scenario: Retrospective skipped on a clean run
+  Given the run had no corrections, no issues, and the user provides no feedback
+  When Phase 4 (Report) completes
+  Then skill-improve ends without writing to feedback/log.md
 
 Scenario: Retrofits and amendments must not introduce hardcoded paths
   Given the skill is being retrofitted with OIAE components or amended based on feedback
