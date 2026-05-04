@@ -1,0 +1,13 @@
+{
+  "name": "session-recap",
+  "version": "1.0.0",
+  "description": "Read a Claude Code session's transcript and produce two markdown artifacts in Japanese: a scannable Summary (TL;DR, what got done, key terms with one-line glosses, files touched, decisions, open threa",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "session-recap"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}

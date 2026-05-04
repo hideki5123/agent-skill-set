@@ -1,0 +1,20 @@
+{
+  "name": "hideki-plugins",
+  "owner": {
+    "name": "Hideki"
+  },
+  "metadata": {
+    "description": "Custom Claude Code plugins by Hideki"
+  },
+  "plugins": [
+    {
+      "name": "session-recap",
+      "source": {
+        "type": "local",
+        "path": "."
+      },
+      "description": "Read a Claude Code session's transcript and produce two markdown artifacts in Japanese: a scannable Summary (TL;DR, what got done, key terms with one-line glosses, files touched, decisions, open threa",
+      "version": "1.0.0"
+    }
+  ]
+}

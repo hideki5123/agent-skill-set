@@ -1,6 +1,6 @@
 ---
 name: session-watch
-version: 1.0.0
+version: 1.1.0
 description: >
   Watch another running Claude Code session in real time and narrate its activity in Japanese
   with detailed term-by-term explanations. By default targets a session active in the current
@@ -177,7 +177,18 @@ If the user asks to widen or narrow the filter (e.g., "Read/Grepも観たい", "
 ### Step 5: Stop
 
 When the user says any of "監視やめて" / "止めて" / "stop" / "監視終わり" / "もういい":
-call `TaskStop` with the task ID and confirm. Then proceed to the Retrospective below.
+
+1. Call `TaskStop` with the task ID and confirm in Japanese.
+2. **Invoke `session-recap`**: use the Skill tool with `skill: "session-recap"` and `args`
+   set to the watched session's full UUID. This produces `summary.md` + `note.md` capturing
+   the technical knowledge, terminology, and decisions from the watched session — kept as
+   a separate skill so the user can also invoke it standalone later.
+   - If the user explicitly says "no recap" / "recapいらない" / "サマリー不要" before or
+     during the stop, skip this and go straight to the Retrospective.
+   - Once `session-recap` returns, surface its output paths to the user in one short
+     Japanese line.
+3. Then proceed to the Retrospective below (this records feedback on session-watch itself,
+   independent of the recap).
 
 ### Retrospective
 
@@ -246,7 +257,15 @@ Scenario: No active session
 Scenario: Stop monitoring
   Given a monitor is running
   When the user says "監視やめて" or any equivalent stop phrase
-  Then the skill calls TaskStop with the task ID and confirms in Japanese.
+  Then the skill calls TaskStop with the task ID, confirms in Japanese,
+       then invokes session-recap with the watched session ID,
+       reports the recap output paths, and finally runs the Retrospective.
+
+Scenario: Stop monitoring, user opts out of recap
+  Given a monitor is running
+  When the user says "監視やめて、recapはいらない" or similar
+  Then the skill stops the monitor, skips the session-recap invocation,
+       and runs the Retrospective directly.
 
 Scenario: Filter adjustment
   Given a monitor is running with the default filter
