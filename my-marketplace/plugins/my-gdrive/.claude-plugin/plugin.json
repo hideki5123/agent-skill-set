@@ -1,0 +1,13 @@
+{
+  "name": "my-gdrive",
+  "version": "1.0.1",
+  "description": "Operate ONLY the user's private (personal) Google Drive via `rclone`, scoped to a single pinned remote (default `my-gdrive:`, override with the `MY_GDRIVE_REMOTE` env var). A safety wrapper around the",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "my-gdrive"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}

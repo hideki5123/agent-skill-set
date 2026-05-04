@@ -1,0 +1,20 @@
+{
+  "name": "hideki-plugins",
+  "owner": {
+    "name": "Hideki"
+  },
+  "metadata": {
+    "description": "Custom Claude Code plugins by Hideki"
+  },
+  "plugins": [
+    {
+      "name": "my-gdrive",
+      "source": {
+        "type": "local",
+        "path": "."
+      },
+      "description": "Operate ONLY the user's private (personal) Google Drive via `rclone`, scoped to a single pinned remote (default `my-gdrive:`, override with the `MY_GDRIVE_REMOTE` env var). A safety wrapper around the",
+      "version": "1.0.1"
+    }
+  ]
+}

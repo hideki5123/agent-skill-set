@@ -4,7 +4,7 @@ Every command in this file uses the pinned-remote variable. Resolve it once
 per shell:
 
 ```bash
-R="${GDRIVE_PRIVATE_REMOTE:-gdrive-private}"
+R="${MY_GDRIVE_REMOTE:-my-gdrive}"
 ```
 
 Then `"${R}:"` is the only remote prefix the skill is allowed to use.
@@ -79,8 +79,8 @@ Supported targets: `docx`, `odt`, `rtf`, `pdf`, `txt`, `html`, `epub`, `xlsx`,
 
 | Command | Purpose |
 |---------|---------|
-| `rclone mount "${R}:" ~/mnt/private-gdrive --vfs-cache-mode full --daemon` | Mount as filesystem |
-| `umount ~/mnt/private-gdrive` (mac) / `fusermount -u ~/mnt/private-gdrive` (linux) | Unmount |
+| `rclone mount "${R}:" ~/mnt/my-gdrive --vfs-cache-mode full --daemon` | Mount as filesystem |
+| `umount ~/mnt/my-gdrive` (mac) / `fusermount -u ~/mnt/my-gdrive` (linux) | Unmount |
 
 ### Sharing & links
 
@@ -138,7 +138,7 @@ If either grep matches, do not execute. Refuse with the template message.
 ## jq Recipes (private-Drive scope)
 
 ```bash
-R="${GDRIVE_PRIVATE_REMOTE:-gdrive-private}"
+R="${MY_GDRIVE_REMOTE:-my-gdrive}"
 
 # Files modified in the last 24 hours
 rclone lsjson "${R}:" -R | \

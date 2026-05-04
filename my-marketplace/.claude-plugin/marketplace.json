@@ -145,9 +145,9 @@
       "description": "Watch another running Claude Code session in real time and narrate its activity in Japanese with detailed term-by-term explanations. By default targets a session active in the current working director"
     },
     {
-      "name": "gdrive-private",
-      "source": "./plugins/gdrive-private",
-      "description": "Operate ONLY the user's private (personal) Google Drive via `rclone`, scoped to a single pinned remote (default `gdrive-private:`, override with the `GDRIVE_PRIVATE_REMOTE` env var). A safety wrapper "
+      "name": "my-gdrive",
+      "source": "./plugins/my-gdrive",
+      "description": "Operate ONLY the user's private (personal) Google Drive via `rclone`, scoped to a single pinned remote (default `my-gdrive:`, override with the `MY_GDRIVE_REMOTE` env var). A safety wrapper around the"
     }
   ]
 }
