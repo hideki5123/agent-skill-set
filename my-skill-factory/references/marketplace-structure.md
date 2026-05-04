@@ -105,7 +105,7 @@ Example: `review-pr@hideki-plugins`
 {
   "<name>@hideki-plugins": [{
     "scope": "user",
-    "installPath": "C:\\Users\\Hideki\\.claude\\plugins\\cache\\hideki-plugins\\<name>\\<version>",
+    "installPath": "<absolute path to ~/.claude/plugins/cache/hideki-plugins/<name>/<version>, written by Claude Code in the OS's native form>",
     "version": "<version>",
     "installedAt": "<ISO timestamp>",
     "lastUpdated": "<ISO timestamp>",

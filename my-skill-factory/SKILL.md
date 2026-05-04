@@ -21,6 +21,42 @@ repo root via `git rev-parse --show-toplevel`, so when you `cd <repo-root>` firs
 forward-slash relative paths (`my-skill-factory/scripts/install_skill.py <skill-name>`) on any
 platform — that is the form used throughout this document.
 
+## Path discipline (applies to every skill you create or edit)
+
+When authoring a skill's `SKILL.md`, references, or scripts, **never embed hardcoded
+operator-specific or OS-specific absolute paths** in the skill's content. These break the
+skill on every machine other than the author's, and a generated skill that says
+`/Users/alice/...` or `D:\Shared\...` is broken-by-construction.
+
+Forbidden in skill content:
+
+- Operator home paths: `/Users/<name>/...`, `/home/<name>/...`, `C:\Users\<name>\...`.
+- Machine-specific roots: `D:\Shared\...`, `/private/...`, `/mnt/<host>/...`.
+- Any path that assumes the skill repo lives at one specific location.
+
+Use instead:
+
+- The `<repo-root>` placeholder for this skill repo (see "Paths" above), with
+  forward-slash relative paths from there.
+- `~` or `$HOME` for the user's home directory.
+- Runtime resolution: `git rev-parse --show-toplevel` from inside the repo, or accept
+  the path as an argument from the user.
+- Documentation examples that show a concrete path **must** be clearly framed as
+  examples (e.g. "on Windows this typically resolves to `D:\...`"), not as the
+  authoritative path.
+
+**Pre-install verification.** Before running `install_skill.py` on any new or edited
+skill, grep the skill source dir for path leaks and clean up any non-example hits:
+
+```bash
+grep -rn -e '/Users/' -e '/home/' -e '/private/' -e 'C:\\' -e 'D:\\' \
+  <repo-root>/<skill-name>/ --exclude-dir=feedback
+```
+
+Each remaining hit must either be (a) a documentation example explicitly framed as
+"example" or "typically", or (b) replaced with a placeholder / runtime resolution.
+Anything else is a bug.
+
 ## Workflow
 
 1. **Gather requirements** — Understand what the skill should do
@@ -119,6 +155,13 @@ Place in subdirectories as needed:
 - `references/` — Loaded by Claude on demand
 - `scripts/` — Executed directly
 - `assets/` — Used in output, not loaded into context
+
+### Pre-install path-discipline check
+
+Before installing, run the path-leak grep from the "Path discipline" section above on
+the new skill's source directory. Any non-example hit (operator home, OS-specific root,
+or a path assuming a particular clone location) must be replaced with a placeholder or
+runtime resolution. Do this every time, including for re-installs of edited skills.
 
 ### Install into marketplace
 
@@ -226,6 +269,14 @@ Scenario: Re-install without changes
   Given a skill's files have not changed
   When the user re-runs the install script
   Then the script overwrites the previous installation and the skill remains functional
+
+Scenario: New skill must not contain hardcoded absolute paths
+  Given the user is creating or editing a skill
+  When the factory writes any of the skill's SKILL.md, references, or scripts
+  Then no operator-specific path (/Users/..., /home/..., C:\..., D:\..., /private/...)
+       appears in the skill's content except as an explicit documentation example
+  And before install, the path-discipline grep is run and any non-example hits are
+       replaced with <repo-root>, ~, $HOME, or runtime resolution
 
 Scenario: Improve a skill based on feedback
   Given a skill has feedback/log.md with recurring failure patterns

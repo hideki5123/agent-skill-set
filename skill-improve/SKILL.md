@@ -28,6 +28,30 @@ Resolve once per session:
 `install_skill.py` auto-detects the repo via `git rev-parse --show-toplevel`, so once you
 `cd <repo-root>` you can invoke it with forward-slash relative paths on any platform.
 
+## Path discipline (applies to every retrofit and amendment)
+
+When this skill writes new content into an existing skill (Retrospective, Feedback Check,
+amendments, file-path references), **never introduce hardcoded operator-specific or
+OS-specific absolute paths**. Forbidden patterns: `/Users/<name>/...`, `/home/<name>/...`,
+`C:\Users\<name>\...`, `D:\Shared\...`, `/private/...`, or any path that assumes the skill
+repo lives at one specific location.
+
+Use `<repo-root>` (the skill repo root, see "Paths" above), `~` / `$HOME`, or runtime
+resolution (`git rev-parse --show-toplevel`) instead. Concrete paths are allowed only as
+explicitly-framed documentation examples ("on Windows this typically resolves to `D:\...`").
+
+**Pre-install verification.** Before running `install_skill.py` after a retrofit or
+amendment, grep the modified skill's source for path leaks:
+
+```bash
+grep -rn -e '/Users/' -e '/home/' -e '/private/' -e 'C:\\' -e 'D:\\' \
+  <repo-root>/<skill-name>/ --exclude-dir=feedback
+```
+
+Each remaining hit must be either an example explicitly framed as such, or replaced with
+a placeholder / runtime resolution. Apply this check whether the change came from the
+retrofit Phase 2 or from an evidence-driven amendment in Phase 3.
+
 ## Arguments
 
 | Argument | Default | Description |
@@ -77,13 +101,16 @@ Read `references/retrofit-checklist.md` for the step-by-step process and placeme
    - Add `### Feedback Check` section (Full level only)
    - Add `### Retrospective` section (Observe or Full level)
 
-4. Run the install script:
+4. Run the path-discipline grep from "Path discipline" above on the skill's source dir
+   and replace any non-example hits with placeholders or runtime resolution.
+
+5. Run the install script:
    ```bash
    cd <repo-root>
    python my-skill-factory/scripts/install_skill.py <skill-name>
    ```
 
-5. Commit and push:
+6. Commit and push:
    ```bash
    cd <repo-root>
    git add <skill-name>/ my-marketplace/plugins/<skill-name>/ my-marketplace/.claude-plugin/marketplace.json
@@ -126,6 +153,8 @@ Read `my-skill-factory/references/skill-improvement-guide.md` for pattern detect
 7. **Apply approved changes**:
    - Edit the skill files
    - Bump version in frontmatter
+   - Run the path-discipline grep from "Path discipline" above on the modified skill;
+     replace any non-example hits with placeholders or runtime resolution.
 
 8. **Record amendment** — Append to `feedback/amendments.md` using format from `my-skill-factory/references/skill-improvement-guide.md`
 
@@ -183,6 +212,14 @@ Scenario: Analyze-only mode
   Given --analyze-only flag is set and feedback exists
   When /skill-improve --skill <name> --analyze-only is invoked
   Then only analyze feedback and propose amendments, skip retrofit
+
+Scenario: Retrofits and amendments must not introduce hardcoded paths
+  Given the skill is being retrofitted with OIAE components or amended based on feedback
+  When new content is written into the target skill's SKILL.md, references, or scripts
+  Then no operator-specific path (/Users/..., /home/..., C:\..., D:\..., /private/...)
+       appears in the new content except as an explicit documentation example
+  And before install, the path-discipline grep is run and any non-example hits are
+       replaced with <repo-root>, ~, $HOME, or runtime resolution
 ```
 
 ## References
