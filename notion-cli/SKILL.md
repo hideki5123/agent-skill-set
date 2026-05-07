@@ -132,6 +132,7 @@ For every operation:
 | `page archive <id>` | Soft-delete | Confirm before running. Reversible from the Notion trash. |
 | `db get <id>` | Retrieve database schema | Use to discover property names + types before `db query`. |
 | `db query <id>` | Query rows | `--filter '<json>'` and `--sorts '<json>'`. See `references/filters.md`. |
+| `db create` | Create a database under a parent page | Requires `--parent-page <id>` and `--name "<text>"`. `--description "<text>"` optional. `--schema-stdin` reads JSON `{ "properties": {…} }` from stdin (must include at least one `title`-typed property). Refuses silent overwrite when a same-titled database already exists under the same parent. |
 | `blocks list <page-id>` | List top-level children | `--limit N` (max 100). For nested blocks, recurse on each child id. |
 | `blocks append <page-id>` | Append blocks | Reads JSON array from stdin. See `references/property-types.md` for block shapes. |
 | `blocks delete <id>` | Delete a block | Confirm before running. |
@@ -195,6 +196,26 @@ Scenario: Append blocks
   When the user says "add this paragraph to the page"
   Then the skill builds a Notion blocks JSON array, pipes it to
        `notion blocks append <page-id>` via stdin, and reports the appended block ids
+
+Scenario: Create a new database under a parent page
+  Given the integration has been added to the parent page
+  When the user supplies --parent-page <id>, --name "<text>", and a schema on stdin
+  Then the skill runs `notion db create --parent-page <id> --name "<text>" --schema-stdin`
+       and returns the new database id and url
+
+Scenario: db create rejects when --parent-page is missing
+  When the user runs db create without --parent-page
+  Then the CLI exits with a clear error explaining --parent-page is required
+
+Scenario: db create rejects when stdin schema JSON is malformed
+  Given --schema-stdin is passed but stdin contains invalid JSON or no `properties` object
+  When the CLI runs db create
+  Then it surfaces a clear parse/validation error and does not call the Notion API
+
+Scenario: db create rejects when a same-titled database already exists under the parent
+  Given a database with the requested name is already a child of the same parent page
+  When the user runs db create
+  Then the CLI fails with an error including the existing database id, refusing to silently overwrite
 
 Scenario: Archive a page (destructive — confirm)
   Given the user wants to archive a page

@@ -31,6 +31,11 @@ Commands:
   db query <id>                 Query database rows
                                 Options: --filter '<json>' --sorts '<json>'
                                          --limit N --start-cursor C
+  db create                     Create a database under a parent page
+                                Options: --parent-page <id>   (required)
+                                         --name "<text>"      (required)
+                                         --description "<text>"
+                                         --schema-stdin       (read JSON {properties: {...}} from stdin)
   blocks list <id>              List top-level child blocks of a page or block
                                 Options: --limit N --start-cursor C
   blocks append <id>            Append blocks (reads JSON array from stdin)
@@ -496,6 +501,92 @@ async function main(argv: string[]) {
           }
           const result = await client().databases.query(params);
           emit(result, format);
+          return;
+        }
+        if (sub === "create") {
+          const parentPage = stringFlag(flags["parent-page"]);
+          if (!parentPage) {
+            throw new Error("db create requires --parent-page <id>");
+          }
+          const parentPageId = normalizeId(parentPage);
+          const name = stringFlag(flags.name);
+          if (!name) {
+            throw new Error('db create requires --name "<text>"');
+          }
+          const description = stringFlag(flags.description);
+
+          let properties: Record<string, unknown>;
+          if (flags["schema-stdin"]) {
+            const body = await readStdinJson<{
+              properties?: Record<string, unknown>;
+            }>();
+            if (
+              !body.properties ||
+              typeof body.properties !== "object" ||
+              Array.isArray(body.properties)
+            ) {
+              throw new Error(
+                "db create --schema-stdin: stdin JSON must have an object 'properties'",
+              );
+            }
+            properties = body.properties;
+          } else {
+            // Minimal default schema: a single title property named "Name"
+            properties = { Name: { title: {} } };
+          }
+
+          const hasTitle = Object.values(properties).some(
+            (v: any) => v && typeof v === "object" && "title" in v,
+          );
+          if (!hasTitle) {
+            throw new Error(
+              "db create: schema must include at least one property of type 'title'",
+            );
+          }
+
+          // Reject silent overwrite — fail if a same-titled database already
+          // exists under the same parent page.
+          const existing = await client().search({
+            query: name,
+            filter: { value: "database", property: "object" },
+            page_size: 50,
+          });
+          const conflict = (existing.results as any[]).find((db: any) => {
+            if (db.object !== "database") return false;
+            const titleStr = ((db.title ?? []) as any[])
+              .map((t: any) => t.plain_text ?? "")
+              .join("")
+              .trim();
+            if (titleStr !== name) return false;
+            const parent = db.parent ?? {};
+            if (parent.type !== "page_id") return false;
+            try {
+              return normalizeId(parent.page_id) === parentPageId;
+            } catch {
+              return false;
+            }
+          });
+          if (conflict) {
+            throw new Error(
+              `db create: a database titled "${name}" already exists under parent ${parentPageId} (id: ${
+                (conflict as any).id
+              }). Refusing to silently overwrite.`,
+            );
+          }
+
+          const params: any = {
+            parent: { type: "page_id", page_id: parentPageId },
+            title: [{ type: "text", text: { content: name } }],
+            properties,
+          };
+          if (description) {
+            params.description = [
+              { type: "text", text: { content: description } },
+            ];
+          }
+
+          const created = await client().databases.create(params);
+          emit(created, format);
           return;
         }
         throw new Error(`Unknown subcommand: ${cmd} ${sub ?? ""}`);

@@ -1,0 +1,13 @@
+{
+  "name": "recap-to-notion",
+  "version": "1.0.0",
+  "description": "Sync a session-recap directory (summary.md + note.md + meta.json) to Notion under the explicit \"My Agent Notes / Session Recaps\" database via the notion-cli skill. The Notion target is fixed by design",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "recap-to-notion"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}

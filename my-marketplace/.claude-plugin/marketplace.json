@@ -135,16 +135,6 @@
       "description": "Retrofit the OIAE self-improvement loop to existing skills and analyze feedback to propose evidence-based amendments. Adds Retrospective, Feedback Check, and version tracking to skills that lack them."
     },
     {
-      "name": "session-recap",
-      "source": "./plugins/session-recap",
-      "description": "Read a Claude Code session's transcript and produce two markdown artifacts in Japanese: a scannable Summary (TL;DR, what got done, key terms with one-line glosses, files touched, decisions, open threa"
-    },
-    {
-      "name": "session-watch",
-      "source": "./plugins/session-watch",
-      "description": "Watch another running Claude Code session in real time and narrate its activity in Japanese with detailed term-by-term explanations. By default targets a session active in the current working director"
-    },
-    {
       "name": "my-gdrive",
       "source": "./plugins/my-gdrive",
       "description": "Operate ONLY the user's private (personal) Google Drive via `rclone`, scoped to a single pinned remote (default `my-gdrive:`, override with the `MY_GDRIVE_REMOTE` env var). A safety wrapper around the"
@@ -153,6 +143,21 @@
       "name": "notion-cli",
       "source": "./plugins/notion-cli",
       "description": "Operate Notion from the terminal via the official Notion REST API on TypeScript + deno — search workspace, get/create/update/archive pages, query databases with filters and sorts, list/append/delete b"
+    },
+    {
+      "name": "recap-to-notion",
+      "source": "./plugins/recap-to-notion",
+      "description": "Sync a session-recap directory (summary.md + note.md + meta.json) to Notion under the explicit \"My Agent Notes / Session Recaps\" database via the notion-cli skill. The Notion target is fixed by design"
+    },
+    {
+      "name": "session-recap",
+      "source": "./plugins/session-recap",
+      "description": "Read a Claude Code session's transcript and produce two markdown artifacts plus a meta.json: a scannable Summary (TL;DR, key terms, files, decisions, open threads) and a complementary Detailed Note (f"
+    },
+    {
+      "name": "session-watch",
+      "source": "./plugins/session-watch",
+      "description": "Watch another running Claude Code session in real time and narrate its activity in Japanese with detailed term-by-term explanations. By default targets a session active in the current working director"
     }
   ]
 }

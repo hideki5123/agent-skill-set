@@ -134,6 +134,39 @@ deno run <perms> ~/.notion-cli/lib/notion.ts db query <database-id> --limit 25
 
 See `filters.md` for the full filter grammar (compound `and`/`or`, all property types).
 
+### Create a new database under a parent page
+
+The integration must already be connected to the parent page. The schema must include at least one property of type `title`.
+
+```sh
+# Minimal: only a title property (default schema if --schema-stdin is omitted)
+deno run <perms> ~/.notion-cli/lib/notion.ts db create \
+  --parent-page <page-id> \
+  --name "My DB"
+
+# Custom schema via stdin
+cat <<'JSON' | deno run <perms> ~/.notion-cli/lib/notion.ts db create \
+  --parent-page <page-id> \
+  --name "Session Recaps" \
+  --description "Auto-generated recaps from Claude Code sessions" \
+  --schema-stdin
+{
+  "properties": {
+    "Title":        { "title": {} },
+    "Date":         { "date": {} },
+    "Session ID":   { "rich_text": {} },
+    "Slug":         { "rich_text": {} },
+    "CWD":          { "rich_text": {} },
+    "Duration":     { "rich_text": {} },
+    "Total Events": { "number": { "format": "number" } },
+    "Language":     { "select": { "options": [{ "name": "ja" }, { "name": "en" }] } }
+  }
+}
+JSON
+```
+
+Returns the full database object on success (use `--format text` for a one-line summary). The CLI refuses to silently overwrite: if a same-titled database already lives under the same parent, it fails with the existing database id so the caller can decide whether to use that one instead.
+
 ## Blocks
 
 ### List top-level children of a page or block

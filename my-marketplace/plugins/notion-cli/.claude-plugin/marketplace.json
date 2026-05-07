@@ -14,7 +14,7 @@
         "path": "."
       },
       "description": "Operate Notion from the terminal via the official Notion REST API on TypeScript + deno — search workspace, get/create/update/archive pages, query databases with filters and sorts, list/append/delete b",
-      "version": "1.0.0"
+      "version": "1.1.0"
     }
   ]
 }

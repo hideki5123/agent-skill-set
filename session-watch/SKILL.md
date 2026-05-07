@@ -1,12 +1,14 @@
 ---
 name: session-watch
-version: 1.1.0
+version: 1.1.1
 description: >
   Watch another running Claude Code session in real time and narrate its activity in Japanese
   with detailed term-by-term explanations. By default targets a session active in the current
   working directory; if multiple are active, asks the user to pick. Can also target a specific
-  session by ID. Read-only — never sends messages to the watched session. Use when the user
-  says "session監視" / "監視して" / "別のClaudeを観察" / "他のセッションを見ていて" /
+  session by ID. Read-only on the watched session. After the watch ends, invokes session-recap;
+  any further chain (e.g. recap-to-notion for Notion sync) is configured by session-recap's own
+  ~/.claude/session-recaps/.recap-config.json, not this skill. Use when the user says
+  "session監視" / "監視して" / "別のClaudeを観察" / "他のセッションを見ていて" /
   "Aliseを観察" / "watch session" / "observe" / "observe claude" / "observe session" /
   "observe the session" / "Observe" / "/session-watch" / "セッションウォッチ" /
   "オブザーブ" / "他のセッション解説" / "別Claudeをモニタ".
