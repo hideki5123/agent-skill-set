@@ -4,29 +4,33 @@ The Notion Internal Integration Secret grants full access (within the integratio
 
 ## Hard rules
 
-1. **Existence checks only.** Verify `NOTION_TOKEN` is set without ever reading or printing the value. Acceptable: `Deno.env.get("NOTION_TOKEN") !== undefined`. Forbidden: passing the value to `console.log`, writing it to disk, sending it to any network destination other than `api.notion.com`.
+1. **Existence checks only.** Verify a token source resolves without ever reading or printing the value. The CLI checks three sources in order: `NOTION_TOKEN`, `NOTION_API_KEY`, then the file at `NOTION_TOKEN_FILE`. Acceptable: `Deno.env.get("NOTION_TOKEN") !== undefined`, `Deno.stat(tokenFilePath)` (size, mode — not contents). Forbidden: passing any of these values to `console.log`, writing to disk, sending to any network destination other than `api.notion.com`.
 
 2. **Never run these commands on the user's behalf:**
-   - `echo $NOTION_TOKEN`
-   - `printenv | grep -i notion`
-   - `env | grep notion`
+   - `echo $NOTION_TOKEN` / `echo $NOTION_API_KEY`
+   - `printenv | grep -i notion` / `env | grep notion`
    - `cat ~/.zshrc` / `cat ~/.bashrc` / `cat ~/.config/fish/config.fish` / `cat $PROFILE`
    - `cat .env*`
+   - `cat $NOTION_TOKEN_FILE` (or any other path the user uses as a token source — agenix, sops-nix, 1Password CLI mounts, etc.)
    - Any `curl` or `fetch` that prints request headers including `Authorization`
+   - Any `ps`/`top`-style command that could leak a value passed on a command line
 
-   If the user asks you to read their token "to verify it's set", refuse and run the existence check from `preflight.ts` instead, which prints `set` / `missing` only.
+   If the user asks you to read their token "to verify it's set", refuse and run the existence check from `preflight.ts` instead, which only reports the resolved source name (e.g. `token: NOTION_API_KEY` or `token: NOTION_TOKEN_FILE → /run/agenix/notion-api-key (51 bytes)`).
 
 3. **Scoped deno permissions, always.** Every `deno run` invocation MUST use the narrowest set:
-   - `--allow-env=NOTION_TOKEN` (only this var, never blanket `--allow-env`)
+   - `--allow-env=NOTION_TOKEN,NOTION_API_KEY,NOTION_TOKEN_FILE` (only these three vars, never blanket `--allow-env`)
    - `--allow-net=api.notion.com` (only this host, never blanket `--allow-net`)
    - `--allow-read=$HOME/.notion-cli` (workspace dir; add explicit paths only when reading user-supplied input files)
    - `--allow-write=$HOME/.notion-cli` (same)
+   - `--allow-read=$NOTION_TOKEN_FILE` only when the user resolves their token via a file (route (c) of the auth flow). This is exactly that one path — never `--allow-read=/run/agenix/` or any directory.
 
-4. **No `.env` fallback.** The token MUST come from a real environment variable exported in the user's shell rc. `.env` files are not loaded. This is intentional: a `.env` file in the repo root invites accidental commits.
+4. **No `.env` fallback.** The token MUST come from one of the three approved sources (env var, alias env var, or env-var-pointed file). `.env` files are not loaded. This is intentional: a `.env` file in the repo root invites accidental commits.
 
-5. **No token persistence outside the env.** Do not write the token to disk. Do not cache it. Do not include it in error messages or stack traces.
+5. **No token persistence outside the env / file source.** Do not write the token to disk (other than the secrets-manager-managed file the user already maintains). Do not cache it. Do not include it in error messages or stack traces. When reading from a file, the token is held in memory for one HTTP client and discarded.
 
 6. **Sanitize errors before surfacing.** The Notion SDK can include the request URL in error messages. Strip query strings or any header that begins with `Authorization`. The SDK's default error shape (`code`, `status`, `message`) is safe to surface as-is.
+
+7. **Never pass the token on a command line.** Command-line args are visible to other users via `ps`. Do not invoke the CLI as `NOTION_TOKEN=ntn_… deno run …` followed by a value pasted from chat. Use the file route (option (c)) when in doubt — `cat /run/agenix/notion-api-key` does not expose the value to `ps`, and the CLI reads it directly.
 
 ## Token leak playbook
 

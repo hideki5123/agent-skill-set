@@ -111,32 +111,61 @@ if (!install.ok) {
 }
 console.log(`[ok] mise install`);
 
-// 6. existence-check NOTION_TOKEN (never read value)
-const tokenSet = Deno.env.get("NOTION_TOKEN") !== undefined;
-console.log(
-  tokenSet ? "[ok] NOTION_TOKEN: set" : "[warn] NOTION_TOKEN: missing",
-);
-if (!tokenSet) {
+// 6. existence-check token sources (never read the value).
+//    Resolution order: NOTION_TOKEN → NOTION_API_KEY → NOTION_TOKEN_FILE.
+const directSet = (Deno.env.get("NOTION_TOKEN") ?? "").length > 0;
+const aliasSet = (Deno.env.get("NOTION_API_KEY") ?? "").length > 0;
+const tokenFile = Deno.env.get("NOTION_TOKEN_FILE") ?? "";
+let fileOk = false;
+let fileNote = "";
+if (tokenFile.length > 0) {
+  try {
+    const st = await Deno.stat(tokenFile);
+    fileOk = st.isFile && st.size > 0;
+    fileNote = fileOk
+      ? `${tokenFile} (${st.size} bytes)`
+      : `${tokenFile} (file empty)`;
+  } catch {
+    fileNote = `${tokenFile} (unreadable — add --allow-read=${tokenFile})`;
+  }
+}
+
+if (directSet) {
+  console.log("[ok] token source: NOTION_TOKEN");
+} else if (aliasSet) {
+  console.log("[ok] token source: NOTION_API_KEY");
+} else if (fileOk) {
+  console.log(`[ok] token source: NOTION_TOKEN_FILE → ${fileNote}`);
+} else if (tokenFile.length > 0) {
+  console.log(`[warn] NOTION_TOKEN_FILE set but unusable: ${fileNote}`);
+} else {
+  console.log("[warn] no token source resolves");
   console.log(
-    "  Export NOTION_TOKEN in your shell rc and re-run setup.",
+    "  Pick one and re-run setup. See references/auth-setup.md for the full walk-through.",
   );
   console.log(
-    "  See references/auth-setup.md for full instructions.",
+    "  (a) zsh/bash: add `export NOTION_TOKEN=ntn_...` to ~/.zshrc or ~/.bashrc",
   );
   console.log(
-    "  zsh/bash: add `export NOTION_TOKEN=ntn_...` to ~/.zshrc or ~/.bashrc",
+    "      fish:     add `set -gx NOTION_TOKEN ntn_...` to ~/.config/fish/config.fish",
   );
   console.log(
-    "  fish:     add `set -gx NOTION_TOKEN ntn_...` to ~/.config/fish/config.fish",
+    "      PowerShell: add `$env:NOTION_TOKEN = 'ntn_...'` to $PROFILE",
   );
   console.log(
-    "  PowerShell: add `$env:NOTION_TOKEN = 'ntn_...'` to $PROFILE",
+    "  (b) Already exporting NOTION_API_KEY? The CLI accepts it as a fallback.",
+  );
+  console.log(
+    "  (c) Nix / agenix / sops-nix users: export NOTION_TOKEN_FILE pointing at",
+  );
+  console.log(
+    "      the chmod-0400 secret file (e.g. /run/agenix/notion-api-key).",
   );
 }
 
 console.log("\nSetup complete.");
 console.log(
-  `Next: smoke-test with \`deno run --allow-env=NOTION_TOKEN --allow-net=api.notion.com --allow-read=$HOME/.notion-cli --allow-write=$HOME/.notion-cli ${
+  `Next: smoke-test with \`deno run --allow-env=NOTION_TOKEN,NOTION_API_KEY,NOTION_TOKEN_FILE --allow-net=api.notion.com --allow-read=$HOME/.notion-cli --allow-write=$HOME/.notion-cli [--allow-read=$NOTION_TOKEN_FILE if used] ${
     join(libDir, "notion.ts")
   } auth\``,
 );

@@ -2,13 +2,19 @@
 
 All examples assume preflight has succeeded and the workspace is at `~/.notion-cli/`.
 
-The base permission set is constant:
+The base permission set is:
 
 ```
---allow-env=NOTION_TOKEN --allow-net=api.notion.com --allow-read=$HOME/.notion-cli --allow-write=$HOME/.notion-cli
+--allow-env=NOTION_TOKEN,NOTION_API_KEY,NOTION_TOKEN_FILE --allow-net=api.notion.com --allow-read=$HOME/.notion-cli --allow-write=$HOME/.notion-cli
 ```
 
-Below it's abbreviated as `<perms>`.
+When the token source is `NOTION_TOKEN_FILE` (route (c) of the auth flow — agenix, sops-nix, 1Password CLI mounts, etc.), append exactly that one extra path:
+
+```
+--allow-read=$NOTION_TOKEN_FILE
+```
+
+Below the full permission set is abbreviated as `<perms>`.
 
 ## Auth / smoke test
 

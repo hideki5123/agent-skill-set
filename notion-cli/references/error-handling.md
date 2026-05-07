@@ -9,8 +9,8 @@ The Notion API uses standard HTTP status codes plus a structured `code` string. 
 Token is wrong, revoked, or empty.
 
 - Re-copy the Internal Integration Secret from <https://www.notion.so/profile/integrations> → your integration → Configuration → Show.
-- Make sure the `NOTION_TOKEN` env var is exported in the **same shell** that's running deno. (Setting it in `~/.zshrc` doesn't apply to an already-open terminal.)
-- If you regenerated the token recently, every other terminal session also needs to re-source.
+- Make sure your active token source is in the **same shell** that's running deno. Setting `NOTION_TOKEN` in `~/.zshrc` doesn't apply to an already-open terminal; for `NOTION_TOKEN_FILE`, the file must be present (e.g. agenix mounts at activation time — check with `[ -r "$NOTION_TOKEN_FILE" ]`).
+- If you regenerated the token recently, every other terminal session also needs to re-source. For agenix / sops-nix, run `darwin-rebuild switch` (or `home-manager switch` / `nixos-rebuild switch`) so the new file is materialized.
 
 ### 403 — `restricted_resource`
 
@@ -78,6 +78,14 @@ hint: share the page with the integration in Notion (••• → Connections)
 ```
 
 For 401/403/404 the CLI appends a one-line hint pointing to the most likely fix.
+
+### `missing_token` / `empty_token_file` / `token_file_unreadable` (status 0)
+
+These are emitted by the CLI itself before any HTTP call. They mean the token resolution chain failed before reaching the API.
+
+- `missing_token`: none of `NOTION_TOKEN`, `NOTION_API_KEY`, or `NOTION_TOKEN_FILE` is satisfied. Pick one route in `references/auth-setup.md`.
+- `empty_token_file`: `NOTION_TOKEN_FILE` is set but the file is empty. Re-materialize via your secrets manager (`darwin-rebuild switch` for agenix, `sops -d` round-trip for sops-nix, etc.) or check the source `.age` / `.sops.yaml` artifact for the right entry.
+- `token_file_unreadable`: deno could not open the file. The most common cause is a missing `--allow-read=$NOTION_TOKEN_FILE` permission (deno does not auto-grant read access to paths outside `$HOME/.notion-cli`). Other causes: the file was not yet materialized at the time of the call, the file mode is `0000`, or the file is owned by another user. The error message includes the underlying OS error.
 
 ## Sanitization
 

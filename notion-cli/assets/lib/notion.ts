@@ -1,11 +1,19 @@
 // notion.ts — Notion REST API CLI on deno + npm:@notionhq/client@2.
 //
 // Run with:
-//   deno run --allow-env=NOTION_TOKEN --allow-net=api.notion.com \
+//   deno run --allow-env=NOTION_TOKEN,NOTION_API_KEY,NOTION_TOKEN_FILE \
+//     --allow-net=api.notion.com \
 //     --allow-read=$HOME/.notion-cli --allow-write=$HOME/.notion-cli \
+//     [--allow-read=$NOTION_TOKEN_FILE]   # add when resolving via file
 //     <this> <command> [args]
 //
-// Never logs the NOTION_TOKEN value — existence-only checks.
+// Token resolution order (first match wins):
+//   1. NOTION_TOKEN         — direct value
+//   2. NOTION_API_KEY       — alias (some setups standardize on this name)
+//   3. NOTION_TOKEN_FILE    — path to a file whose contents are the token
+//                             (use for sops-nix / agenix / 1Password CLI mounts)
+//
+// Never logs the token value — existence-only checks and read-then-discard.
 
 // deno-lint-ignore-file no-explicit-any
 import { Client } from "npm:@notionhq/client@2";
@@ -49,10 +57,16 @@ Global options:
   --format json|text            Output format (default: json)
   --help                        Show this message
 
-Auth:
-  Set NOTION_TOKEN to an Internal Integration Secret.
-  Get one at https://www.notion.so/profile/integrations and share each target
-  page or database with the integration (••• → Connections → Add connections).
+Auth (any one of):
+  NOTION_TOKEN           env var with the Internal Integration Secret.
+  NOTION_API_KEY         env var alias (resolved if NOTION_TOKEN unset).
+  NOTION_TOKEN_FILE      env var pointing at a file whose contents are the
+                         token (e.g. agenix/sops-nix-managed file at
+                         /run/agenix/<name>). Add --allow-read=<that-file>
+                         to deno permissions when you use this.
+
+  Get a token at https://www.notion.so/profile/integrations and share each
+  target page or database with the integration (••• → Connections → Add).
   Full setup: references/auth-setup.md.
 `;
 
@@ -115,20 +129,60 @@ function normalizeId(input: string): string {
 
 // ── token + client ─────────────────────────────────────────────────
 
+function failMissingToken(): never {
+  console.error(JSON.stringify({
+    error: {
+      status: 0,
+      code: "missing_token",
+      message:
+        "No Notion token found. Set one of: NOTION_TOKEN (direct), NOTION_API_KEY (alias), or NOTION_TOKEN_FILE (path to a file containing the token). See references/auth-setup.md.",
+    },
+  }));
+  Deno.exit(2);
+}
+
 function getToken(): string {
-  const t = Deno.env.get("NOTION_TOKEN");
-  if (!t) {
-    console.error(JSON.stringify({
-      error: {
-        status: 0,
-        code: "missing_token",
-        message:
-          "NOTION_TOKEN is not set. See references/auth-setup.md to create an Internal Integration and export the token.",
-      },
-    }));
-    Deno.exit(2);
+  // 1. Direct env var.
+  const direct = Deno.env.get("NOTION_TOKEN");
+  if (direct && direct.length > 0) return direct;
+
+  // 2. Aliased env var.
+  const alias = Deno.env.get("NOTION_API_KEY");
+  if (alias && alias.length > 0) return alias;
+
+  // 3. File reference (e.g. agenix / sops-nix mounts).
+  const path = Deno.env.get("NOTION_TOKEN_FILE");
+  if (path && path.length > 0) {
+    try {
+      const raw = Deno.readTextFileSync(path);
+      const trimmed = raw.trim();
+      if (trimmed.length === 0) {
+        console.error(JSON.stringify({
+          error: {
+            status: 0,
+            code: "empty_token_file",
+            message:
+              `NOTION_TOKEN_FILE points at a file with no content: ${path}`,
+          },
+        }));
+        Deno.exit(2);
+      }
+      return trimmed;
+    } catch (err) {
+      const msg = (err as Error).message ?? String(err);
+      console.error(JSON.stringify({
+        error: {
+          status: 0,
+          code: "token_file_unreadable",
+          message:
+            `Could not read NOTION_TOKEN_FILE (${path}). Add --allow-read=${path} to deno permissions, or check the file mode/owner. Underlying error: ${msg}`,
+        },
+      }));
+      Deno.exit(2);
+    }
   }
-  return t;
+
+  failMissingToken();
 }
 
 // Lazily-instantiated client so `--help` and arg-only paths don't require the env.

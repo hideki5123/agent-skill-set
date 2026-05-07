@@ -6,10 +6,13 @@ description: >
   query databases with filters and sorts, list/append/delete blocks, list and
   retrieve users, list databases, retrieve page comments. Two-tool stack:
   mise + deno (no node_modules, no pnpm, no bash). Token stays outside the
-  agent: existence-only check on NOTION_TOKEN, scoped
-  `--allow-env=NOTION_TOKEN` and `--allow-net=api.notion.com` flags only,
-  no `.env` files, never echo or print the token. Walks first-time users
-  through creating a Notion Internal Integration and sharing pages with it.
+  agent: existence-only check, scoped
+  `--allow-env=NOTION_TOKEN,NOTION_API_KEY,NOTION_TOKEN_FILE` and
+  `--allow-net=api.notion.com` flags only, no `.env` files, never echo or
+  print the token. Token resolved in order: NOTION_TOKEN → NOTION_API_KEY →
+  contents of the file at NOTION_TOKEN_FILE (suits agenix / sops-nix /
+  1Password CLI mounts). Walks first-time users through creating a Notion
+  Internal Integration and sharing pages with it.
   Trigger patterns (match any variation):
   notion / Notion / notion-cli / notion cli / notion api /
   notion page / notion pages / notion database / notion db /
@@ -31,8 +34,8 @@ Call the Notion REST API from the terminal. Implementation: TypeScript on **deno
 
 ## Hard rules
 
-1. **Never read or print the token.** Use existence checks only. Forbidden: `echo $NOTION_TOKEN`, `printenv | grep -i notion`, `cat ~/.zshrc`, `cat .env`, logging `Authorization` headers. See `references/security.md`.
-2. **Always use scoped deno permissions.** Base perms for every CLI invocation: `--allow-env=NOTION_TOKEN --allow-net=api.notion.com --allow-read=$HOME/.notion-cli --allow-write=$HOME/.notion-cli`. Add `--allow-read=<input-file>` only when the user passes a file path. Never blanket `--allow-read` / `--allow-net`.
+1. **Never read or print the token.** Use existence checks only. Forbidden: `echo $NOTION_TOKEN`, `echo $NOTION_API_KEY`, `printenv | grep -i notion`, `cat ~/.zshrc`, `cat .env`, `cat $NOTION_TOKEN_FILE` (or any file used as a token source), logging `Authorization` headers. See `references/security.md`.
+2. **Always use scoped deno permissions.** Base perms for every CLI invocation: `--allow-env=NOTION_TOKEN,NOTION_API_KEY,NOTION_TOKEN_FILE --allow-net=api.notion.com --allow-read=$HOME/.notion-cli --allow-write=$HOME/.notion-cli`. When the user resolves their token via `NOTION_TOKEN_FILE`, also add `--allow-read=$NOTION_TOKEN_FILE` (just that one path — never a broader read scope). Add `--allow-read=<input-file>` only when the user passes another file path as an argument. Never blanket `--allow-read` / `--allow-net`.
 3. **Cross-OS only.** All non-trivial logic lives in `assets/lib/*.ts`. No bash, no PowerShell, no shell heredocs.
 4. **Confirm destructive ops.** Before `page archive`, `blocks delete`, or `db update` calls that drop properties, summarize what will change and ask the user before sending.
 5. **Never invent page or database IDs.** Always derive them from a Notion URL the user supplies, from `notion search`, or from a known reference. If you cannot, ask.
@@ -45,14 +48,16 @@ Call the Notion REST API from the terminal. Implementation: TypeScript on **deno
 ## Preflight (before every call)
 
 ```
-deno run --allow-env=NOTION_TOKEN --allow-read --allow-run=mise,deno ~/.notion-cli/lib/preflight.ts
+deno run --allow-env=NOTION_TOKEN,NOTION_API_KEY,NOTION_TOKEN_FILE,HOME,USERPROFILE --allow-read --allow-run=mise,deno ~/.notion-cli/lib/preflight.ts
 ```
+
+(`HOME` / `USERPROFILE` are needed only by preflight to locate `~/.notion-cli/`. The per-call invocations don't need them — those use `$HOME` shell expansion before deno starts.)
 
 If any check fails:
 - `mise` missing → instruct platform install and stop. macOS: `brew install mise`. Linux: `curl https://mise.run | sh`. Windows: `winget install jdx.mise`.
 - `deno` missing → `cd ~/.notion-cli && mise install`.
 - `workspace` missing → run setup (below).
-- `NOTION_TOKEN` missing → walk the user through `references/auth-setup.md`. **Do not** offer a `.env` fallback.
+- `token` missing → walk the user through `references/auth-setup.md`. None of `NOTION_TOKEN`, `NOTION_API_KEY`, or `NOTION_TOKEN_FILE` (file readable + non-empty) is satisfied. **Do not** offer a `.env` fallback.
 
 ## First-time setup (run once)
 
@@ -68,11 +73,11 @@ From a user shell (manual, version-pinned path; replace `<version>` with the ins
 deno run --allow-read --allow-write --allow-env --allow-run=mise ~/.claude/plugins/cache/hideki-plugins/notion-cli/<version>/skills/notion-cli/assets/lib/setup.ts
 ```
 
-`setup.ts` creates `~/.notion-cli/{lib,.cache,tmp}/`, copies `assets/lib/*.ts` and `mise.toml` into the workspace, runs `mise trust && mise install`, and existence-checks `NOTION_TOKEN`.
+`setup.ts` creates `~/.notion-cli/{lib,.cache,tmp}/`, copies `assets/lib/*.ts` and `mise.toml` into the workspace, runs `mise trust && mise install`, and existence-checks the token sources (`NOTION_TOKEN` / `NOTION_API_KEY` / `NOTION_TOKEN_FILE`).
 
 ## Authenticating Notion on the terminal
 
-The user asked how to auth. Walk them through it whenever `NOTION_TOKEN` is missing OR they explicitly ask:
+The user asked how to auth. Walk them through it whenever no token source resolves OR they explicitly ask:
 
 1. **Open the integrations page**: <https://www.notion.so/profile/integrations> (or <https://www.notion.so/my-integrations> on older accounts).
 2. **Click "+ New integration"**. Configure:
@@ -80,32 +85,43 @@ The user asked how to auth. Walk them through it whenever `NOTION_TOKEN` is miss
    - Associated workspace: pick the workspace you want CLI access to.
    - Type: **Internal** (recommended). Internal tokens never expire and don't require an OAuth app.
 3. **Copy the secret.** Click *Show* under "Internal Integration Secret" and copy. It starts with `ntn_…` (newer) or `secret_…` (older).
-4. **Export it in your shell rc** (the user does this themselves — never paste it through the agent):
+4. **Make the secret reachable from your shell** (the user does this themselves — never paste it through the agent). Pick **one** of the following; the CLI tries them in order:
 
-   - **zsh / bash** — append to `~/.zshrc` or `~/.bashrc`:
+   **(a) Direct env var — simplest.** Append to your shell rc:
+   - **zsh / bash** (`~/.zshrc` / `~/.bashrc`):
      ```
      export NOTION_TOKEN="ntn_xxxxxxxxxxxxxxxxxxxx"
      ```
      Then `source ~/.zshrc` (or open a new terminal).
-   - **fish** — append to `~/.config/fish/config.fish`:
+   - **fish** (`~/.config/fish/config.fish`):
      ```
      set -gx NOTION_TOKEN ntn_xxxxxxxxxxxxxxxxxxxx
      ```
-   - **PowerShell** — append to `$PROFILE`:
+   - **PowerShell** (`$PROFILE`):
      ```
      $env:NOTION_TOKEN = 'ntn_xxxxxxxxxxxxxxxxxxxx'
      ```
+
+   **(b) Aliased env var.** If your environment already exports the token under `NOTION_API_KEY` (some Nix / home-manager setups standardize on that name), the CLI accepts it as a fallback. No extra step.
+
+   **(c) Secrets-manager-managed file** — recommended for Nix users with **agenix** or **sops-nix**, and for `1Password` / `pass` users mounting tokens as files. Keep the secret out of plain dotfiles entirely. Set `NOTION_TOKEN_FILE` to a chmod-`0400` file whose contents are exactly the token (no surrounding whitespace):
+   ```
+   export NOTION_TOKEN_FILE=/run/agenix/notion-api-key   # agenix example
+   ```
+   When invoking the CLI, also add `--allow-read=$NOTION_TOKEN_FILE` to the deno permission scope so the file is the only path beyond `$HOME/.notion-cli` that the script may read. See `references/auth-setup.md` (Nix / agenix section) for full setup.
+
 5. **Critical: share each page or database with the integration.** A fresh integration sees nothing in the workspace until you grant it. Per page/db:
    - Open the page or database in Notion.
    - Click `•••` (top-right) → **Connections** → **Add connections** → pick your integration.
    - Children of a shared page inherit the connection.
 6. **Verify**:
    ```
-   deno run --allow-env=NOTION_TOKEN --allow-net=api.notion.com --allow-read=$HOME/.notion-cli --allow-write=$HOME/.notion-cli ~/.notion-cli/lib/notion.ts auth
+   deno run --allow-env=NOTION_TOKEN,NOTION_API_KEY,NOTION_TOKEN_FILE --allow-net=api.notion.com --allow-read=$HOME/.notion-cli --allow-write=$HOME/.notion-cli [--allow-read=$NOTION_TOKEN_FILE] ~/.notion-cli/lib/notion.ts auth
    ```
+   (Drop the bracketed `--allow-read=$NOTION_TOKEN_FILE` if you used route (a) or (b).)
    On success: prints the bot user JSON. On 401: token wrong or revoked. On empty results from `search`: nothing has been shared with the integration yet.
 
-Full details and screenshots-of-text: `references/auth-setup.md`.
+Full details and the Nix / agenix walk-through: `references/auth-setup.md`.
 
 ## Per-call workflow
 
@@ -115,8 +131,9 @@ For every operation:
 2. **Decide which subcommand** to run (table below).
 3. **Run with scoped permissions**:
    ```
-   deno run --allow-env=NOTION_TOKEN --allow-net=api.notion.com --allow-read=$HOME/.notion-cli --allow-write=$HOME/.notion-cli ~/.notion-cli/lib/notion.ts <command> [args]
+   deno run --allow-env=NOTION_TOKEN,NOTION_API_KEY,NOTION_TOKEN_FILE --allow-net=api.notion.com --allow-read=$HOME/.notion-cli --allow-write=$HOME/.notion-cli [--allow-read=$NOTION_TOKEN_FILE] ~/.notion-cli/lib/notion.ts <command> [args]
    ```
+   The bracketed `--allow-read=$NOTION_TOKEN_FILE` is only needed if the user is on route (c) of the auth flow (token is sourced from a file).
 4. **Surface the response.** Default output is JSON; pass `--format text` for a compact human-readable summary.
 5. **For destructive ops** (`page archive`, `blocks delete`, deletes-via-update), summarize first and confirm before sending.
 
@@ -160,15 +177,37 @@ The following are **deliberately deferred** from v1. If the user asks, surface t
 ## Behavior scenarios
 
 ```gherkin
-Scenario: First-time auth — no token set
-  Given NOTION_TOKEN is not exported
+Scenario: First-time auth — no token source resolves
+  Given none of NOTION_TOKEN, NOTION_API_KEY, or NOTION_TOKEN_FILE is satisfied
   When the user invokes any subcommand
-  Then preflight reports "NOTION_TOKEN: missing" and the skill walks the user through
-       creating an Internal Integration, exporting the token in their shell rc, and
-       sharing target pages with the integration
+  Then preflight reports "token: missing" and the skill walks the user through
+       creating an Internal Integration, picking a token source (direct env var,
+       NOTION_API_KEY alias, or NOTION_TOKEN_FILE pointing at a secrets-manager
+       file), and sharing target pages with the integration
+
+Scenario: Token resolved from NOTION_API_KEY alias
+  Given NOTION_TOKEN is unset but NOTION_API_KEY is exported with a valid token
+  When the user invokes any subcommand
+  Then the CLI authenticates using NOTION_API_KEY without prompting, since
+       resolution falls through NOTION_TOKEN → NOTION_API_KEY → NOTION_TOKEN_FILE
+
+Scenario: Token resolved from NOTION_TOKEN_FILE (agenix / sops-nix / 1Password)
+  Given NOTION_TOKEN and NOTION_API_KEY are both unset, and NOTION_TOKEN_FILE
+        points at a chmod-0400 file (e.g. /run/agenix/notion-api-key) whose
+        contents are a valid token
+  When the caller runs deno with --allow-env=NOTION_TOKEN,NOTION_API_KEY,NOTION_TOKEN_FILE
+        and --allow-read=$NOTION_TOKEN_FILE added to the base scope
+  Then the CLI reads the file once at startup, trims trailing whitespace,
+       authenticates, and never logs the value
+
+Scenario: NOTION_TOKEN_FILE set but file unreadable or missing perm
+  Given NOTION_TOKEN_FILE points at a path the deno process cannot read
+  When the CLI starts
+  Then it fails with code "token_file_unreadable" and a hint to add
+       --allow-read=<that-path> or fix the file mode/owner
 
 Scenario: Search the workspace
-  Given NOTION_TOKEN is set and the integration has been added to a page
+  Given a token source resolves and the integration has been added to a page
   When the user says "search notion for 'meeting notes'"
   Then the skill runs `notion search "meeting notes"` and prints matching pages and
        databases — empty results trigger a hint to share more pages with the integration
@@ -224,13 +263,14 @@ Scenario: Archive a page (destructive — confirm)
        running `notion page archive <id>`
 
 Scenario: Token set but target page not shared
-  Given NOTION_TOKEN is valid but the page has not been shared with the integration
+  Given the token is valid but the page has not been shared with the integration
   When the skill calls `page get <id>`
   Then the API returns 404 / object_not_found, and the skill explains how to share
        the page in the Notion UI (••• → Connections → Add connection)
 
-Scenario: User asks the agent to print or echo NOTION_TOKEN
-  When the user asks to reveal the token
+Scenario: User asks the agent to print or echo the token
+  When the user asks to reveal NOTION_TOKEN, NOTION_API_KEY, or the contents of
+        NOTION_TOKEN_FILE
   Then the skill refuses, points the user to their own shell, and reminds them that
        leaked tokens should be rotated at https://www.notion.so/profile/integrations
 
