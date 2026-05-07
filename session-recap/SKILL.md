@@ -1,6 +1,6 @@
 ---
 name: session-recap
-version: 1.1.0
+version: 1.1.1
 description: >
   Read a Claude Code session's transcript and produce two markdown artifacts plus a
   meta.json: a scannable Summary (TL;DR, key terms, files, decisions, open threads) and
@@ -216,15 +216,26 @@ mdcat, etc.) even if Notion sync is unavailable.
 
 - In `summary.md`, every key term and key command links to its full definition in
   `note.md` using a **cross-file anchor**: `[label](./note.md#anchor-id)`.
-- In `note.md`, plain headings (e.g. `### derivation`) generate auto-slug anchors
-  (`derivation`). For headings that contain symbols, spaces, or punctuation that auto-slug
-  cannot capture cleanly, add an explicit ID with `{#explicit-id}` syntax — e.g.
-  `### \`nix build <flake>#<output>\` {#cmd-nix-build}`.
 - Anchor IDs use kebab-case lowercase. Conventions:
   - Term: `#<term-slug>` (e.g. `#derivation`, `#flake`)
   - Command: `#cmd-<short-label>` (e.g. `#cmd-nix-build`, `#cmd-git-add-a`)
   - Pitfall: `#pitfall-<short-label>`
   - Phase: `#phase-<n>-<short-label>`
+- In `note.md`, **a heading must always carry an explicit `{#kebab-id}` whenever its
+  rendered text contains anything other than `[a-z0-9-]`** — that is, dots,
+  underscores, slashes, spaces with mixed case, backticks, parentheses, dollar signs,
+  uppercase letters, etc. Standard markdown sluggers (GitHub, VS Code, mdBook, Pandoc)
+  disagree on how to slugify these, so without an explicit ID the cross-file links in
+  `summary.md` will silently break. Examples:
+  - `### derivation` — plain alphanumeric, auto-slug `derivation` is reliable, no
+    `{#…}` needed.
+  - `### home.sessionPath {#home-sessionpath}` — has a dot AND mixed case, must
+    declare ID explicitly.
+  - `### system.defaults.finder {#system-defaults-finder}` — has dots, must declare.
+  - `### \`hm-session-vars.sh\` {#hm-session-vars-sh}` — has backticks and a dot.
+  - `### \`nix build <flake>#<output>\` {#cmd-nix-build}` — has angle brackets and `#`.
+  When in doubt, add the `{#…}` — it never hurts and always makes the link resolve in
+  every renderer.
 
 When recap-to-notion later merges these into a single Notion page, it rewrites the
 cross-file `(./note.md#x)` form into same-page `(#x)` form. The local files keep

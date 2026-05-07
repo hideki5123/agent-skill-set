@@ -14,7 +14,7 @@
         "path": "."
       },
       "description": "Sync a session-recap directory (summary.md + note.md + meta.json) to Notion under the explicit \"My Agent Notes / Session Recaps\" database via the notion-cli skill. The Notion target is fixed by design",
-      "version": "1.0.0"
+      "version": "1.0.1"
     }
   ]
 }

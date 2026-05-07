@@ -1,6 +1,6 @@
 ---
 name: recap-to-notion
-version: 1.0.0
+version: 1.0.1
 description: >
   Sync a session-recap directory (summary.md + note.md + meta.json) to Notion under the
   explicit "My Agent Notes / Session Recaps" database via the notion-cli skill. The Notion
@@ -29,6 +29,30 @@ This skill assumes:
 Cleanup of confirmed-old local recap dirs is **not** this skill's job — it belongs to
 `session-recap` (the manifest owner). This skill only appends manifest entries on
 successful uploads.
+
+## Calling notion-cli
+
+`notion-cli` is **not a shell binary** — it is a Claude Code skill whose implementation
+lives in `~/.notion-cli/lib/notion.ts` (a deno script created by the skill's `setup.ts`).
+All invocations in this workflow run that script with scoped deno permissions.
+
+Define the prefix once at the start of the run:
+
+```bash
+NOTION_PERMS="--allow-env=NOTION_TOKEN,NOTION_API_KEY,NOTION_TOKEN_FILE \
+  --allow-net=api.notion.com \
+  --allow-read=$HOME/.notion-cli --allow-write=$HOME/.notion-cli"
+# If the user's token source is NOTION_TOKEN_FILE (agenix / sops-nix / 1Password
+# CLI mounts), append exactly that one path to the read scope:
+[ -n "$NOTION_TOKEN_FILE" ] && NOTION_PERMS="$NOTION_PERMS --allow-read=$NOTION_TOKEN_FILE"
+NOTION="deno run $NOTION_PERMS $HOME/.notion-cli/lib/notion.ts"
+```
+
+All later `$NOTION <subcommand> [args]` lines in this SKILL.md expand to that full
+deno invocation. Never assume `notion-cli` is on `$PATH` — it is not. If
+`~/.notion-cli/lib/notion.ts` is missing (workspace not yet bootstrapped), tell the
+user to run notion-cli's `setup.ts` once and exit cleanly without modifying any local
+state.
 
 ## Workflow
 
@@ -69,7 +93,7 @@ If the file is missing or `database_id` is empty:
 
 1. Locate the parent page:
    ```bash
-   notion-cli search "My Agent Notes" --filter pages --limit 5 --format json
+   $NOTION search "My Agent Notes" --filter pages --limit 5 --format json
    ```
    Pick the result with `object == "page"` and a `title` exactly matching
    `My Agent Notes`. Extract its `id`.
@@ -78,14 +102,14 @@ If the file is missing or `database_id` is empty:
      Stop. Do not write `.notion-config.json`. Local files stay intact for next retry.
 2. Locate or create the database:
    ```bash
-   notion-cli search "Session Recaps" --filter databases --limit 5 --format json
+   $NOTION search "Session Recaps" --filter databases --limit 5 --format json
    ```
    Find a `database` whose parent is the page from step 1 and whose title is exactly
    `Session Recaps`.
    - If found → save its `id` to `.notion-config.json`.
    - If not found → call:
      ```bash
-     cat <<'JSON' | notion-cli db create \
+     cat <<'JSON' | $NOTION db create \
        --parent-page <parent-page-id> \
        --name "Session Recaps" \
        --description "Auto-generated recaps from Claude Code sessions" \
@@ -105,10 +129,10 @@ If the file is missing or `database_id` is empty:
      JSON
      ```
      Save the returned `id` to `.notion-config.json`. No user confirmation prompt.
-   - If `notion-cli db create` is missing (older notion-cli) → tell the user (UI
-     language): 「Notion 上で `My Agent Notes` 配下に `Session Recaps` データベースを
-     手動作成してください (スキーマは README 参照)。notion-cli を 1.1.0 以上に上げる
-     と自動化されます」 / English equivalent. Stop.
+   - If `db create` is rejected as an unknown subcommand (older notion-cli that lacks
+     it) → tell the user (UI language): 「Notion 上で `My Agent Notes` 配下に
+     `Session Recaps` データベースを手動作成してください (スキーマは README 参照)。
+     notion-cli を 1.1.0 以上に上げると自動化されます」 / English equivalent. Stop.
 
 If `.notion-config.json` had a value but Phase B/B0 later returns an
 `object_not_found` error from notion-cli, clear the `database_id` and re-run Phase A
@@ -184,7 +208,7 @@ Input: absolute path to a recap dir containing `summary.md`, `note.md`, `meta.js
 
 5. **Look up an existing page** keyed by `Session ID`:
    ```bash
-   notion-cli db query <database-id> --format json \
+   $NOTION db query <database-id> --format json \
      --filter '{"property":"Session ID","rich_text":{"equals":"<session_id>"}}'
    ```
    - If `results[]` non-empty → take `results[0].id` as the existing page id; status =
@@ -193,16 +217,16 @@ Input: absolute path to a recap dir containing `summary.md`, `note.md`, `meta.js
 
 6. **Apply the upsert**:
 
-   - **created**: `notion-cli page create --parent-db <database-id> --title "<title>" --stdin` with
+   - **created**: `$NOTION page create --parent-db <database-id> --title "<title>" --stdin` with
      stdin JSON `{ "properties": { ... }, "children": [<merged blocks>] }`.
    - **updated**:
-     1. `notion-cli blocks list <existing-page-id> --format json` → collect every
+     1. `$NOTION blocks list <existing-page-id> --format json` → collect every
         top-level block id.
-     2. For each block id, `notion-cli blocks delete <block-id> --yes` (Notion's
+     2. For each block id, `$NOTION blocks delete <block-id> --yes` (Notion's
         delete is reversible from trash; we do this to clear stale content before
         re-appending).
-     3. `notion-cli blocks append <existing-page-id>` with the merged blocks JSON.
-     4. `notion-cli page update <existing-page-id>` with stdin
+     3. `$NOTION blocks append <existing-page-id>` with the merged blocks JSON.
+     4. `$NOTION page update <existing-page-id>` with stdin
         `{ "properties": { ... } }` to refresh metadata.
 
 7. **Append a manifest entry** on success:
@@ -228,10 +252,15 @@ Input: absolute path to a recap dir containing `summary.md`, `note.md`, `meta.js
   stop — manual intervention required.
 - **`.notion-config.json` parse error**: rename to
   `.notion-config.json.bak.<unix-ts>` and re-run Phase A.
-- **`notion-cli` not installed**: surface a one-line UI-language message and exit
-  without modifying any local state. The user installs notion-cli, then re-invokes.
-- **`notion-cli db create` not available** (older notion-cli): handled in Phase A
-  (instruct manual creation, exit cleanly).
+- **`~/.notion-cli/lib/notion.ts` missing** (notion-cli workspace not bootstrapped):
+  surface a one-line UI-language message instructing the user to run notion-cli's
+  `setup.ts` (see notion-cli SKILL.md "First-time setup"). Exit without modifying any
+  local state. The user runs setup, then re-invokes recap-to-notion.
+- **`db create` not available** (older notion-cli that pre-dates the subcommand):
+  handled in Phase A (instruct manual DB creation, exit cleanly).
+- **No Notion token resolved** (none of `NOTION_TOKEN` / `NOTION_API_KEY` /
+  `NOTION_TOKEN_FILE` set): notion-cli emits a `missing_token` JSON error. Surface
+  it and exit cleanly without modifying state. User exports a token and re-invokes.
 
 ### Retrospective
 
@@ -334,10 +363,16 @@ Scenario: Oversized block in markdown → upsert fails with clear error, no mani
   Then the skill surfaces the cause in UI language and does not append a manifest
        entry. The user is advised to shorten the markdown and re-invoke.
 
-Scenario: notion-cli not installed → skip sync, leave local intact
-  Given notion-cli is not installed or is missing from $PATH
+Scenario: notion-cli workspace not bootstrapped → skip sync, leave local intact
+  Given ~/.notion-cli/lib/notion.ts does not exist (setup.ts has never been run)
   When the skill starts
-  Then it emits a UI-language one-line message and exits without modifying anything.
+  Then it emits a UI-language one-line message pointing the user at notion-cli's
+       setup.ts and exits without modifying any local state.
+
+Scenario: No Notion token resolved → skip sync, leave local intact
+  Given none of NOTION_TOKEN / NOTION_API_KEY / NOTION_TOKEN_FILE is set
+  When notion-cli returns a missing_token JSON error from the first call
+  Then the skill surfaces the error in UI language and exits without modifying state.
 ```
 
 ## Notes and constraints
@@ -358,7 +393,9 @@ Scenario: notion-cli not installed → skip sync, leave local intact
   mode is a single block exceeding the per-block character cap (~2000 chars). Such a
   failure is surfaced verbatim and the user shortens the markdown manually. v1.0.0
   does not auto-chunk.
-- **Dependency**: `notion-cli >= 1.1.0`. Earlier versions lack `db create` and Phase A
-  falls back to a manual instruction.
+- **Dependency**: `notion-cli >= 1.1.0`, with the workspace bootstrapped at
+  `~/.notion-cli/` (run notion-cli's `setup.ts` once). All subcommands are invoked via
+  `deno run` against `~/.notion-cli/lib/notion.ts`, never as a `notion-cli` shell
+  binary (which does not exist).
 - **Read access to recap dir**: this skill reads `summary.md`, `note.md`, `meta.json`.
   It never modifies them.
