@@ -163,6 +163,11 @@
       "name": "codex-cli",
       "source": "./plugins/codex-cli",
       "description": "Run OpenAI Codex CLI from the terminal for batch / one-shot `codex exec` invocations with output captured to an `-o` file. Use for fire-and-forget runs, scripted CI, code review batches (`codex review"
+    },
+    {
+      "name": "en-to-ja-explainer",
+      "source": "./plugins/en-to-ja-explainer",
+      "description": "英語の技術ドキュメント (Hugging Face docs / GitHub README / arXiv 論文 / 技術ブログ等) を、日本人が読んで AI 生成と気づかない自然な日本語の解説サイトに変換します。フェッチ → 構成設計 → HTML/CSS/JS 生成 → 多角レビュー (技術正確性 + 日本語自然さ + UX) → 修正 → ローカル配信、まで一気通貫。日本語のチェックは A"
     }
   ]
 }
