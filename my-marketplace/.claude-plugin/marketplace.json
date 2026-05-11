@@ -115,11 +115,6 @@
       "description": "Call the OpenAI Platform API from the terminal via TypeScript on deno — chat completions, Responses API, reasoning (o-series), embeddings, image generation, audio (Whisper transcription, TTS), files, "
     },
     {
-      "name": "codex-cli",
-      "source": "./plugins/codex-cli",
-      "description": "Run OpenAI Codex CLI from the terminal for AI-powered coding tasks. Execute one-shot prompts, maintain multi-turn sessions with follow-ups, run code reviews, and resume previous conversations — all th"
-    },
-    {
       "name": "local-skill-factory",
       "source": "./plugins/local-skill-factory",
       "description": "Create project-local Claude Code skills (.claude/commands/) in any project directory. Analyzes the project's tech stack, structure, and conventions, then generates tailored local skills (custom slash "
@@ -158,6 +153,16 @@
       "name": "recap-to-notion",
       "source": "./plugins/recap-to-notion",
       "description": "Sync a session-recap directory (summary.md + note.md + meta.json) to Notion under the explicit \"My Agent Notes / Session Recaps\" database via the notion-cli skill. The Notion target is fixed by design"
+    },
+    {
+      "name": "codex-server",
+      "source": "./plugins/codex-server",
+      "description": "Run OpenAI Codex via the Codex App Server (JSON-RPC-over-stdio) for streaming multi-turn chat sessions with persistent threads, structured output, image input, and rich event streams. Default entry po"
+    },
+    {
+      "name": "codex-cli",
+      "source": "./plugins/codex-cli",
+      "description": "Run OpenAI Codex CLI from the terminal for batch / one-shot `codex exec` invocations with output captured to an `-o` file. Use for fire-and-forget runs, scripted CI, code review batches (`codex review"
     }
   ]
 }

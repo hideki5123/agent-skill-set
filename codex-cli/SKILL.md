@@ -1,21 +1,27 @@
 ---
 name: codex-cli
 description: >
-  Run OpenAI Codex CLI from the terminal for AI-powered coding tasks.
-  Execute one-shot prompts, maintain multi-turn sessions with follow-ups,
-  run code reviews, and resume previous conversations — all through Bash commands.
-  Always use this skill instead of `mcp__codex__codex` and `mcp__codex__codex-reply`
-  MCP tools — CLI is faster and more capable.
-  Trigger patterns (match any variation):
-  codex / codex-cli / codex CLI /
-  openai / open ai / OpenAI /
-  chatgpt / chat gpt / ChatGPT / GPT /
-  ask/run/use + {codex, openai, chatgpt, gpt} /
-  {codex, openai, gpt, chatgpt} + {review, session, exec, query, check} /
-  resume/continue/fork + {codex, gpt, openai, chatgpt} session /
-  "second opinion" / "cross-check" / "ai pair programming" / "another AI" / "external AI" /
-  "ask another model" / "get GPT's take" / "what does openai think"
-version: 1.1.1
+  Run OpenAI Codex CLI from the terminal for batch / one-shot `codex exec`
+  invocations with output captured to an `-o` file. Use for fire-and-forget
+  runs, scripted CI, code review batches (`codex review`), and resuming a
+  specific session by id (`codex exec resume`). Always use this skill
+  instead of `mcp__codex__codex` and `mcp__codex__codex-reply` MCP tools —
+  CLI is faster and more capable.
+
+  For streaming UX, multi-turn dialogues that need live state, structured
+  (JSON schema) output, attaching images, or programmatic event handling
+  → **use codex-server instead**. codex-server uses the user's ChatGPT
+  subscription via Codex App Server and decoupled async invocation that
+  bypasses the Bash 2-minute timeout entirely.
+
+  Trigger patterns (batch-only — chat/streaming triggers belong to codex-server):
+  codex-cli / codex CLI /
+  codex exec / codex review / codex resume / codex fork /
+  batch + {codex, gpt} / one-shot + {codex, gpt} / non-interactive + codex /
+  codex {to a file, -o, output file, captured output} /
+  CI + {codex, gpt} / scripted + {codex, gpt} /
+  fork codex session / resume codex session by id
+version: 1.2.0
 ---
 
 # Codex CLI Skill
