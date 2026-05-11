@@ -223,10 +223,22 @@ export function buildEnv(): Record<string, string> {
   return env;
 }
 
+interface SessionMeta {
+  type?: string;
+  payload?: {
+    id?: string;
+    cwd?: string;
+  };
+}
+
 export async function loadLatestThreadId(cwd: string): Promise<string | null> {
-  // Walk ~/.codex/sessions/YYYY/MM/DD/*.jsonl, newest first, return the first
-  // thread_id whose session ran in this cwd. Falls back to the globally
-  // newest thread_id if no cwd match is found.
+  // Walk ~/.codex/sessions/YYYY/MM/DD/*.jsonl, newest first, parse each
+  // first line as JSON, and return the first session whose `payload.cwd`
+  // matches. Falls back to the globally newest session's id if no cwd
+  // match is found.
+  //
+  // Session-file format (first line):
+  //   {"timestamp":"...","type":"session_meta","payload":{"id":"<uuid>","cwd":"...",...}}
   const root = codexSessionsDir();
   if (!(await pathExists(root))) return null;
 
@@ -258,16 +270,16 @@ export async function loadLatestThreadId(cwd: string): Promise<string | null> {
       const text = await Deno.readTextFile(path);
       const firstLine = text.split("\n", 1)[0];
       if (!firstLine) continue;
-      const m = firstLine.match(/"thread_id"\s*:\s*"([^"]+)"/);
-      if (!m) continue;
-      const threadId = m[1];
-      if (globalNewest === null) globalNewest = threadId;
-
-      // Optional cwd match: many codex session files include a cwd field.
-      const cwdMatch = firstLine.match(/"cwd"\s*:\s*"([^"]+)"/);
-      if (cwdMatch && cwdMatch[1] === cwd) {
-        return threadId;
+      let parsed: SessionMeta;
+      try {
+        parsed = JSON.parse(firstLine) as SessionMeta;
+      } catch {
+        continue;
       }
+      const threadId = parsed.payload?.id;
+      if (!threadId) continue;
+      if (globalNewest === null) globalNewest = threadId;
+      if (parsed.payload?.cwd === cwd) return threadId;
     } catch { /* skip */ }
   }
   return globalNewest;

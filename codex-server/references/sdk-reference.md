@@ -47,7 +47,16 @@ const thread = codex.startThread({
 const thread = codex.resumeThread("<thread-id>");
 ```
 
-After construction, `thread.id` is populated (string).
+Notes on `resumeThread`:
+- Does NOT take a second options argument in v0.130 — no `workingDirectory`,
+  no `skipGitRepoCheck`. The resumed turn always uses the original thread's
+  recorded cwd, and the codex CLI enforces its trusted-directory check there.
+- If you need to resume into a non-git directory, add it to codex's
+  trusted-projects config in `~/.codex/config.toml` ahead of time.
+
+`thread.id` is NOT populated synchronously after either constructor in
+v0.130 — capture it from the `thread.started` event in the runStreamed
+event stream.
 
 ## Turns
 

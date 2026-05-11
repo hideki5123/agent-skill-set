@@ -7,8 +7,15 @@
 //       [--schema-file <path>] [--model <name>] [--skip-git-check]
 //
 // Run with:
-//   deno run --allow-read --allow-write --allow-env=PATH,HOME,USERPROFILE \
+//   deno run --allow-read --allow-write --allow-env \
 //            --allow-run=<codex-path> --allow-net=api.openai.com <this>
+//
+// --allow-env is unscoped here because @openai/codex-sdk loads through
+// deno's Node compat layer, which probes many Node-internal env vars.
+// The ChatGPT-subscription-only guarantee is preserved at the *env
+// injection* boundary: buildEnv() only forwards PATH/HOME/USERPROFILE to
+// the SDK's env option, so the spawned codex binary never sees
+// OPENAI_API_KEY regardless of what deno can read.
 
 import { join } from "jsr:@std/path@1";
 import { parseArgs } from "jsr:@std/cli@1/parse-args";
@@ -35,11 +42,14 @@ interface ThreadItem {
 
 interface ThreadEvent {
   type:
+    | "thread.started"
+    | "turn.started"
     | "item.started"
     | "item.updated"
     | "item.completed"
     | "turn.completed"
     | "turn.failed";
+  thread_id?: string;
   item?: ThreadItem;
   usage?: {
     input_tokens?: number;
@@ -153,8 +163,9 @@ try {
   const streamed = await thread.runStreamed(input, runOpts);
   const events: AsyncIterable<ThreadEvent> = streamed.events;
 
-  // Persist thread-id as soon as the SDK populates it. The SDK exposes
-  // thread.id after startThread/resumeThread; capture once before iteration.
+  // Best-effort: capture thread.id synchronously if the SDK populates it.
+  // For new threads, the id arrives via the `thread.started` stream event
+  // below.
   if (thread.id) {
     existingMeta.thread_id = thread.id;
     await writeTurnMeta(existingMeta);
@@ -162,6 +173,13 @@ try {
 
   for await (const ev of events) {
     await appendEvent(turnId, ev);
+
+    if (ev.type === "thread.started" && ev.thread_id) {
+      existingMeta.thread_id = ev.thread_id;
+      await writeTurnMeta(existingMeta);
+      continue;
+    }
+    if (ev.type === "turn.started") continue;
 
     if (ev.type === "item.completed" && ev.item) {
       const it = ev.item;

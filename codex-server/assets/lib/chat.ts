@@ -79,11 +79,24 @@ async function forkWorker(opts: {
   skipGitCheck?: boolean;
 }): Promise<number> {
   const cfg = await readConfig();
+  // NOTE on --allow-env scope (worker only):
+  // The @openai/codex-sdk loads through deno's Node compat layer, which
+  // probes several Node-internal env vars (NODE_V8_COVERAGE, NODE_OPTIONS,
+  // NODE_NO_WARNINGS, …) plus codex-specific ones. Enumerating them is
+  // fragile across SDK upgrades, so the worker uses unscoped --allow-env.
+  //
+  // ChatGPT-subscription-only guarantee is unchanged because:
+  // 1. `buildEnv()` (helpers.ts) only forwards PATH/HOME/USERPROFILE to the
+  //    SDK's `env` option, which is what reaches the spawned codex binary.
+  // 2. Even if deno can read OPENAI_API_KEY, codex never receives it.
+  // 3. The codex binary authenticates via ~/.codex/auth.json (ChatGPT login).
+  // The client (chat.ts) keeps its tight --allow-env because it doesn't load
+  // the SDK — only the worker does.
   const args: string[] = [
     "run",
     "--allow-read",
     "--allow-write",
-    "--allow-env=PATH,HOME,USERPROFILE",
+    "--allow-env",
     `--allow-run=${cfg.codexPath}`,
     "--allow-net=api.openai.com",
     await workerSelf(),
@@ -368,8 +381,14 @@ async function cmdListThreads(): Promise<void> {
     try {
       const text = await Deno.readTextFile(path);
       const firstLine = text.split("\n", 1)[0];
-      const tid = firstLine.match(/"thread_id"\s*:\s*"([^"]+)"/)?.[1] ?? null;
-      const cwd = firstLine.match(/"cwd"\s*:\s*"([^"]+)"/)?.[1] ?? null;
+      let tid: string | null = null;
+      let cwd: string | null = null;
+      try {
+        // deno-lint-ignore no-explicit-any
+        const parsed = JSON.parse(firstLine) as any;
+        tid = parsed?.payload?.id ?? null;
+        cwd = parsed?.payload?.cwd ?? null;
+      } catch { /* skip */ }
       out.push({
         thread_id: tid,
         path,
@@ -402,7 +421,13 @@ async function cmdShow(rest: string[]): Promise<void> {
         try {
           const head = await Deno.readTextFile(p);
           const firstLine = head.split("\n", 1)[0];
-          if (firstLine.includes(`"thread_id":"${threadId}"`)) match = p;
+          // session-meta payload.id is the thread-id; not the top-level
+          // "thread_id" field (which only appears on later stream events).
+          try {
+            // deno-lint-ignore no-explicit-any
+            const parsed = JSON.parse(firstLine) as any;
+            if (parsed?.payload?.id === threadId) match = p;
+          } catch { /* skip */ }
         } catch { /* skip */ }
       }
     }
