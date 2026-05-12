@@ -6,7 +6,7 @@
 - **Change**: SKILL.md `### SKILL.md body` section now defaults to a 1-line pointer to `references/scenarios.feature` (on-demand only, never auto-loaded). Inline BDD becomes the exception requiring justification. Also strengthened: "WHEN TO READ: ..." guidance is now mandatory on every `references/` file mention.
 - **Files Modified**: `my-skill-factory/SKILL.md` — `### SKILL.md body` (Step 4 area).
 - **Version Bump**: 1.0.0 → 1.1.0
-- **Git Commit**: (pending — included in the combined 1.1.0 commit)
+- **Git Commit**: 71449f2
 - **Status**: applied — monitoring
 ---
 
@@ -16,7 +16,7 @@
 - **Change**: Added a new "Token-cost contract" bullet to Step 2's Decide list. It mandates: estimate SKILL.md body weight; mark every `references/` file with explicit "WHEN TO READ: ..." gating; explicitly exclude BDD scenarios, long worked examples, and detailed protocol docs from auto-load.
 - **Files Modified**: `my-skill-factory/SKILL.md` — `## Step 2: Design the Skill` (Decide list).
 - **Version Bump**: 1.0.0 → 1.1.0
-- **Git Commit**: (pending — combined 1.1.0 commit)
+- **Git Commit**: 71449f2
 - **Status**: applied — monitoring
 ---
 
@@ -26,7 +26,7 @@
 - **Change**: Restructured Step 1 into two ordered blocks: "Architecture questions (always ask unless answered)" followed by "Stack/runtime questions (after architecture is clear)". Architecture block calls out auth mode (with billing-implication surfacing), sync vs async, batch vs streaming, and user-facing names.
 - **Files Modified**: `my-skill-factory/SKILL.md` — `## Step 1: Gather Requirements`.
 - **Version Bump**: 1.0.0 → 1.1.0
-- **Git Commit**: (pending — combined 1.1.0 commit)
+- **Git Commit**: 71449f2
 - **Status**: applied — monitoring
 ---
 
@@ -39,7 +39,7 @@
 - **Change**: Removed the "2-3 questions max" cap. Replaced with explicit guidance: ask as many clarifying questions as needed; "minimize interruptions" does NOT apply to user-visible names/labels (always confirm) or architectural Q&A (ask freely). Skip a question only when explicitly answered.
 - **Files Modified**: `my-skill-factory/SKILL.md` — `## Step 1: Gather Requirements` (tail paragraph).
 - **Version Bump**: 1.0.0 → 1.1.0
-- **Git Commit**: (pending — combined 1.1.0 commit)
+- **Git Commit**: 71449f2
 - **Status**: applied — monitoring
 - **Recurrence threshold met**: this is the only amendment in this batch motivated by 3+ feedback entries.
 ---
@@ -50,7 +50,7 @@
 - **Change**: Step 5 renamed to "Verify and Smoke Test". Split into 5a (listing check, unchanged) and 5b (runtime smoke, REQUIRED). For wrapper skills (CLI/SDK/API), 5b mandates at least one happy-path execution + one error-path. For other skill kinds, the primary entry point must be exercised. Treats any bug found here as a smoke-discovered fix to commit before reporting completion.
 - **Files Modified**: `my-skill-factory/SKILL.md` — `## Step 5: Verify and Smoke Test`.
 - **Version Bump**: 1.0.0 → 1.1.0
-- **Git Commit**: (pending — combined 1.1.0 commit)
+- **Git Commit**: 71449f2
 - **Status**: applied — monitoring
 ---
 
@@ -63,6 +63,6 @@
   3. Retrospective template inside `skill-improvement-guide.md` (the boilerplate this factory embeds into generated skills) also got the same WHY-follow-up requirement.
 - **Files Modified**: `my-skill-factory/SKILL.md` — `## Retrospective`; `my-skill-factory/references/skill-improvement-guide.md` — log format table + Retrospective Step Template.
 - **Version Bump**: 1.0.0 → 1.1.0
-- **Git Commit**: (pending — combined 1.1.0 commit)
+- **Git Commit**: 71449f2
 - **Status**: applied — monitoring
 ---
