@@ -1,7 +1,7 @@
 ---
 name: en-to-ja-explainer
-description: 英語の技術ドキュメント (Hugging Face docs / GitHub README / arXiv 論文 / 技術ブログ等) を、日本人が読んで AI 生成と気づかない自然な日本語の解説サイトに変換します。フェッチ → 構成設計 → HTML/CSS/JS 生成 → 多角レビュー (技術正確性 + 日本語自然さ + UX) → 修正 → ローカル配信、まで一気通貫。日本語のチェックは AI らしさパターン辞書と複数視点のサブエージェントレビューで二段構え。Triggers: 「英語ドキュメントを日本語で解説するサイトを作って」「Japanese explainer for [URL]」「英語の技術ドキュメントをやさしく日本語にして」「Convert this English doc to a Japanese site」「AI っぽくない日本語で技術解説」「Hugging Face docs を日本語化」「arXiv を日本語で噛み砕いて」「en-to-ja explainer」「/en-to-ja-explainer」
-version: 1.0.0
+description: 英語の技術ドキュメント (Hugging Face docs / GitHub README / arXiv 論文 / 技術ブログ等) を、日本人が読んで AI 生成と気づかない自然な日本語の解説サイトに変換します。フェッチ → 構成 → HTML/CSS/JS 生成 → 多角レビュー → 修正 → ローカル配信、まで一気通貫。日本語自然さチェックは `naturalize-ja` スキルに委譲 (辞書本体・grep・サブエージェント レビューはそちら側に集約)。技術正確性は codex-cli、UX/レスポンシブは汎用 Agent が担当。Triggers: 「英語ドキュメントを日本語で解説するサイトを作って」「Japanese explainer for [URL]」「英語の技術ドキュメントをやさしく日本語にして」「Convert this English doc to a Japanese site」「AI っぽくない日本語で技術解説」「Hugging Face docs を日本語化」「arXiv を日本語で噛み砕いて」「en-to-ja explainer」「/en-to-ja-explainer」
+version: 1.1.0
 ---
 
 # en-to-ja-explainer
@@ -70,28 +70,25 @@ version: 1.0.0
 
 ### Step 3: 日本語本文を書く
 
-**書き始める前に必ず** `references/ai-japanese-patterns.md` を読み、これを文体ガイドとして従う。
-
 各セクションで:
 
 1. 当たり前の日本語でドラフト
-2. ドラフト直後に AI 表現の grep を回す (patterns ファイルに grep コマンドあり)
-3. ヒットを 1 つずつ置換
+2. ドラフト直後に `naturalize-ja --policy auto <file>` を実行し、CRITICAL の AI 臭を除去
+3. 残った IMPORTANT は文脈を見て個別判断
 
 「読みやすさ」ではなく「ネイティブが読んで引っかからないか」を最適化軸にする。
-
-加えて、用語訳の一貫性と文体は `references/tech-translation-guide.md` を参照。
+用語訳の一貫性と文体は `references/tech-translation-guide.md` を参照。AI 臭のカテゴリ辞書 (A-O) と grep は naturalize-ja 側に集約されているため、このスキルは詳細を抱えない。
 
 ### Step 4: 多角レビュー
 
-`references/team-roles.md` の各エージェントを並列で走らせる:
+`references/team-roles.md` の各レビューを並列で走らせる:
 
 - **技術正確性レビュー** — `codex-cli` スキルにデリゲート。英語原文と日本語の対応を機械的にクロスチェック
-- **日本語自然さレビュー** — 汎用 Agent。`ai-japanese-patterns.md` のカテゴリ A〜L に照らして AI 臭を網羅検査
+- **日本語自然さレビュー** — `naturalize-ja` スキルにデリゲート (`--policy propose` で findings を回収し、Step 5 の Synthesis に統合)
 - **UX/レスポンシブレビュー** — 汎用 Agent。SVG overflow、表のはみ出し、コードブロック、clamp() の使用などを静的に検証
 - **(任意) 学習体験レビュー** — 汎用 Agent。読者層に対して説明順序が妥当か
 
-依存関係がないので可能な限り並列。プロンプトのテンプレートは `references/team-roles.md` にある。
+依存関係がないので可能な限り並列。プロンプト・委譲先のテンプレートは `references/team-roles.md` にある。
 
 ### Step 5: 修正の適用
 
@@ -121,10 +118,14 @@ LAN IP も解決して、スマホからアクセスできる URL も併せて�
 
 ## References
 
-- `references/ai-japanese-patterns.md` — AI 日本語の禁止語句・置換辞書 (**最重要**)
-- `references/team-roles.md` — レビューエージェントのプロンプト集と統合プロトコル
+- `references/team-roles.md` — レビューの並列実行プロトコルと委譲先 (日本語自然さは naturalize-ja へ)
 - `references/site-template-guide.md` — HTML / CSS / SVG / レスポンシブの基本パターンと落とし穴
 - `references/tech-translation-guide.md` — 英→日の用語訳と文体方針
+
+## 委譲する外部スキル
+
+- `naturalize-ja` — 日本語の AI 臭検出と置換。Step 3 (ドラフト直後の自動修正) と Step 4 (自然さレビュー) の両方で起動する
+- `codex-cli` — 技術正確性レビューで起動 (英↔日のクロスチェック)
 
 ## Behavior Scenarios
 
@@ -145,9 +146,8 @@ Scenario: 既存サイトの日本語自然さ監査
 Scenario: ユーザーが 1 フレーズを「これ AI っぽい」と指摘
   Given サイトは既に生成済み
   When ユーザーが該当フレーズを引用して「これ AI っぽい」と指摘
-  Then スキルはそのフレーズが ai-japanese-patterns.md のどのカテゴリかを判定し、
-       同パターンを全ファイルから検索、一括修正を 1 メッセージで適用する。
-       辞書に無いパターンであれば、辞書への追加候補としても記録する
+  Then スキルは naturalize-ja スキルに該当フレーズと対象ファイルを渡し、
+       一括検出・修正を委譲する。新パターンの辞書登録判断も naturalize-ja 側で行う
 
 Scenario: モバイル / レスポンシブの不具合報告
   Given ユーザーが「文字が切れている」「表がはみ出る」等のレイアウト問題を報告
@@ -175,24 +175,23 @@ Scenario: ユーザーが想定読者層を未指定
 
 1. セッション中の出来事を振り返る:
    - 構成案や訳語の差し戻し
-   - 多角レビューで覆った AI 臭の表現
-   - `ai-japanese-patterns.md` の辞書に無かった新パターン
    - レイアウト / SVG の修正
-2. ユーザーに 1 行で問いかける (日本語):
-   「今回のレビューで気になった AI 表現 / 改善ポイントがあれば一言だけ (Enter でスキップ)」
-3. ユーザーからフィードバックがある、または辞書に無い新パターンが現場で出ていた場合:
-   a. このスキルのソースディレクトリを `git rev-parse --show-toplevel` で解決し、`feedback/log.md` を作成 / 追記
-   b. log エントリには新パターンとカテゴリ案を必ず含める (`ai-japanese-patterns.md` 更新の根拠になる)
-4. クリーンに完走でフィードバックも新パターンも無ければ、ログには書かず終了
+   - naturalize-ja のレビューで覆った AI 臭表現 (傾向のみ)
+2. ユーザーに 1 行で問いかける:
+   「今回のレビューで気になった構成・訳語・レイアウトがあれば一言だけ (Enter でスキップ)」
+3. ユーザーからフィードバックがある場合のみ:
+   a. このスキルの `feedback/log.md` に追記 (`git rev-parse --show-toplevel` で解決)
+   b. 日本語表現に関するフィードバックなら naturalize-ja 側の `feedback/log.md` への転記も提案する
+4. クリーンに完走でフィードバックが無ければ、ログは書かず終了
 
 ログのフォーマットは `references/skill-improvement-guide.md` (factory 側) を参照。
 
 ## Feedback Check
 
-スキル起動時、`feedback/log.md` に 5 件以上の記録があるなら直近 10 件を読む。同一の新パターン (辞書未登録の AI 表現) が 3 件以上で出ているなら、ユーザーに伝える:
+スキル起動時、`feedback/log.md` に 5 件以上あれば直近 10 件を読む。同じ問題 (構成案 / 訳語 / レイアウト系) が 3 件以上で出ていれば、ユーザーに伝える:
 
-「直近のフィードバックで『X』というパターンが繰り返し検出されています。`ai-japanese-patterns.md` への追加を提案します。」
+「直近のフィードバックで『X』というパターンが繰り返し検出されています。SKILL.md または references の見直しを提案します。」
 
-決定はユーザーに委ね、必要なら `/skill-improve --skill en-to-ja-explainer` で深い分析に進める。
+決定はユーザーに委ね、深い分析が必要なら `/skill-improve --skill en-to-ja-explainer` に進める。日本語表現関連の繰り返し問題は naturalize-ja 側の話なので、そちらに `/skill-improve --skill naturalize-ja` を案内する。
 
-ログが無い、または 5 件未満なら静かにスキップして通常実行に移る。
+ログが無い、または 5 件未満なら静かにスキップ。

@@ -150,11 +150,6 @@
       "description": "Run OpenAI Codex CLI from the terminal for batch / one-shot `codex exec` invocations with output captured to an `-o` file. Use for fire-and-forget runs, scripted CI, code review batches (`codex review"
     },
     {
-      "name": "en-to-ja-explainer",
-      "source": "./plugins/en-to-ja-explainer",
-      "description": "英語の技術ドキュメント (Hugging Face docs / GitHub README / arXiv 論文 / 技術ブログ等) を、日本人が読んで AI 生成と気づかない自然な日本語の解説サイトに変換します。フェッチ → 構成設計 → HTML/CSS/JS 生成 → 多角レビュー (技術正確性 + 日本語自然さ + UX) → 修正 → ローカル配信、まで一気通貫。日本語のチェックは A"
-    },
-    {
       "name": "codex-server",
       "source": "./plugins/codex-server",
       "description": "Run OpenAI Codex via the Codex App Server (JSON-RPC-over-stdio) for streaming multi-turn chat sessions with persistent threads, structured output, image input, and rich event streams. Default entry po"
@@ -173,6 +168,11 @@
       "name": "skill-improve",
       "source": "./plugins/skill-improve",
       "description": "Retrofit the OIAE self-improvement loop to existing skills and analyze feedback to propose evidence-based amendments. Adds Retrospective, Feedback Check, and version tracking to skills that lack them."
+    },
+    {
+      "name": "en-to-ja-explainer",
+      "source": "./plugins/en-to-ja-explainer",
+      "description": "英語の技術ドキュメント (Hugging Face docs / GitHub README / arXiv 論文 / 技術ブログ等) を、日本人が読んで AI 生成と気づかない自然な日本語の解説サイトに変換します。フェッチ → 構成 → HTML/CSS/JS 生成 → 多角レビュー → 修正 → ローカル配信、まで一気通貫。日本語自然さチェックは `naturalize-ja` スキルに委譲 "
     }
   ]
 }

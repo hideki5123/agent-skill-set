@@ -25,35 +25,16 @@ codex exec "日本語サイト {OUTPUT_DIR} を、英語原文 {SOURCE_URL} に�
 
 `run_in_background: true` で投げ、Monitor で `-o` ファイルを待つ。
 
-## Required: 日本語自然さレビュー
+## Required: 日本語自然さレビュー (naturalize-ja に委譲)
 
-スキル本体と独立した視点で AI 臭を検査するため、Agent (subagent_type: general-purpose) にデリゲートする。
+`naturalize-ja` スキルを呼ぶ:
 
-サブエージェントへのプロンプトテンプレート (`{...}` は呼び出し時に Claude が埋める):
+- 入力: `<output-dir>/index.html` (および本文 .md ファイルがあれば追加)
+- ポリシー: `propose` (Synthesis Protocol で他レビューと合わせて判断するため、自動適用はしない)
+- 期待される出力: CRITICAL / IMPORTANT / NICE-TO-HAVE 分類済み findings、および辞書に無い新パターン候補
 
-```
-添付の日本語ファイル {OUTPUT_DIR}/index.html を、ネイティブ日本語話者が読んだとき
-「AI 生成だ」と気づくかどうかの観点で監査してください。
-
-監査基準は以下のカテゴリ A-L です。事前にこれらをすべて理解してください。
-
-{AI_JAPANESE_PATTERNS_CONTENT}  ← この呼び出しの直前に
-                                   references/ai-japanese-patterns.md を読み込み、
-                                   その内容を丸ごとここに差し込む
-
-監査結果の出力形式:
-
-## カテゴリ X (該当カテゴリ名)
-- file_path:line_number — 元: 「該当フレーズ」
-  置換案: 「修正後フレーズ」
-  理由: (どの AI シグナルか)
-
-ヒット数が 0 なら、その旨を 1 行で報告。
-発見順ではなく、深刻度順 (置き換えないと AI 臭が消えないもの →
-スタイル微調整) で並べる。総数は最後にカウントを示す。
-```
-
-注: `{AI_JAPANESE_PATTERNS_CONTENT}` は実行時に Claude が `references/ai-japanese-patterns.md` を読み込んで差し込む。サブエージェントは独立コンテキストで動くため、ファイルパスを渡しても拾えない場合がある。中身を直接渡す方が確実。
+辞書 (A-O カテゴリ)、grep コマンド、サブエージェントへのプロンプトテンプレートはすべて
+naturalize-ja 側に集約されている。このスキルは詳細を抱えない。
 
 ## Required: UX / レスポンシブレビュー
 
@@ -138,9 +119,9 @@ CRITICAL / IMPORTANT / NICE-TO-HAVE で分類。
 並列実行の例 (Claude が 1 メッセージで投げる):
 
 ```
-- Agent(subagent_type=general-purpose, prompt=日本語自然さレビュー...)
+- Skill(skill="naturalize-ja", args="<output-dir>/index.html --policy propose")
 - Agent(subagent_type=general-purpose, prompt=UX/レスポンシブレビュー...)
 - Bash(codex exec ... --full-auto -s read-only -o /tmp/codex-tech-review.txt, run_in_background=true)
 ```
 
-3 つは独立しているので並列で投げる。codex は背景実行 + Monitor で待ち、Agent 2 つは前景で同時起動。全部揃ったら Synthesis に入る。
+3 つは独立しているので並列で投げる。codex は背景実行 + Monitor で待ち、naturalize-ja と UX Agent は前景で同時起動。全部揃ったら Synthesis に入る。
