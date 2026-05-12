@@ -14,7 +14,7 @@
         "path": "."
       },
       "description": "Create, build, and install custom Claude Code skills into Hideki's local marketplace. End-to-end workflow from requirements gathering to a fully installed and usable skill. Use when the user asks to c",
-      "version": "1.0.0"
+      "version": "1.1.0"
     }
   ]
 }

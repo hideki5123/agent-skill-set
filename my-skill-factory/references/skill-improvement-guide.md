@@ -41,6 +41,7 @@ New entries go at the top (newest first). Each entry is a self-contained record.
 - **Task**: <1-line description of what the user asked for>
 - **Outcome**: success | partial-success | failure | error
 - **Rating**: <N>/5 (or "—" if not provided)
+- **Rating reason**: <user's verbatim response to "why this rating?", or "—" if rating was 5 or not provided>
 - **Corrections**: <mid-session corrections/pivots the user made, or "none">
 - **Issues**: <specific problems encountered, or "none">
 - **User Note**: <user's verbatim feedback, or "—">
@@ -55,6 +56,7 @@ Field definitions:
 | **Task** | What the user originally asked for (1 line) |
 | **Outcome** | `success` (completed as expected), `partial-success` (completed with workarounds), `failure` (could not complete), `error` (crashed/broke) |
 | **Rating** | User's optional 1-5 rating |
+| **Rating reason** | If `Rating` is 1-4, the user's verbatim answer to the "why?" follow-up. ALWAYS ask the follow-up when rating < 5 — the "why" is where the actionable improvement signal lives. Set to "—" if rating was 5 or not provided. |
 | **Corrections** | Mid-session course corrections — rejected outputs, approach changes, user redirections. This is the strongest improvement signal. |
 | **Issues** | Technical problems: errors, tool failures, missing data, unexpected behavior |
 | **User Note** | User's verbatim feedback, quoted exactly |
@@ -94,11 +96,12 @@ After completing the workflow, reflect on the entire execution session:
 
 1. Consider: Were there mid-session corrections? Rejected outputs? Plan changes? Errors?
 2. Ask the user: "Quick feedback on this run? (1-5 rating, note any issues, or press enter to skip)"
+   **If the user provides a rating < 5, ALWAYS follow up**: "Why this rating? (concrete details help me improve)" — record the response verbatim as `Rating reason`. Never skip this follow-up, even in auto-mode; the "why" is where the actionable signal lives.
 3. If the user provides feedback OR if corrections/issues occurred during this session:
    a. Create `feedback/` directory if it does not exist
    b. Read `feedback/log.md` (create with `# Feedback Log` header if it does not exist)
    c. Prepend a new entry after the header using the log format from `references/skill-improvement-guide.md`
-   d. Fill in: current timestamp, skill version from frontmatter, task description, outcome assessment,
+   d. Fill in: current timestamp, skill version from frontmatter, task description, outcome assessment, rating + rating reason (if rating < 5),
       corrections that occurred during the session, issues encountered, user's note
 4. If the user skips AND no corrections or issues occurred, end without recording.
 ```

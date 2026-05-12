@@ -1,6 +1,6 @@
 ---
 name: my-skill-factory
-version: 1.0.0
+version: 1.1.0
 description: Create, build, and install custom Claude Code skills into Hideki's local marketplace. End-to-end workflow from requirements gathering to a fully installed and usable skill. Use when the user asks to create a new skill, build a skill, make a plugin, add a new capability, or says "make me a skill for X". Also use when updating or reinstalling an existing custom skill. Trigger phrases include "create skill", "make skill", "new skill", "build plugin", "skill for X", "update skill".
 ---
 
@@ -82,13 +82,33 @@ If `feedback/log.md` does not exist, skip silently.
 
 ## Step 1: Gather Requirements
 
-Ask the user:
+Ask the user in this order — **architecture before stack**:
+
+**Architecture questions (always ask unless the user has already answered):**
 - What should the skill do? Get 2-3 concrete usage examples.
 - What triggers it? (e.g., "review PR", "create diagram")
+- For any external API/SDK/service: which auth mode? If multiple modes exist,
+  default to the one that avoids billing (e.g., subscription vs API-key).
+  Surface billing implications upfront — they often drive the entire design.
+- Sync (block until done) or async (return turn-id / handle quickly, observe
+  progress separately)? For any operation that may exceed 2 minutes, async is
+  usually right.
+- Batch (one-shot) or streaming (incremental output)?
+- User-facing names/labels (skill name, command name, default output path,
+  default model name): always confirm before writing files. A judgment call
+  about a public-facing label is never "low-risk."
+
+**Stack/runtime questions (after architecture is clear):**
 - Does it need external tools? (gh CLI, APIs, MCP servers)
 - What output format? (markdown report, file creation, GitHub actions)
+- Runtime preference? (deno > bun > Node+pnpm+tsx, unless the user specifies
+  otherwise.)
 
-Keep it to 2-3 focused questions max. Skip if the user already provided enough detail.
+Ask as many clarifying questions as you need. Auto-mode's "minimize
+interruptions" does NOT apply to (a) user-visible names/labels and (b)
+architectural Q&A — these questions are cheap and avoid expensive rework
+cycles. Skip a question only when the user has explicitly answered it
+in their initial request.
 
 ### Formalize as BDD scenarios
 
@@ -109,6 +129,13 @@ Decide:
 - **Scripts needed?** Deterministic operations → put in `scripts/`
 - **Assets needed?** Templates, images → put in `assets/`
 - **Improvement loop level**: Read `references/skill-improvement-guide.md`. Assess: will this skill be used >5 times? Does it have a complex multi-phase workflow? Choose None / Observe / Full accordingly. If Observe or Full, add the Retrospective and/or Feedback Check sections from the guide's templates.
+- **Token-cost contract**: estimate the SKILL.md body's load cost (always
+  loaded on trigger — aim small). Mark every `references/` file with
+  explicit "WHEN TO READ: ..." guidance so it stays at 0 tokens during
+  normal execution. BDD scenarios, long worked examples, and detailed
+  protocol docs must NOT be auto-loaded — they live behind explicit
+  WHEN TO READ gates. Before writing files, confirm: which references
+  count toward routine token cost, which don't?
 - **Scenario mapping**: Map each BDD scenario to SKILL.md sections (trigger context → frontmatter, workflow → body, outputs → format/references)
 
 ## Step 3: Team Orchestration Assessment
@@ -158,10 +185,16 @@ The description is critical — it controls when the skill triggers. Include:
 ### SKILL.md body
 
 - Use imperative form
-- Keep under 500 lines
+- Keep under 500 lines (aim well under — see Token-cost contract in Step 2)
 - Only include knowledge Claude doesn't already have
-- Reference any `references/` files with clear "read this when..." guidance
-- Include a `## Behavior Scenarios` section with the Given/When/Then specs from Step 1
+- Reference any `references/` files with explicit "WHEN TO READ: ..." guidance
+  so they are not auto-loaded during normal execution
+- **BDD scenarios default to `references/scenarios.feature`** (separate file,
+  on-demand only, never auto-loaded). SKILL.md body should contain only a
+  1-line pointer such as: `BDD spec lives in references/scenarios.feature.
+  Read only when auditing or amending the skill; not needed for normal
+  execution.` Inline BDD in the body is the exception requiring explicit
+  justification (e.g., the skill itself is a 1-scenario utility).
 
 ### Supporting files
 
@@ -213,15 +246,33 @@ git commit -m "feat: add <skill-name> skill"
 git push
 ```
 
-## Step 5: Verify
+## Step 5: Verify and Smoke Test
 
-Launch a new CLI session to confirm:
+**5a — Listing check.** Launch a new CLI session to confirm the skill is registered:
 
 ```bash
 echo "List all available skills. Just list the skill names as a bullet list." | claude -p
 ```
 
 The new skill should appear as `<skill-name>:<skill-name>` in the output.
+
+**5b — Runtime smoke (REQUIRED before reporting the work complete).** Run the
+skill end-to-end against real dependencies — code-only review and listing
+checks miss runtime bugs in env scoping, SDK shape assumptions, regex
+patterns, file system semantics, etc.
+
+- **Wrapper skills (CLI / SDK / API):** execute at least one primary user
+  flow against the actual external service. Verify the happy path returns
+  expected output. Verify at least one error path produces a friendly
+  message (e.g., missing auth, missing binary).
+- **Pure-logic skills:** exercise the primary entry point with a
+  representative input and inspect the result.
+- **Utility skills:** trigger the skill via its actual invocation path and
+  verify the side effect / output.
+
+Any bug found during smoke is a "smoke-discovered fix" that should be
+committed before reporting completion. Do not claim the work is done on
+the strength of `claude -p` listing alone.
 
 ## Retrospective
 
@@ -232,6 +283,11 @@ session:
    plan changes), errors during install, missing pre-install checks, or scenarios
    discovered late?
 2. Ask the user (in Japanese): 「今回の作成/更新のフィードバック (1-5の評価、気になった点、または何もなければEnter)」
+   **If the user provides a rating < 5, ALWAYS follow up** with:
+   「なぜその評価ですか？ (改善のために具体的に教えてください)」
+   Record the response verbatim as `Rating reason`. A rating without the
+   "why" loses the strongest improvement signal — never skip this followup
+   for ratings 1-4, even in auto-mode.
 3. If the user provides feedback OR if corrections/issues actually occurred:
    a. Create `feedback/` next to this SKILL.md if it does not exist (resolve the
       directory via `git rev-parse --show-toplevel` from this skill's source dir,
@@ -249,6 +305,7 @@ session:
       - **Task**: <which target skill, create or update, brief description>
       - **Outcome**: success | partial-success | failure | error
       - **Rating**: <N>/5 (or "—" if not provided)
+      - **Rating reason**: <user's verbatim response to the WHY follow-up, or "—" if rating was 5 or not provided>
       - **Corrections**: <mid-session corrections, or "none">
       - **Issues**: <specific problems, or "none">
       - **User Note**: <user's verbatim feedback, or "—">
