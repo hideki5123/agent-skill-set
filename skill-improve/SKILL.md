@@ -1,6 +1,6 @@
 ---
 name: skill-improve
-version: 1.0.0
+version: 1.1.0
 description: >
   Retrofit the OIAE self-improvement loop to existing skills and analyze feedback
   to propose evidence-based amendments. Adds Retrospective, Feedback Check, and
@@ -124,7 +124,20 @@ Read `references/retrofit-checklist.md` for the step-by-step process and placeme
    python my-skill-factory/scripts/install_skill.py <skill-name>
    ```
 
-6. Commit and push:
+6. **Smoke check (REQUIRED before reporting completion).** Verify the
+   retrofitted skill actually loads:
+   - `claude -p` listing confirms `<skill-name>:<skill-name>` is present in
+     a fresh session.
+   - Frontmatter `version` field reads as the value just written.
+   - Path-discipline grep over the source dir still returns no non-example
+     hits.
+
+   Code-only review is NOT sufficient — a typo in the new Retrospective
+   section, a malformed frontmatter, or a missed path leak only surfaces
+   when the skill is actually loaded. Treat any issue found here as a
+   smoke-discovered fix to commit before reporting completion.
+
+7. Commit and push:
    ```bash
    cd <repo-root>
    git add <skill-name>/ my-marketplace/plugins/<skill-name>/ my-marketplace/.claude-plugin/marketplace.json
@@ -172,14 +185,33 @@ Read `my-skill-factory/references/skill-improvement-guide.md` for pattern detect
 
 8. **Record amendment** — Append to `feedback/amendments.md` using format from `my-skill-factory/references/skill-improvement-guide.md`
 
-9. **Install and commit**:
+9. **Install**:
    ```bash
    cd <repo-root>
    python my-skill-factory/scripts/install_skill.py <skill-name>
-   git add <skill-name>/ my-marketplace/plugins/<skill-name>/ my-marketplace/.claude-plugin/marketplace.json
-   git commit -m "fix: improve <skill-name> skill based on feedback (AMD-NNN)"
-   git push
    ```
+
+10. **Smoke check (REQUIRED before commit/push).** Verify the amended skill
+    actually loads:
+    - `claude -p` listing confirms `<skill-name>:<skill-name>` is present
+      in a fresh session.
+    - Frontmatter `version` field reads as the bumped value.
+    - Path-discipline grep over the source dir returns no non-example hits.
+    - For amended skills that have scripts/lib (e.g., deno-backed wrapper
+      skills), the script files at least syntactically parse / type-check
+      via a dry `--check` or equivalent (where the runtime supports it).
+
+    If smoke fails, fix the underlying issue and re-install before
+    committing. Never ship an amendment that fails its own smoke check —
+    that's exactly the regression class AMD-003 is preventing.
+
+11. **Commit and push**:
+    ```bash
+    cd <repo-root>
+    git add <skill-name>/ my-marketplace/plugins/<skill-name>/ my-marketplace/.claude-plugin/marketplace.json
+    git commit -m "fix: improve <skill-name> skill based on feedback (AMD-NNN)"
+    git push
+    ```
 
 ### Phase 4: Report
 
@@ -197,6 +229,11 @@ After Phase 4 (Report) completes, reflect on this run of skill-improve itself:
 1. Consider: were there mid-session corrections (rejected amendments, scope changes,
    wrong target skill, install/commit failures, missed path leaks)?
 2. Ask the user (in Japanese): 「今回の改善作業のフィードバック (1-5の評価、気になった点、または何もなければEnter)」
+   **If the user provides a rating < 5, ALWAYS follow up** with:
+   「なぜその評価ですか？ (改善のために具体的に教えてください)」
+   Record the response verbatim as `Rating reason`. A rating without the
+   "why" loses the strongest improvement signal — never skip this follow-up
+   for ratings 1-4, even in auto-mode.
 3. If the user provides feedback OR if corrections/issues actually occurred:
    a. Create `feedback/` next to this SKILL.md if it does not exist (resolve the
       directory via `git rev-parse --show-toplevel` from this skill's source dir,
@@ -214,6 +251,7 @@ After Phase 4 (Report) completes, reflect on this run of skill-improve itself:
       - **Task**: <which target skill, retrofit / analyze / both>
       - **Outcome**: success | partial-success | failure | error
       - **Rating**: <N>/5 (or "—" if not provided)
+      - **Rating reason**: <user's verbatim response to the WHY follow-up, or "—" if rating was 5 or not provided>
       - **Corrections**: <mid-session corrections, or "none">
       - **Issues**: <specific problems, or "none">
       - **User Note**: <user's verbatim feedback, or "—">
@@ -225,68 +263,22 @@ After Phase 4 (Report) completes, reflect on this run of skill-improve itself:
 
 ## Behavior Scenarios
 
-```gherkin
-Scenario: Retrofit OIAE to skill without feedback loop
-  Given an existing skill has no Retrospective, Feedback Check, or version field
-  When /skill-improve --skill <name> is invoked
-  Then assess opt-in level, present to user, add missing OIAE components,
-       install, commit, and push
-
-Scenario: Analyze feedback and propose amendments
-  Given a skill has feedback/log.md with recurring issues
-  When /skill-improve --skill <name> is invoked
-  Then read all feedback, identify patterns, propose amendments with evidence,
-       apply approved changes, record in amendments.md, install, commit, and push
-
-Scenario: Skill already has OIAE and no feedback yet
-  Given a skill has Retrospective and Feedback Check but no feedback/log.md
-  When /skill-improve --skill <name> is invoked
-  Then report that OIAE components are present but no feedback data exists yet,
-       and suggest running the skill a few times to collect data
-
-Scenario: Evaluate previous amendments
-  Given a skill has amendments in "applied — monitoring" status
-  When /skill-improve --skill <name> is invoked
-  Then check post-amendment feedback entries, update amendment status
-       to effective or ineffective, and suggest rollback if ineffective
-
-Scenario: Retrofit-only mode
-  Given --retrofit-only flag is set
-  When /skill-improve --skill <name> --retrofit-only is invoked
-  Then only add missing OIAE components, skip feedback analysis
-
-Scenario: Analyze-only mode
-  Given --analyze-only flag is set and feedback exists
-  When /skill-improve --skill <name> --analyze-only is invoked
-  Then only analyze feedback and propose amendments, skip retrofit
-
-Scenario: Feedback Check surfaces a recurring pattern in skill-improve itself
-  Given skill-improve/feedback/log.md has 5+ entries with a common issue keyword in 3+
-  When /skill-improve is invoked on any target
-  Then it tells the user about the pattern and suggests
-       /skill-improve --skill skill-improve, then continues normally on the requested target
-
-Scenario: Retrospective recorded after a run with corrections
-  Given the user rejected a proposed amendment or course-corrected mid-run
-  When Phase 4 (Report) completes
-  Then skill-improve asks for a 1-5 rating in Japanese, creates feedback/log.md if missing,
-       and prepends an entry capturing the corrections, the user's note, and the outcome
-
-Scenario: Retrospective skipped on a clean run
-  Given the run had no corrections, no issues, and the user provides no feedback
-  When Phase 4 (Report) completes
-  Then skill-improve ends without writing to feedback/log.md
-
-Scenario: Retrofits and amendments must not introduce hardcoded paths
-  Given the skill is being retrofitted with OIAE components or amended based on feedback
-  When new content is written into the target skill's SKILL.md, references, or scripts
-  Then no operator-specific path (/Users/..., /home/..., C:\..., D:\..., /private/...)
-       appears in the new content except as an explicit documentation example
-  And before install, the path-discipline grep is run and any non-example hits are
-       replaced with <repo-root>, ~, $HOME, or runtime resolution
-```
+BDD spec lives in `references/scenarios.feature`. Read only when auditing or
+amending this skill (e.g., via `/skill-improve --skill skill-improve`); **not
+needed for normal execution**.
 
 ## References
 
-- `references/retrofit-checklist.md` — Step-by-step checklist for adding OIAE components with placement rules
-- `my-skill-factory/references/skill-improvement-guide.md` — OIAE protocol, log format, amendment format, templates, pattern detection heuristics
+Read these on-demand only — they are not auto-loaded.
+
+- `references/scenarios.feature` — Gherkin BDD spec for this skill.
+  **WHEN TO READ**: only when auditing or amending the skill itself (e.g.,
+  via `/skill-improve --skill skill-improve`). Never during normal execution.
+- `references/retrofit-checklist.md` — Step-by-step checklist for adding OIAE
+  components with placement rules. **WHEN TO READ**: only in Phase 2
+  (retrofit) when OIAE components are missing from the target skill.
+- `my-skill-factory/references/skill-improvement-guide.md` — OIAE protocol,
+  log format, amendment format, templates, pattern detection heuristics.
+  **WHEN TO READ**: in Phase 2 when looking up template wording, and in
+  Phase 3 when applying pattern-detection heuristics or formatting an
+  amendments.md entry.
