@@ -6,7 +6,7 @@
 - **Change**: Moved the entire `## Behavior Scenarios` block to `references/scenarios.feature`. SKILL.md body now carries only a 1-line pointer indicating the file is for audit/amendment use, not normal execution. Added a 12th scenario covering the new smoke-check requirement (AMD-003).
 - **Files Modified**: `skill-improve/SKILL.md` — `## Behavior Scenarios`; new `skill-improve/references/scenarios.feature`.
 - **Version Bump**: 1.0.0 → 1.1.0
-- **Git Commit**: (pending — combined 1.1.0 commit)
+- **Git Commit**: 858a1c6
 - **Status**: applied — monitoring
 ---
 
@@ -16,7 +16,7 @@
 - **Change**: References section now opens with "Read these on-demand only — they are not auto-loaded." Each entry carries an explicit "WHEN TO READ: ..." marker stating exactly which phase / situation justifies loading the file.
 - **Files Modified**: `skill-improve/SKILL.md` — `## References` section.
 - **Version Bump**: 1.0.0 → 1.1.0
-- **Git Commit**: (pending — combined 1.1.0 commit)
+- **Git Commit**: 858a1c6
 - **Status**: applied — monitoring
 ---
 
@@ -29,7 +29,7 @@
   3. Added a new Gherkin scenario "Smoke check after retrofit or amendment" to `references/scenarios.feature`.
 - **Files Modified**: `skill-improve/SKILL.md` — Phase 2 (retrofit) and Phase 3 (analyze feedback) sections; `skill-improve/references/scenarios.feature`.
 - **Version Bump**: 1.0.0 → 1.1.0
-- **Git Commit**: (pending — combined 1.1.0 commit)
+- **Git Commit**: 858a1c6
 - **Status**: applied — monitoring
 - **Self-test note**: this very amendment session followed its own new rule — smoke-checked skill-improve v1.1.0 after install, before commit. The smoke confirmed: listing OK, cached plugin.json version 1.1.0 OK, frontmatter 1.1.0 OK.
 ---
@@ -43,6 +43,6 @@
   3. Added a Gherkin scenario "Retrospective with low rating triggers WHY follow-up" to `references/scenarios.feature`.
 - **Files Modified**: `skill-improve/SKILL.md` — `### Retrospective`; `skill-improve/references/scenarios.feature`.
 - **Version Bump**: 1.0.0 → 1.1.0
-- **Git Commit**: (pending — combined 1.1.0 commit)
+- **Git Commit**: 858a1c6
 - **Status**: applied — monitoring
 ---
