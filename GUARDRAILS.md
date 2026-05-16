@@ -109,8 +109,11 @@ $(echo cu)rl http://github.com               # コマンド置換
     "Bash(rm -rf ~)",
     "Bash(rm -rf ~/*)",
     "Bash(rm -rf $HOME*)",
+    "Bash(sudo rm -rf /)",
     "Bash(sudo rm -rf /*)",
+    "Bash(sudo rm -rf ~)",
     "Bash(sudo rm -rf ~*)",
+    "Bash(sudo rm -rf $HOME*)",
 
     "Bash(dd * of=/dev/sd*)",
     "Bash(dd * of=/dev/nvme*)",
@@ -290,7 +293,8 @@ echo "$normalized" | tr '&|;' '\n' | while IFS= read -r sub; do
   [ -z "$sub" ] && continue
 
   # 真に破滅的なパターン群
-  if echo "$sub" | grep -qE '^(sudo +)?rm +(-[a-zA-Z]*[rRf][a-zA-Z]*) +(/|~|/\*|\$HOME)( |$)'; then
+  # 注: $HOME 等は上の正規化で X に置換済み。 X を「未知の変数 = 危険」として扱う
+  if echo "$sub" | grep -qE '^(sudo +)?rm +(-[a-zA-Z]*[rRf][a-zA-Z]*) +(/|~|/\*|X)( |$)'; then
     echo "GUARDRAIL BLOCK: filesystem root/home destruction: $sub" >&2; exit 2
   fi
   if echo "$sub" | grep -qE 'dd .*of=/dev/(sd|nvme|hd|mmcblk)'; then
@@ -307,7 +311,10 @@ done
 exit 0
 ```
 
-> 注: 上の正規表現は説明用。本実装では unit test を伴うべき。
+> **注: 本サンプルは説明用。production 実装では次の改良が必須**:
+> - **変数正規化との整合**: 上記では `$HOME` 等を事前に `X` へ正規化するので、検知側は `\$HOME` リテラルではなく `X` を「未知変数 = 危険」として扱う (上記 `rm` 正規表現参照)
+> - **クォートを尊重した分割**: `tr '&|;' '\n'` は単純すぎ、クォート内のセミコロンや here-doc も分割してしまう。production では `bash --noexec --parse`、`shellcheck` の AST、または専用 shell lexer を使う
+> - 危険 / 良性両方のコーパスで unit test を伴う
 
 ---
 
@@ -547,7 +554,8 @@ claude-agent ALL=(ALL) !ALL
 ### B.4 注意点 (旧 §8.4)
 
 - `NOPASSWD` は読み取り系**のみ**。書き込み系で NOPASSWD すると LLM が無人で破壊操作を打てる
-- ワイルドカード `*` は sudoers の引数マッチで予期せぬ挙動になりがち。**フルパス + 固定引数**を推奨
+- **ワイルドカード `*` は sudoers では `/` もマッチする**ため path traversal を許容する。 例: `/bin/cat /var/log/*.log` は `/var/log/../../etc/shadow.log` 形式の引数でもマッチし、結果として `/etc/shadow.log` (任意位置の `.log` ファイル) を root として読み取りに行ける。 **フルパス + 固定引数** (例: `/bin/cat /var/log/myapp.log` のように unit 名で具体列挙) を推奨。 やむを得ず `*` を使う場合は hook 側で path canonicalize して `..` を含む引数を弾くこと
+- B.3 サンプルの `/var/log/*.log` 等は説明簡略化のための例示。 production では各 unit 名を個別に列挙すること
 - `Defaults:claude-agent !env_reset, env_keep += "..."` のような env 緩和は **しない**
 
 ### B.5 §13 経路への移行 (v2 追加)
