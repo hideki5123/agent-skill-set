@@ -218,6 +218,9 @@ settings.json の ask には **具体的なサブコマンド** (`apt install *`
     "Bash(npm install -g *)", "Bash(pip install *)", "Bash(pip3 install *)",
     "Bash(cargo install *)", "Bash(gem install *)",
 
+    "Bash(npm run *)", "Bash(npm test *)", "Bash(npm ci)",
+    "Bash(yarn *)", "Bash(pnpm *)",
+
     "Bash(systemctl restart *)", "Bash(systemctl stop *)", "Bash(systemctl start *)",
     "Bash(systemctl enable *)", "Bash(systemctl disable *)",
     "Bash(service * *)",
@@ -261,6 +264,8 @@ Claude Code は次を built-in で読み取り扱いし、ルールなしで自�
 
 `sudo -n` 付きの読み取り系を allow に明示する。 §5.2 で broad な `Bash(sudo *)` を ask に**置かない** (§5.1 参照) ため、 下記の specific allow が評価順 (deny → ask → allow) 上 fire できる。 **以下の `sudo -n ...` 行は Appendix B (sudoers ホワイトリスト) を採用したケース限定**。§13 経路 (agent に sudo を渡さない) では不要かつ無効。
 
+> **package-manager script を allow しない理由 (v2)**: `npm run *` / `yarn *` / `pnpm *` 系は `package.json` の任意スクリプトを実行でき、 そこから sudo / 破壊操作 / ネットワーク exfil に到達するバイパス経路になる。 Claude Code は top-level Bash しか評価しないため、 script 内部は素通り。 これらは §5.2 ask に移してある。 信頼できる固定スクリプト名 (例: `npm run lint`, `npm run typecheck`) のみ allow に置きたい場合は project ごとに narrowly 列挙すること (例: `Bash(npm run lint)`, `Bash(npm run typecheck)`)。 同様の risk が `cargo test` / `go test` / `pytest` にもあるが、 テストコード経由の攻撃面は npm scripts ほど顕在化していないため `allow` に残置。 untrusted リポジトリで作業する場合は hook 側でテスト起動を blockable にすることを検討。
+
 > **メモ**: §4.2 と同じく `permissions` キー配下に置く fragment。 単独で完全な settings として使うなら `{ "permissions": { "allow": [...] } }` でラップする。
 
 ```json
@@ -276,8 +281,6 @@ Claude Code は次を built-in で読み取り扱いし、ルールなしで自�
     "Bash(sudo -n lsof *)",
     "Bash(sudo -n ps *)",
 
-    "Bash(npm run *)", "Bash(npm test *)", "Bash(npm ci)",
-    "Bash(yarn *)", "Bash(pnpm *)",
     "Bash(python -m pytest *)", "Bash(pytest *)",
     "Bash(cargo test *)", "Bash(cargo build *)",
     "Bash(go test *)", "Bash(go build *)",
@@ -315,40 +318,73 @@ Claude Code は次を built-in で読み取り扱いし、ルールなしで自�
 #!/usr/bin/env bash
 # scripts/hooks/pretool-bash-guard.sh
 # 責務: 真に破滅的なコマンドを意味解析で止める（パターン deny の補完）
+# 設計: fail-closed (依存欠落・入力不正・内部エラーは exit 2 で block)
+
+set -o pipefail
 
 input=$(cat)
-# 注: echo は入力先頭が `-` のとき option 扱いする処理系がある。 printf '%s\n' で堅牢化
-cmd=$(printf '%s\n' "$input" | jq -r 'select(.tool_name=="Bash") | .tool_input.command // empty')
+
+# === 依存チェック (fail-closed) ===
+if ! command -v jq >/dev/null 2>&1; then
+  echo "GUARDRAIL ERROR: jq not installed — blocking by default" >&2
+  exit 2
+fi
+
+# === JSON parse (失敗時 block) ===
+tool_name=$(printf '%s\n' "$input" | jq -r '.tool_name // empty' 2>/dev/null)
+if [ -z "$tool_name" ]; then
+  echo "GUARDRAIL ERROR: invalid hook input JSON — blocking by default" >&2
+  exit 2
+fi
+
+# Bash 以外は対象外 (Read/Edit 等は settings.json deny に委ねる、 §4.2 参照)
+[ "$tool_name" != "Bash" ] && exit 0
+
+cmd=$(printf '%s\n' "$input" | jq -r '.tool_input.command // empty' 2>/dev/null)
 [ -z "$cmd" ] && exit 0
 
-# 正規化: 変数 / $() / バッククォート / クォートを剥がす
-normalized=$(echo "$cmd" \
+# === 正規化: 変数 / $() / バッククォート / クォートを剥がす ===
+normalized=$(printf '%s\n' "$cmd" \
   | sed -E 's/\$\{?[A-Za-z_][A-Za-z0-9_]*\}?/X/g' \
   | sed -E 's/\$\([^)]*\)/X/g' \
   | tr -d '`"\047')
 
-# 連結境界で分割
+# === 分割前に評価する検査 ===
+# 注: `:(){ :|:& };:` のような fork bomb は & | ; を含むので、
+#     分割後に regex すると fragment 化されてマッチしない。
+#     分割前の cmd 全体に対して照合する。
+if printf '%s\n' "$normalized" | grep -qE '[A-Za-z_:]+\(\)\s*\{[^}]*\|[^}]*&[^}]*\}'; then
+  echo "GUARDRAIL BLOCK: fork bomb-like recursive function: $cmd" >&2
+  exit 2
+fi
+
+# === 連結境界で分割して各サブコマンドを評価 ===
 # 注: パイプライン `... | while` は while をサブシェルで実行するため、
 #     ループ内の `exit 2` がサブシェルだけを抜けて hook 全体が exit 0 で
 #     続いてしまう (危険コマンドが silently 通る)。
 #     プロセス置換 `done < <(...)` で while をメインシェルに留める。
 while IFS= read -r sub; do
-  sub=$(echo "$sub" | xargs)  # trim
+  sub=$(printf '%s\n' "$sub" | xargs)  # trim
   [ -z "$sub" ] && continue
 
-  # 真に破滅的なパターン群
-  # 注: $HOME 等は上の正規化で X に置換済み。 X を「未知の変数 = 危険」として扱う
-  if echo "$sub" | grep -qE '^(sudo +)?rm +(-[a-zA-Z]*[rRf][a-zA-Z]*) +(/|~|/\*|X)(/| |$)'; then
-    echo "GUARDRAIL BLOCK: filesystem root/home destruction: $sub" >&2; exit 2
+  # === rm 系の 3 段階チェック ===
+  # 1) コマンドが (sudo) rm で始まる
+  # 2) かつ recursive/force 系 flag をどこかに含む (short / long / 分離 / 結合 すべて対応)
+  # 3) かつ 危険 target (/, ~, /*, X) を引数にもつ
+  # 注: $HOME 等は上の正規化で X に置換済み。 X を「未知変数 = 危険」として扱う
+  if printf '%s\n' "$sub" | grep -qE '^(sudo +)?rm( |$)'; then
+    if printf '%s\n' "$sub" | grep -qE '(^| )(-[a-zA-Z]*[rRf][a-zA-Z]*|--recursive|--force|--no-preserve-root)( |$)'; then
+      if printf '%s\n' "$sub" | grep -qE ' (/|~|/\*|X)(/| |$)'; then
+        echo "GUARDRAIL BLOCK: rm with recursive/force flag targeting root/home: $sub" >&2; exit 2
+      fi
+    fi
   fi
-  if echo "$sub" | grep -qE 'dd .*of=/dev/(sd|nvme|hd|mmcblk)'; then
+
+  if printf '%s\n' "$sub" | grep -qE 'dd .*of=/dev/(sd|nvme|hd|mmcblk)'; then
     echo "GUARDRAIL BLOCK: block device write: $sub" >&2; exit 2
   fi
-  if echo "$sub" | grep -qE '(sudo +)?(mkfs\.|wipefs|shred +/dev/)'; then
+  if printf '%s\n' "$sub" | grep -qE '(sudo +)?(mkfs\.|wipefs|shred +/dev/)'; then
     echo "GUARDRAIL BLOCK: disk wipe: $sub" >&2; exit 2
-  fi
-  if echo "$sub" | grep -qE ':\(\)\s*\{\s*:\s*\|\s*:'; then
-    echo "GUARDRAIL BLOCK: fork bomb: $sub" >&2; exit 2
   fi
 done < <(printf '%s\n' "$normalized" | tr '&|;' '\n')
 
@@ -356,9 +392,11 @@ exit 0
 ```
 
 > **注: 本サンプルは説明用。production 実装では次の改良が必須**:
-> - **変数正規化との整合**: 上記では `$HOME` 等を事前に `X` へ正規化するので、検知側は `\$HOME` リテラルではなく `X` を「未知変数 = 危険」として扱う (上記 `rm` 正規表現参照)
-> - **クォートを尊重した分割**: `tr '&|;' '\n'` は単純すぎ、クォート内のセミコロンや here-doc も分割してしまう。production では `bash --noexec --parse`、`shellcheck` の AST、または専用 shell lexer を使う
-> - **fork bomb 検知の限界**: 上の正規表現は教科書的な `:(){ :|:& };:` 形のみ捕捉する。 `f(){ f|f& };f` のような関数名変更や難読化で容易に回避可能。 **真の防御は OS 側の `ulimit -u <max-procs>` や cgroups (`pids.max`) によるプロセス数制限**。 hook 検知は補助層に留める
+> - **fail-closed 設計**: 上記サンプル通り、 jq 不在 / 入力 JSON 不正 / 内部エラー時は **exit 2 (block)** で停止する。 silently exit 0 (= allow) は security hook として致命的
+> - **変数正規化との整合**: `$HOME` 等を事前に `X` へ正規化し、 検知側は `\$HOME` リテラルではなく `X` を「未知変数 = 危険」として扱う
+> - **クォートを尊重した分割**: `tr '&|;' '\n'` は単純すぎ、クォート内のセミコロンや here-doc も分割してしまう。 production では `bash -n` で構文検証、 `shfmt -tojson` や [mvdan/sh](https://github.com/mvdan/sh) (Go) で AST 解析、 または専用 shell lexer を使う
+> - **fork bomb は分割前に評価**: `&` / `|` / `;` を含む fork bomb payload (`:(){ :|:& };:` 等) は分割後だと fragment 化されて regex に当たらないため、 上記サンプルでは分割前の `$normalized` 全体で照合している。 ただし任意の関数名 / 難読化に対しては best-effort 止まり。 **真の防御は OS 側の `ulimit -u <max-procs>` や cgroups (`pids.max`) によるプロセス数制限**。 hook 検知は補助層に留める
+> - **rm 長 option 対応**: 上記の 3 段階チェックは `-r -f` (分離), `--recursive --force` (long), `-rf --no-preserve-root` も捕捉する。 ただし `rm -rf -- /` のような `--` end-of-options や、 echo/eval 経由の難読化には弱い。 不明な rm 形は **fail closed** にするのが production 推奨
 > - 危険 / 良性両方のコーパスで unit test を伴う
 
 ---
@@ -537,16 +575,15 @@ sudo usermod -aG systemd-journal claude-agent
 `apt install`、`systemctl restart` のような「system 状態を変える」操作は、agent ホストではなく **使い捨て可能な devcontainer 内**で実行する。container を捨てれば変更も消える。
 
 ```jsonc
-// .devcontainer/devcontainer.json (抜粋)
+// .devcontainer/devcontainer.json (抜粋) — DinD 等の privileged feature は使わない baseline
 {
   "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
   "remoteUser": "vscode",
-  "features": {
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {}
-  },
   "postCreateCommand": "sudo apt-get update && sudo apt-get install -y <pkgs>"
 }
 ```
+
+> **DinD についての注意**: 素の `docker-in-docker` devcontainer feature は内部で **`--privileged` を必要とする** ため、 下記の隔離前提と矛盾する。 container 内で Docker が必要な場合は **rootless Podman** (`podman` パッケージを直接 apt install して utilize) や **host docker socket を共有しない別構成** を別途検討すること。 「DinD feature を入れただけで安全」 という前提で扱わない。
 
 container 内では agent に `NOPASSWD: ALL` を渡しても **ホスト本体への影響は限定的** — ただし以下の隔離前提が**すべて**成立する場合のみ:
 
@@ -605,12 +642,14 @@ settings.json と hook は **Claude Code のプロセス内の防御**。Claude 
 ### B.3 サンプル: `/etc/sudoers.d/claude-agent` (旧 §8.3)
 
 ```sudoers
-# 読み取り系: パスワードなしで許可
+# 読み取り系: パスワードなしで許可 (引数まで完全固定。 wildcard も bare コマンドも使わない)
 claude-agent ALL=(root) NOPASSWD: \
-    /bin/systemctl status *, \
-    /bin/journalctl, \
-    /bin/journalctl -n *, \
-    /bin/journalctl -u *, \
+    /bin/systemctl status myapp, \
+    /bin/systemctl status nginx, \
+    /bin/journalctl -u myapp, \
+    /bin/journalctl -u nginx, \
+    /bin/journalctl -u myapp -n 100, \
+    /bin/journalctl -u nginx -n 100, \
     /usr/bin/ss -tlnp, \
     /usr/bin/lsof, \
     /bin/cat /var/log/myapp.log, \
@@ -627,8 +666,8 @@ claude-agent ALL=(root) PASSWD: \
 ### B.4 注意点 (旧 §8.4)
 
 - `NOPASSWD` は読み取り系**のみ**。書き込み系で NOPASSWD すると LLM が無人で破壊操作を打てる
-- **ワイルドカード `*` は sudoers では `/` もマッチする**ため path traversal を許容する。 例: `/bin/cat /var/log/*.log` は `/var/log/../../etc/shadow.log` 形式の引数でもマッチし、結果として `/etc/shadow.log` (任意位置の `.log` ファイル) を root として読み取りに行ける。 **フルパス + 固定引数** (例: `/bin/cat /var/log/myapp.log` のように unit 名で具体列挙) を推奨。 やむを得ず `*` を使う場合は hook 側で path canonicalize して `..` を含む引数を弾くこと
-- B.3 サンプルの `/var/log/*.log` 等は説明簡略化のための例示。 production では各 unit 名を個別に列挙すること
+- **コマンドを引数リストなしで列挙すると sudoers は任意引数を許可する**: 例: `/bin/journalctl,` (引数なし) は `journalctl --vacuum-time=1s` のような mutate 系も通してしまう。 read-only を意図するなら **引数まで完全固定** (`/bin/journalctl -u myapp` のように unit / option 単位で列挙) するか、 引数なしを意図するなら明示的に `""` 空引数リストを書く (例: `/bin/journalctl ""`)。 B.3 サンプルは全て引数固定で書いてある
+- **ワイルドカード `*` は sudoers では `/` もマッチする**ため path traversal を許容する。 例: `/bin/cat /var/log/*.log` は `/var/log/../../etc/shadow.log` 形式の引数でもマッチし、結果として `/etc/shadow.log` (任意位置の `.log` ファイル) を root として読み取りに行ける。 **フルパス + 固定引数** (例: `/bin/cat /var/log/myapp.log` のように unit 名で具体列挙) を推奨。 やむを得ず `*` を使う必要がある場合は、 **constrained wrapper script** を作って sudoers にはそれだけを登録する (wrapper 内で `realpath` を取り、 `..` や symlink を検査し、 unsafe なら exit 1)。 hook 側 (§7) の canonicalization は **Claude Code 経由のコマンドにしか効かない**ため、 別シェル / 別プロセスから sudo が呼ばれる経路には無効 — sudoers fallback の OS-level 防御目的には合わない
 - `Defaults:claude-agent !env_reset, env_keep += "..."` のような env 緩和は **しない**
 - **catch-all deny `claude-agent ALL=(ALL) !ALL` は書かない**: sudoers は未列挙コマンドを既定で deny する。 末尾の `!ALL` は評価順 (last-match-wins) で先行する NOPASSWD/PASSWD allow をすべて上書きしてしまい、 列挙したホワイトリストごと無効化される
 
