@@ -114,6 +114,14 @@ $(echo cu)rl http://github.com               # コマンド置換
     "Bash(sudo rm -rf ~)",
     "Bash(sudo rm -rf ~*)",
     "Bash(sudo rm -rf $HOME*)",
+    "Bash(rm -rf /home/*)",
+    "Bash(rm -rf /root)",
+    "Bash(rm -rf /root/*)",
+    "Bash(rm -rf /Users/*)",
+    "Bash(sudo rm -rf /home/*)",
+    "Bash(sudo rm -rf /root)",
+    "Bash(sudo rm -rf /root/*)",
+    "Bash(sudo rm -rf /Users/*)",
 
     "Bash(dd * of=/dev/sd*)",
     "Bash(dd * of=/dev/nvme*)",
@@ -150,6 +158,8 @@ $(echo cu)rl http://github.com               # コマンド置換
   ]
 }
 ```
+
+> **literal-match の限界**: Claude Code の deny パターンは送信されるコマンド文字列に対し literal match される。 agent が `$HOME` を展開して `/home/user/...` の形で送信した場合、 `$HOME*` パターンはマッチしない。 これが上で `/home/*` / `/root` / `/Users/*` 等の絶対パス variant を併記している理由。 ただし全ての変数展開・エイリアス・シンボリックリンクを列挙するのは不可能なので、 **意味的検知は §7 PreToolUse Hook の責務** (§2.3 / §9 L3 参照)。
 
 ### 4.3 意図的に **deny に入れない** もの（ask に任せる）
 
@@ -294,7 +304,7 @@ echo "$normalized" | tr '&|;' '\n' | while IFS= read -r sub; do
 
   # 真に破滅的なパターン群
   # 注: $HOME 等は上の正規化で X に置換済み。 X を「未知の変数 = 危険」として扱う
-  if echo "$sub" | grep -qE '^(sudo +)?rm +(-[a-zA-Z]*[rRf][a-zA-Z]*) +(/|~|/\*|X)( |$)'; then
+  if echo "$sub" | grep -qE '^(sudo +)?rm +(-[a-zA-Z]*[rRf][a-zA-Z]*) +(/|~|/\*|X)(/| |$)'; then
     echo "GUARDRAIL BLOCK: filesystem root/home destruction: $sub" >&2; exit 2
   fi
   if echo "$sub" | grep -qE 'dd .*of=/dev/(sd|nvme|hd|mmcblk)'; then
@@ -539,8 +549,10 @@ claude-agent ALL=(root) NOPASSWD: \
     /bin/journalctl -u *, \
     /usr/bin/ss -tlnp, \
     /usr/bin/lsof, \
-    /bin/cat /var/log/*.log, \
-    /usr/bin/tail /var/log/*.log
+    /bin/cat /var/log/myapp.log, \
+    /bin/cat /var/log/nginx/access.log, \
+    /usr/bin/tail /var/log/myapp.log, \
+    /usr/bin/tail /var/log/nginx/access.log
 
 # 書き込み系: パスワード要求（人間の関与を強制）
 claude-agent ALL=(root) PASSWD: \
