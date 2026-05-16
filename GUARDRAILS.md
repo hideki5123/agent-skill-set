@@ -148,6 +148,21 @@ $(echo cu)rl http://github.com               # コマンド置換
     "Read(~/.ssh/*_ed25519)",
     "Read(~/.aws/credentials)",
     "Read(~/.gnupg/**)",
+    "Read(/home/*/.ssh/id_*)",
+    "Read(/home/*/.ssh/*_rsa)",
+    "Read(/home/*/.ssh/*_ed25519)",
+    "Read(/Users/*/.ssh/id_*)",
+    "Read(/Users/*/.ssh/*_rsa)",
+    "Read(/Users/*/.ssh/*_ed25519)",
+    "Read(/root/.ssh/id_*)",
+    "Read(/root/.ssh/*_rsa)",
+    "Read(/root/.ssh/*_ed25519)",
+    "Read(/home/*/.aws/credentials)",
+    "Read(/Users/*/.aws/credentials)",
+    "Read(/root/.aws/credentials)",
+    "Read(/home/*/.gnupg/**)",
+    "Read(/Users/*/.gnupg/**)",
+    "Read(/root/.gnupg/**)",
 
     "Bash(:(){ :|:& };:)",
 
@@ -161,7 +176,9 @@ $(echo cu)rl http://github.com               # コマンド置換
 }
 ```
 
-> **literal-match の限界**: Claude Code の deny パターンは送信されるコマンド文字列に対し literal match される。 agent が `$HOME` を展開して `/home/user/...` の形で送信した場合、 `$HOME*` パターンはマッチしない。 これが上で `/home/*` / `/root` / `/Users/*` 等の絶対パス variant を併記している理由。 ただし全ての変数展開・エイリアス・シンボリックリンクを列挙するのは不可能なので、 **意味的検知は §7 PreToolUse Hook の責務** (§2.3 / §9 L4 参照)。
+> **literal-match の限界 (重要)**: Claude Code の deny パターンは送信される文字列に対し literal match される。 agent が `~` や `$HOME` を展開して絶対パス (`/home/user/...`) で送信した場合、 `~/...` や `$HOME*` パターンはマッチしない。 これが Bash 系 (`rm`, `sudo rm` 等) と Read 系 (`~/.ssh/...`) の両方で `/home/*` / `/root` / `/Users/*` 等の絶対パス variant を併記している理由。
+>
+> **Bash vs Read / Edit の重要な差**: §7 PreToolUse Hook は **Bash 限定** (`select(.tool_name=="Bash")` で他ツールを除外)。 **Read / Edit ツールには hook が走らない**ため、 機密ファイル保護は settings.json の deny パターン**だけ**が頼り。 上の絶対パス列挙はとりわけ重要。 列挙し切れない経路 (symlink、 bind mount、 OS 固有 home prefix、 NFS mount 等) は **§9 L0 隔離** (container / VM / user namespace) で物理的に隔てる以外にない。 Bash 系は §7 hook の意味的検知 (§2.3 / §9 L4) で別途カバーされる。
 
 ### 4.3 意図的に **deny に入れない** もの（ask に任せる）
 
@@ -300,7 +317,8 @@ Claude Code は次を built-in で読み取り扱いし、ルールなしで自�
 # 責務: 真に破滅的なコマンドを意味解析で止める（パターン deny の補完）
 
 input=$(cat)
-cmd=$(echo "$input" | jq -r 'select(.tool_name=="Bash") | .tool_input.command // empty')
+# 注: echo は入力先頭が `-` のとき option 扱いする処理系がある。 printf '%s\n' で堅牢化
+cmd=$(printf '%s\n' "$input" | jq -r 'select(.tool_name=="Bash") | .tool_input.command // empty')
 [ -z "$cmd" ] && exit 0
 
 # 正規化: 変数 / $() / バッククォート / クォートを剥がす
@@ -332,7 +350,7 @@ while IFS= read -r sub; do
   if echo "$sub" | grep -qE ':\(\)\s*\{\s*:\s*\|\s*:'; then
     echo "GUARDRAIL BLOCK: fork bomb: $sub" >&2; exit 2
   fi
-done < <(echo "$normalized" | tr '&|;' '\n')
+done < <(printf '%s\n' "$normalized" | tr '&|;' '\n')
 
 exit 0
 ```
@@ -340,6 +358,7 @@ exit 0
 > **注: 本サンプルは説明用。production 実装では次の改良が必須**:
 > - **変数正規化との整合**: 上記では `$HOME` 等を事前に `X` へ正規化するので、検知側は `\$HOME` リテラルではなく `X` を「未知変数 = 危険」として扱う (上記 `rm` 正規表現参照)
 > - **クォートを尊重した分割**: `tr '&|;' '\n'` は単純すぎ、クォート内のセミコロンや here-doc も分割してしまう。production では `bash --noexec --parse`、`shellcheck` の AST、または専用 shell lexer を使う
+> - **fork bomb 検知の限界**: 上の正規表現は教科書的な `:(){ :|:& };:` 形のみ捕捉する。 `f(){ f|f& };f` のような関数名変更や難読化で容易に回避可能。 **真の防御は OS 側の `ulimit -u <max-procs>` や cgroups (`pids.max`) によるプロセス数制限**。 hook 検知は補助層に留める
 > - 危険 / 良性両方のコーパスで unit test を伴う
 
 ---
