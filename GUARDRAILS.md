@@ -161,7 +161,7 @@ $(echo cu)rl http://github.com               # コマンド置換
 }
 ```
 
-> **literal-match の限界**: Claude Code の deny パターンは送信されるコマンド文字列に対し literal match される。 agent が `$HOME` を展開して `/home/user/...` の形で送信した場合、 `$HOME*` パターンはマッチしない。 これが上で `/home/*` / `/root` / `/Users/*` 等の絶対パス variant を併記している理由。 ただし全ての変数展開・エイリアス・シンボリックリンクを列挙するのは不可能なので、 **意味的検知は §7 PreToolUse Hook の責務** (§2.3 / §9 L3 参照)。
+> **literal-match の限界**: Claude Code の deny パターンは送信されるコマンド文字列に対し literal match される。 agent が `$HOME` を展開して `/home/user/...` の形で送信した場合、 `$HOME*` パターンはマッチしない。 これが上で `/home/*` / `/root` / `/Users/*` 等の絶対パス variant を併記している理由。 ただし全ての変数展開・エイリアス・シンボリックリンクを列挙するのは不可能なので、 **意味的検知は §7 PreToolUse Hook の責務** (§2.3 / §9 L4 参照)。
 
 ### 4.3 意図的に **deny に入れない** もの（ask に任せる）
 
@@ -180,7 +180,14 @@ $(echo cu)rl http://github.com               # コマンド置換
 
 ### 5.1 デフォルト方針
 
-**「sudo を含むすべての書き込み系」は ask** が出発点。これだけで OWASP LLM06 の「自律性」軸を大幅に削れる。
+書き込み系の操作と sudo を **ask** に置きたい — が、 **`Bash(sudo *)` のような broad パターンを §5.2 に書いてはならない**。 Claude Code の評価順 (deny → ask → allow, 各層内 first match) では broad な ask が §6.2 の specific allow より先にマッチしてしまい、 `sudo -n systemctl status myapp` のような読み取り系 allow が永遠に発火しない (settings.json だけでは「default ask, 特定だけ allow」を直接表現できない)。
+
+したがって sudo のコンプリヘンシブな防御は次の層に分担する:
+
+- **§7 PreToolUse Hook** — 意味的に危険な sudo コマンドを exit 2 で停止
+- **Appendix B sudoers** — sudoers ホワイトリストで OS レベル拒否 (採用時のみ)
+
+settings.json の ask には **具体的なサブコマンド** (`apt install *`, `systemctl restart *`, `mount *` 等) のみを書く。 これだけでも OWASP LLM06 の「自律性」軸を大幅に削れる。
 
 ### 5.2 ルール例（settings.json `permissions.ask`）
 
@@ -189,9 +196,6 @@ $(echo cu)rl http://github.com               # コマンド置換
 ```json
 {
   "ask": [
-    "Bash(sudo *)",
-    "Bash(sudo -n *)",
-
     "Bash(apt install *)", "Bash(apt remove *)", "Bash(apt-get *)",
     "Bash(dnf *)", "Bash(yum *)", "Bash(brew install *)", "Bash(brew uninstall *)",
     "Bash(npm install -g *)", "Bash(pip install *)", "Bash(pip3 install *)",
@@ -218,6 +222,8 @@ $(echo cu)rl http://github.com               # コマンド置換
 }
 ```
 
+`Bash(sudo *)` / `Bash(sudo -n *)` は **意図的に入れていない** (§5.1 参照)。 sudo 全般のカバレッジは §7 hook + Appendix B sudoers に委ねる。
+
 ### 5.3 ask が出たときの人間側のチェックリスト
 
 1. このコマンドは**今のタスクと関係あるか？**（無関係なら prompt injection を疑う）
@@ -236,7 +242,7 @@ Claude Code は次を built-in で読み取り扱いし、ルールなしで自�
 
 ### 6.2 明示で追加したい読み取り系（settings.json `permissions.allow`）
 
-`sudo -n` 付きの読み取り系は明示しないと ask に落ちる。**以下の `sudo -n ...` 行は Appendix B (sudoers ホワイトリスト) を採用したケース限定**。§13 経路 (agent に sudo を渡さない) では不要かつ無効。
+`sudo -n` 付きの読み取り系を allow に明示する。 §5.2 で broad な `Bash(sudo *)` を ask に**置かない** (§5.1 参照) ため、 下記の specific allow が評価順 (deny → ask → allow) 上 fire できる。 **以下の `sudo -n ...` 行は Appendix B (sudoers ホワイトリスト) を採用したケース限定**。§13 経路 (agent に sudo を渡さない) では不要かつ無効。
 
 > **メモ**: §4.2 と同じく `permissions` キー配下に置く fragment。 単独で完全な settings として使うなら `{ "permissions": { "allow": [...] } }` でラップする。
 
@@ -356,16 +362,18 @@ Appendix B (sudoers ホワイトリスト) を採用するのは次のケース�
 
 | 層 | 防御対象 | 実装 | 検出時の挙動 |
 |---|---|---|---|
-| **L0: 隔離** | 全層が破られた場合の被害局所化 | Container / VM / devcontainer (§13 L3) | プロセス分離 |
-| **L1a: Anthropic Sandbox** | Bash 子プロセスの FS/network (Anthropic 公式) | `.claude/settings.json` の sandbox 設定 (§13 L1) | カーネルが拒否 |
-| **L1b: 非 sudo 権限委譲** | sudo 経路自体を消す | group membership (§13 L2) | OS が拒否 |
-| **L1c: sudoers** (Appendix B 採用時のみ) | Claude Code を経由しない攻撃 | `/etc/sudoers.d/claude-agent` | OS が拒否 |
-| **L3: PreToolUse hook** | 意味的に危険なコマンド | `scripts/hooks/pretool-bash-guard.sh` | exit 2 で停止 |
-| **L4: permissions.deny** | 明確にパターン化できる禁止操作 | `.claude/settings.json` | ルールで拒否 |
-| **L5: permissions.ask** | 影響大の操作 | `.claude/settings.json` | 人間承認待ち |
-| **L6: 監査** | 事後検出・学習 | shell history + auditd + Claude セッションログ | アラート |
+| **L0: 隔離** | 全層が破られた場合の被害局所化 | Container / VM / devcontainer (§13 R3) | プロセス分離 |
+| **L1: Anthropic Sandbox** | Bash 子プロセスの FS/network (Anthropic 公式) | `.claude/settings.json` の sandbox 設定 (§13 R1) | カーネルが拒否 |
+| **L2: 非 sudo 権限委譲** | sudo 経路自体を消す | group membership (§13 R2) | OS が拒否 |
+| **L3: sudoers** (Appendix B 採用時のみ) | Claude Code を経由しない攻撃 | `/etc/sudoers.d/claude-agent` | OS が拒否 |
+| **L4: PreToolUse hook** | 意味的に危険なコマンド | `scripts/hooks/pretool-bash-guard.sh` | exit 2 で停止 |
+| **L5: permissions.deny** | 明確にパターン化できる禁止操作 | `.claude/settings.json` | ルールで拒否 |
+| **L6: permissions.ask** | 影響大の操作 | `.claude/settings.json` | 人間承認待ち |
+| **L7: 監査** | 事後検出・学習 | shell history + auditd + Claude セッションログ | アラート |
 
-**重要 (v2 更新)**: L3 〜 L5 は LLM 経由でのみ効く。L0 〜 L1c は経由を問わず効く。本気で守るなら **L0 + L1a + L1b が主**、L1c (sudoers) は §13 経路が取れない場合のみ。L3 〜 L5 は UX 改善層。
+**重要 (v2 更新)**: L4 〜 L6 は LLM 経由でのみ効く。L0 〜 L3 は経由を問わず効く。本気で守るなら **L0 + L1 + L2 が主**、L3 (sudoers) は §13 経路が取れない場合のみ。L4 〜 L6 は UX 改善層。
+
+> **L 表記と R 表記の使い分け (v2 注記)**: 本章 §9 の **L0-L7** は「防御層 (Defense Layer)」の番号。 §13.2 の **R1-R4** は「推奨レシピ (Recipe)」の番号で別名前空間。 §9 表内の `(§13 R3)` 等の cross-ref は「§13 で言うところの recipe R3 がこの層に対応する」の意。 マッピング: R1 ≈ L1, R2 ≈ L2, R3 ≈ L0 の subset, R4 は §9 の防御層には属さない (運用層)。
 
 ---
 
@@ -374,11 +382,11 @@ Appendix B (sudoers ホワイトリスト) を採用するのは次のケース�
 ### 10.1 導入順序（v2 推奨）
 
 0. **段階0**: 既存環境を測定（どんなコマンドが発行されているか1週間ログ取得）
-1. **段階1 — §13 経路の評価**: agent に sudo を渡さずに済むか棚卸し。L1 (Anthropic sandbox) / L2 (group) / L3 (devcontainer) でどこまでカバーできるか判定
-2. **段階2A（推奨）**: §13 経路でカバーできる → L1 を有効化、必要に応じて L2 (group 追加) と L3 (devcontainer) を整備。§§4-7 (deny/ask/allow/hook) は §13 経路でも引き続き適用
+1. **段階1 — §13 経路の評価**: agent に sudo を渡さずに済むか棚卸し。R1 (Anthropic sandbox) / R2 (group) / R3 (devcontainer) でどこまでカバーできるか判定
+2. **段階2A（推奨）**: §13 経路でカバーできる → R1 を有効化、必要に応じて R2 (group 追加) と R3 (devcontainer) を整備。§§4-7 (deny/ask/allow/hook) は §13 経路でも引き続き適用
 3. **段階2B（fallback）**: §13 経路でカバーできない真の特権操作が残る → **Appendix B** (sudoers ホワイトリスト) を採用。§§4-7 と組み合わせる
 4. **段階3**: 1〜2 週間運用して摩擦と漏れを確認
-5. **段階4**: 漏れに応じて L1 sandbox 範囲を縮小、ask ルール調整、hook 強化
+5. **段階4**: 漏れに応じて R1 sandbox 範囲を縮小、ask ルール調整、hook 強化
 
 (v1 の sudoers-first 順序は §13 検証を経て廃止)
 
@@ -390,6 +398,7 @@ Appendix B (sudoers ホワイトリスト) を採用するのは次のケース�
 - ❌ `NOPASSWD: ALL` を sudoers に書く
 - ❌ パターン deny だけに頼り hook を省く（[The Register 2026-04 の bypass 事例](https://www.theregister.com/2026/04/01/claude_code_rule_cap_raises/)）
 - ❌ コンテナの中で root として動かす（隔離の意味が半減 — ただし devcontainer 内 root は host 隔離前提なら可）
+- ❌ `Bash(sudo *)` のような broad パターンを ask に置く（§6.2 の specific sudo -n allow を mask する。 §5.1 参照）
 
 ### 10.3 監査ログのチェックポイント
 
@@ -436,6 +445,7 @@ Appendix B (sudoers ホワイトリスト) を採用するのは次のケース�
 |---|---|
 | 2026-05-13 | 初版（緩め deny + 広め ask 方針） |
 | 2026-05-16 | **v2 方針転換**: 「agent に sudo を渡さない」を §13 で主軸化。v1 の sudoers 詳細 (旧 §8) を Appendix B に退避。§2.3 に Adversa bypass 事例、§11 に Anthropic Issue #9184 等の一次資料を追加。§9 / §10.1 / §10.2 を v2 順序に更新。 |
+| 2026-05-16 (rev2) | レビュー指摘対応: §9 防御層を L0-L7 に正規化 (L1a/b/c と L2 gap を解消)、§13 推奨レシピを **R1-R4** 別名前空間にリネーム。§5.1 / §5.2 / §6.2 を Claude Code 評価順 (deny→ask→allow first match) に整合させ、broad `Bash(sudo *)` ask を削除し sudo カバレッジを §7 hook と Appendix B に明示委譲。§13.2 R2 group の docker 警告強化、R3 devcontainer の隔離前提を列挙、Appendix B.3 から `!ALL` catch-all 削除、§7.4 hook のサブシェル exit バグ修正、§11 OWASP URL 訂正。 |
 
 ---
 
@@ -455,22 +465,24 @@ v1 (§§3-8) は「sudoers でホワイトリスト渡し」を中核として�
 
 ### 13.2 4-layer 推奨レシピ
 
-| Layer | 何を | 何で | カバーする操作 |
-|---|---|---|---|
-| **L1** | Anthropic native sandbox を有効化 | `.claude/settings.json` の sandbox 設定 | filesystem write / network egress を allowlist 化 |
-| **L2** | group membership で sudo を回避 | `usermod -aG docker,systemd-journal claude-agent` 等 | Docker, journalctl, audio 等 通常 sudo 必須操作 |
-| **L3** | devcontainer で system mutation を局所化 | `.devcontainer/devcontainer.json` | apt install, systemctl restart 等を container 内に閉じる |
-| **L4** | 人間 delegate | Slack / CLI 経由で「これやって」プロンプト | 上記でカバーできない真の特権操作 |
+> **記法**: 本節の **R1-R4** は「推奨レシピ (Recipe)」の番号。 §9 の防御層番号 (L0-L7) とは別名前空間 (§9 末尾注記参照)。
 
-#### L1: Anthropic native sandbox
+| Recipe | 何を | 何で | カバーする操作 |
+|---|---|---|---|
+| **R1** | Anthropic native sandbox を有効化 | `.claude/settings.json` の sandbox 設定 | filesystem write / network egress を allowlist 化 |
+| **R2** | group membership で sudo を回避 | `usermod -aG systemd-journal claude-agent` 等 (危険 group は避ける、 §13.2 R2 参照) | journalctl, log 読み取り、 メディアデバイス 等 |
+| **R3** | devcontainer で system mutation を局所化 | `.devcontainer/devcontainer.json` | apt install, systemctl restart 等を container 内に閉じる |
+| **R4** | 人間 delegate | Slack / CLI 経由で「これやって」プロンプト | 上記でカバーできない真の特権操作 |
+
+#### R1: Anthropic native sandbox
 
 最初に有効化すべき層。`.claude/settings.json` の `sandbox` 設定で filesystem 範囲と network egress を制限する。**84% prompt 削減効果の根源**。
 
 macOS では `sandbox-exec` (Apple は deprecated 化しているが現状動作。[Infralovers 2026-02 が指摘](https://www.infralovers.com/blog/2026-02-15-sandboxing-claude-code-macos/))、Linux では seccomp / landlock。詳細は [Claude Code Sandboxing docs](https://code.claude.com/docs/en/sandboxing) 参照。
 
-> **注意**: macOS の `sandbox-exec` deprecation は長期的リスク。Production 用途では Linux + devcontainer (L3) を併用するのが安全側。
+> **注意**: macOS の `sandbox-exec` deprecation は長期的リスク。Production 用途では Linux + devcontainer (R3) を併用するのが安全側。
 
-#### L2: group membership (ただし group 選びに注意)
+#### R2: group membership (ただし group 選びに注意)
 
 sudo を使わず、特定リソースへの直接アクセス権を group 経由で agent に付与する。 ただし **group の中には実質的に host root と等価の権限を与えるものがある**ため、 「sudoers より安全」と単純には言えない。 採用する group を**個別に評価**すること。
 
@@ -501,7 +513,7 @@ sudo usermod -aG systemd-journal claude-agent
 
 評価軸: **「その group 経由で host root に escalate できる経路があるか」** をチェックする。 「group は sudo より安全」ではなく「**正しい group を選べば** sudo より低リスク」が正確な表現。
 
-#### L3: devcontainer
+#### R3: devcontainer
 
 `apt install`、`systemctl restart` のような「system 状態を変える」操作は、agent ホストではなく **使い捨て可能な devcontainer 内**で実行する。container を捨てれば変更も消える。
 
@@ -527,25 +539,25 @@ container 内では agent に `NOPASSWD: ALL` を渡しても **ホスト本体�
 
 これらが満たされない container は **隔離されておらず、 container 内 root は事実上 host root と等価**。 隔離前提が成立するときに限り「container × root」が許される (§10.2 NG パターン参照)。
 
-#### L4: 人間 delegate
+#### R4: 人間 delegate
 
-L1-L3 でカバーできない真の host 特権操作 (hardware 操作、L0 物理アクセス、組織ポリシーで sudo が要る操作) は agent に渡さず、**人間に Slack / CLI 経由で頼む形式**にする。
+R1-R3 でカバーできない真の host 特権操作 (hardware 操作、L0 物理アクセス、組織ポリシーで sudo が要る操作) は agent に渡さず、**人間に Slack / CLI 経由で頼む形式**にする。
 
 ```
 エージェント: 「以下のコマンドを host で実行してください: sudo systemctl restart nginx」
 人間:        (確認後) 実行 → 結果を agent に貼り戻す
 ```
 
-非効率に見えるが、L4 まで到達するケース自体が少なければ問題にならない。**L1-L3 で 90% 以上カバーできるのが推奨ライン**。
+非効率に見えるが、R4 まで到達するケース自体が少なければ問題にならない。**R1-R3 で 90% 以上カバーできるのが推奨ライン**。
 
 ### 13.3 レシピ選択ガイド
 
 | 状況 | 推奨 |
 |---|---|
-| 個人開発機 (1-3 台) | L1 + L3 を主、L4 を補助。L2 はオプション。**Appendix B 不要** |
-| 開発チーム共有サーバー | L1 + L2 + L3。L4 を運用ルール化 |
-| 無人 CI runner | L1 + L3。L4 不可なので残りは **Appendix B (sudoers ホワイトリスト) を fallback** |
-| Production deploy server | **Appendix B 必須**。加えて L1 で sandbox 最小化 |
+| 個人開発機 (1-3 台) | R1 + R3 を主、R4 を補助。R2 はオプション。**Appendix B 不要** |
+| 開発チーム共有サーバー | R1 + R2 + R3。R4 を運用ルール化 |
+| 無人 CI runner | R1 + R3。R4 不可なので残りは **Appendix B (sudoers ホワイトリスト) を fallback** |
+| Production deploy server | **Appendix B 必須**。加えて R1 で sandbox 最小化 |
 
 ---
 
@@ -555,7 +567,7 @@ L1-L3 でカバーできない真の host 特権操作 (hardware 操作、L0 物
 **v1 ではこの内容が本書の中核 (旧 §8) だった**。v2 では条件付き fallback に降格。
 
 採用条件 (§10.1 段階2B):
-- 無人 CI runner / 自動デプロイ等で L4 (人間 delegate) が物理的に取れない
+- 無人 CI runner / 自動デプロイ等で R4 (人間 delegate) が物理的に取れない
 - single-purpose appliance で操作対象がほぼ固定
 - §13 のいずれの recipe も組織制約で採用不可
 
@@ -603,11 +615,11 @@ claude-agent ALL=(root) PASSWD: \
 
 ### B.5 §13 経路への移行 (v2 追加)
 
-状況が変わって §13 の L1-L4 いずれかが採用可能になったら、**Appendix B 経路は速やかに retire する**。sudoers が残るほど bypass の機会が増える (§2.3 の Adversa 事例参照)。
+状況が変わって §13 の R1-R4 いずれかが採用可能になったら、**Appendix B 経路は速やかに retire する**。sudoers が残るほど bypass の機会が増える (§2.3 の Adversa 事例参照)。
 
 retire 手順:
-1. §13 L1 (sandbox) を先行有効化
-2. §13 L2 (group) で sudo 経由していた読み取り系を group 経由に移行
-3. §13 L3 (devcontainer) で残った書き込み系を container 内に閉じ込め
+1. §13 R1 (sandbox) を先行有効化
+2. §13 R2 (group) で sudo 経由していた読み取り系を group 経由に移行
+3. §13 R3 (devcontainer) で残った書き込み系を container 内に閉じ込め
 4. `/etc/sudoers.d/claude-agent` を削除
 5. §§4-7 の deny / ask / allow / hook は引き続き有効
