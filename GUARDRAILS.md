@@ -101,6 +101,8 @@ $(echo cu)rl http://github.com               # コマンド置換
 
 ### 4.2 ルール例（settings.json `permissions.deny`）
 
+> **メモ**: 下記 JSON は `.claude/settings.json` の `permissions` キー配下に置く fragment。 単独で完全な settings として使うなら `{ "permissions": { "deny": [...] } }` のように 1 階層ラップする。
+
 ```json
 {
   "deny": [
@@ -182,6 +184,8 @@ $(echo cu)rl http://github.com               # コマンド置換
 
 ### 5.2 ルール例（settings.json `permissions.ask`）
 
+> **メモ**: §4.2 と同じく `permissions` キー配下に置く fragment。 単独で完全な settings として使うなら `{ "permissions": { "ask": [...] } }` でラップする。
+
 ```json
 {
   "ask": [
@@ -233,6 +237,8 @@ Claude Code は次を built-in で読み取り扱いし、ルールなしで自�
 ### 6.2 明示で追加したい読み取り系（settings.json `permissions.allow`）
 
 `sudo -n` 付きの読み取り系は明示しないと ask に落ちる。**以下の `sudo -n ...` 行は Appendix B (sudoers ホワイトリスト) を採用したケース限定**。§13 経路 (agent に sudo を渡さない) では不要かつ無効。
+
+> **メモ**: §4.2 と同じく `permissions` キー配下に置く fragment。 単独で完全な settings として使うなら `{ "permissions": { "allow": [...] } }` でラップする。
 
 ```json
 {
@@ -298,7 +304,11 @@ normalized=$(echo "$cmd" \
   | tr -d '`"\047')
 
 # 連結境界で分割
-echo "$normalized" | tr '&|;' '\n' | while IFS= read -r sub; do
+# 注: パイプライン `... | while` は while をサブシェルで実行するため、
+#     ループ内の `exit 2` がサブシェルだけを抜けて hook 全体が exit 0 で
+#     続いてしまう (危険コマンドが silently 通る)。
+#     プロセス置換 `done < <(...)` で while をメインシェルに留める。
+while IFS= read -r sub; do
   sub=$(echo "$sub" | xargs)  # trim
   [ -z "$sub" ] && continue
 
@@ -316,7 +326,7 @@ echo "$normalized" | tr '&|;' '\n' | while IFS= read -r sub; do
   if echo "$sub" | grep -qE ':\(\)\s*\{\s*:\s*\|\s*:'; then
     echo "GUARDRAIL BLOCK: fork bomb: $sub" >&2; exit 2
   fi
-done
+done < <(echo "$normalized" | tr '&|;' '\n')
 
 exit 0
 ```
@@ -393,7 +403,7 @@ Appendix B (sudoers ホワイトリスト) を採用するのは次のケース�
 
 ### LLM / AI Agent セキュリティ
 
-- [OWASP LLM06:2025 Excessive Agency](https://genai.owasp.org/llmrisk/llm06-sensitive-information-disclosure/) — 3軸最小化と Complete Mediation の元ネタ
+- [OWASP LLM06:2025 Excessive Agency](https://genai.owasp.org/llmrisk/llm062025-excessive-agency/) — 3軸最小化と Complete Mediation の元ネタ
 - [OWASP AI Agent Security Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/AI_Agent_Security_Cheat_Sheet.html) — 包括的なチェックリスト
 - [AWS Well-Architected GENSEC05-BP01: Least privilege for agentic workflows](https://docs.aws.amazon.com/wellarchitected/latest/generative-ai-lens/gensec05-bp01.html) — IAM 観点の最小権限
 - [Oso — Best Practices of Authorizing AI Agents](https://www.osohq.com/learn/best-practices-of-authorizing-ai-agents) — 認可モデル設計
@@ -460,21 +470,36 @@ macOS では `sandbox-exec` (Apple は deprecated 化しているが現状動作
 
 > **注意**: macOS の `sandbox-exec` deprecation は長期的リスク。Production 用途では Linux + devcontainer (L3) を併用するのが安全側。
 
-#### L2: group membership
+#### L2: group membership (ただし group 選びに注意)
 
-「agent が docker を使えるようにする」ためには `sudo docker ...` を許可するのではなく、agent ユーザーを `docker` group に入れる。**sudo 経路を完全に消す**。
+sudo を使わず、特定リソースへの直接アクセス権を group 経由で agent に付与する。 ただし **group の中には実質的に host root と等価の権限を与えるものがある**ため、 「sudoers より安全」と単純には言えない。 採用する group を**個別に評価**すること。
+
+**安全な group の例** (host root に escalate できない):
+
+- `systemd-journal` — `journalctl` 読み取り
+- `audio` / `video` — メディアデバイス
+- service-account group (例: `nginx`, `myapp`) — そのサービスの log / config 読み取り
+
+**危険な group** (事実上 host root と等価。 これらに入れるなら sudoers NOPASSWD: ALL と同等のリスクと扱うこと):
+
+- **`docker`** — `docker run --privileged -v /:/host` で host filesystem を完全制御できる
+- `kvm` — VM 経由で host メモリにアクセス可
+- `disk` — block device 直接読み書きで filesystem 全域改竄可
+- `lxd` / `wheel` — それぞれ container escape / sudo 経路
 
 ```bash
-# 例: claude-agent を docker と systemd-journal group に追加
-sudo usermod -aG docker,systemd-journal claude-agent
+# 例: 安全な group のみ追加 (systemd-journal で journalctl 読み取りを許可)
+sudo usermod -aG systemd-journal claude-agent
+
+# 注意: docker group は host root と等価。 Docker を使わせたい場合は
+#       rootless docker または Podman を検討し、 素の docker group には入れない
 ```
 
-これにより以下が sudo 不要になる:
-- `docker ps` / `docker compose up` / `docker exec`
+これにより以下が sudo 不要になる (安全 group 経由):
 - `journalctl -u <unit>` (systemd-journal group)
 - `cat /var/log/<unit>.log` (適切な ACL / group 設定下)
 
-group 追加は **特権昇格ではない**: agent は root にはならず、特定リソースへの直接アクセス権だけが追加される。sudoers より遥かに安全 (sudoers は実行時に EUID=0 になる、group は元 UID のまま)。
+評価軸: **「その group 経由で host root に escalate できる経路があるか」** をチェックする。 「group は sudo より安全」ではなく「**正しい group を選べば** sudo より低リスク」が正確な表現。
 
 #### L3: devcontainer
 
@@ -492,7 +517,15 @@ group 追加は **特権昇格ではない**: agent は root にはならず、�
 }
 ```
 
-container 内では agent に `NOPASSWD: ALL` を渡しても **ホストには影響しない**。これが「container × root」が許される唯一の文脈 (§10.2 NG パターン参照)。
+container 内では agent に `NOPASSWD: ALL` を渡しても **ホスト本体への影響は限定的** — ただし以下の隔離前提が**すべて**成立する場合のみ:
+
+- `--privileged` フラグは使わない
+- host filesystem の bind mount は最小限 (workspace のみ。 `/`、 `/var/run/docker.sock`、 `/proc`、 `/sys` 等の bind mount は **NG**)
+- docker-in-docker は **ホスト docker.sock 共有方式ではなく nested daemon 方式**で構築する (上記 `docker-in-docker:2` feature は nested daemon 側で安全。 socket mount 式 DinD は host docker access に等価で **NG**)
+- host capabilities の追加 (`--cap-add SYS_ADMIN` 等) はしない
+- 可能なら user namespace remapping を有効化 (container root != host root)
+
+これらが満たされない container は **隔離されておらず、 container 内 root は事実上 host root と等価**。 隔離前提が成立するときに限り「container × root」が許される (§10.2 NG パターン参照)。
 
 #### L4: 人間 delegate
 
@@ -558,9 +591,6 @@ claude-agent ALL=(root) NOPASSWD: \
 claude-agent ALL=(root) PASSWD: \
     /bin/systemctl restart myapp, \
     /bin/systemctl reload nginx
-
-# それ以外は全部拒否（明示）
-claude-agent ALL=(ALL) !ALL
 ```
 
 ### B.4 注意点 (旧 §8.4)
@@ -569,6 +599,7 @@ claude-agent ALL=(ALL) !ALL
 - **ワイルドカード `*` は sudoers では `/` もマッチする**ため path traversal を許容する。 例: `/bin/cat /var/log/*.log` は `/var/log/../../etc/shadow.log` 形式の引数でもマッチし、結果として `/etc/shadow.log` (任意位置の `.log` ファイル) を root として読み取りに行ける。 **フルパス + 固定引数** (例: `/bin/cat /var/log/myapp.log` のように unit 名で具体列挙) を推奨。 やむを得ず `*` を使う場合は hook 側で path canonicalize して `..` を含む引数を弾くこと
 - B.3 サンプルの `/var/log/*.log` 等は説明簡略化のための例示。 production では各 unit 名を個別に列挙すること
 - `Defaults:claude-agent !env_reset, env_keep += "..."` のような env 緩和は **しない**
+- **catch-all deny `claude-agent ALL=(ALL) !ALL` は書かない**: sudoers は未列挙コマンドを既定で deny する。 末尾の `!ALL` は評価順 (last-match-wins) で先行する NOPASSWD/PASSWD allow をすべて上書きしてしまい、 列挙したホワイトリストごと無効化される
 
 ### B.5 §13 経路への移行 (v2 追加)
 
