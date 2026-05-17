@@ -1,0 +1,15 @@
+{
+  "name": "bypass-toggle",
+  "version": "1.0.0",
+  "description": "Toggle effective bypassPermissions for the user's Claude Code sessions via a PreToolUse hook + flag file. Use when the user wants to skip further permission prompts after approving a plan — especially",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "bypass-toggle",
+    "permissions",
+    "hook"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}
