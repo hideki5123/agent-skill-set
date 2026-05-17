@@ -16,6 +16,7 @@ All paths are configured for Hideki's environment.
 
 import argparse
 import json
+import os
 import re
 import shutil
 import sys
@@ -23,7 +24,28 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 # ── Environment paths ──────────────────────────────────────────────
-MARKETPLACE_DIR = Path(r"D:\Shared\agents\my-skills\my-marketplace")
+def _find_marketplace_dir() -> Path:
+    """Locate the my-marketplace root. Honors MY_MARKETPLACE_DIR; otherwise
+    walks up from this script looking for a directory that contains
+    .claude-plugin/marketplace.json (either the parent itself or a
+    `my-marketplace` sibling). Works on Linux, macOS, and Windows."""
+    env = os.environ.get("MY_MARKETPLACE_DIR")
+    if env:
+        return Path(env).expanduser().resolve()
+    here = Path(__file__).resolve()
+    for cur in [here.parent, *here.parents]:
+        if (cur / ".claude-plugin" / "marketplace.json").exists():
+            return cur
+        sibling = cur / "my-marketplace"
+        if (sibling / ".claude-plugin" / "marketplace.json").exists():
+            return sibling.resolve()
+    sys.exit(
+        "Error: could not locate my-marketplace directory. "
+        "Set MY_MARKETPLACE_DIR to override."
+    )
+
+
+MARKETPLACE_DIR = _find_marketplace_dir()
 MARKETPLACE_JSON = MARKETPLACE_DIR / ".claude-plugin" / "marketplace.json"
 CLAUDE_DIR = Path.home() / ".claude"
 PLUGINS_DIR = CLAUDE_DIR / "plugins"
@@ -32,8 +54,6 @@ SETTINGS_JSON = CLAUDE_DIR / "settings.json"
 CACHE_DIR = PLUGINS_DIR / "cache" / "hideki-plugins"
 MARKETPLACE_NAME = "hideki-plugins"
 
-
-import re
 
 def strip_comments(text: str) -> str:
     # Remove // comments
