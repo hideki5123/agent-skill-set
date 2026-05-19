@@ -32,6 +32,7 @@ EXCLUDED_TREE_NAMES = {
     "__pycache__",
     ".DS_Store",
 }
+AGENTS_SUBDIR = "agents"
 
 
 @dataclass
@@ -137,6 +138,8 @@ def copy_skill_tree(source_dir: Path, dest_dir: Path) -> None:
     for item in source_dir.iterdir():
         if item.name in EXCLUDED_TREE_NAMES:
             continue
+        if item.name == AGENTS_SUBDIR and item.is_dir():
+            continue
         dest_path = dest_dir / item.name
         if item.is_dir():
             shutil.copytree(
@@ -148,7 +151,23 @@ def copy_skill_tree(source_dir: Path, dest_dir: Path) -> None:
             shutil.copy2(item, dest_path)
 
 
-def ensure_plugin_metadata(plugin_dir: Path, meta: SkillMeta) -> None:
+def copy_agents_tree(source_dir: Path, plugin_dir: Path) -> bool:
+    source_agents = source_dir / AGENTS_SUBDIR
+    if not source_agents.is_dir():
+        return False
+
+    dest_agents = plugin_dir / AGENTS_SUBDIR
+    if dest_agents.exists():
+        shutil.rmtree(dest_agents)
+    shutil.copytree(
+        source_agents,
+        dest_agents,
+        ignore=shutil.ignore_patterns(*EXCLUDED_TREE_NAMES),
+    )
+    return True
+
+
+def ensure_plugin_metadata(plugin_dir: Path, meta: SkillMeta, has_agents: bool) -> None:
     plugin_meta_dir = plugin_dir / ".claude-plugin"
     plugin_meta_dir.mkdir(parents=True, exist_ok=True)
 
@@ -161,7 +180,7 @@ def ensure_plugin_metadata(plugin_dir: Path, meta: SkillMeta) -> None:
         except json.JSONDecodeError:
             pass
 
-    plugin_json = {
+    plugin_json: dict = {
         "name": meta.name,
         "version": version,
         "description": (meta.description or f"{meta.name} skill")[:200],
@@ -170,6 +189,8 @@ def ensure_plugin_metadata(plugin_dir: Path, meta: SkillMeta) -> None:
         "license": "MIT",
         "skills": "./skills",
     }
+    if has_agents:
+        plugin_json["agents"] = "./agents"
     write_json(plugin_json_path, plugin_json)
 
     plugin_marketplace = {
@@ -232,7 +253,11 @@ def validate(meta: SkillMeta) -> list[str]:
     if not plugin_skill_dir.exists():
         return [f"[{meta.name}] missing generated directory: {plugin_skill_dir}"]
 
-    source_files = collect_files(meta.source_dir)
+    source_files = {
+        rel: digest
+        for rel, digest in collect_files(meta.source_dir).items()
+        if not rel.startswith(f"{AGENTS_SUBDIR}/")
+    }
     generated_files = collect_files(plugin_skill_dir)
 
     missing = sorted(set(source_files) - set(generated_files))
@@ -258,9 +283,11 @@ def run_sync(skills: list[SkillMeta]) -> None:
         plugin_dir = PLUGINS_DIR / meta.name
         plugin_skill_dir = plugin_dir / "skills" / meta.name
         copy_skill_tree(meta.source_dir, plugin_skill_dir)
-        ensure_plugin_metadata(plugin_dir, meta)
+        has_agents = copy_agents_tree(meta.source_dir, plugin_dir)
+        ensure_plugin_metadata(plugin_dir, meta, has_agents)
         synced.append(meta)
-        print(f"Synced {meta.name}: {meta.source_dir} -> {plugin_skill_dir}")
+        suffix = f" (+agents)" if has_agents else ""
+        print(f"Synced {meta.name}: {meta.source_dir} -> {plugin_skill_dir}{suffix}")
 
     if synced:
         sync_registry(synced)
