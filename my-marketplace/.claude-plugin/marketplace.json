@@ -10,6 +10,16 @@
       "description": "Autonomously fetch and apply AI reviewer comments on a GitHub PR — creating a draft PR and requesting reviewers if needed. Default mode processes Copilot/Gemini bot comments without human intervention"
     },
     {
+      "name": "codex-cli",
+      "source": "./plugins/codex-cli",
+      "description": "Run OpenAI Codex CLI from the terminal for batch / one-shot `codex exec` invocations with output captured to an `-o` file. Use for fire-and-forget runs, scripted CI, code review batches (`codex review"
+    },
+    {
+      "name": "codex-server",
+      "source": "./plugins/codex-server",
+      "description": "Run OpenAI Codex via the Codex App Server (JSON-RPC-over-stdio) for streaming multi-turn chat sessions with persistent threads, structured output, image input, and rich event streams. Default entry po"
+    },
+    {
       "name": "confluence",
       "source": "./plugins/confluence",
       "description": "Use confluence-cli to read, search, create, update, move, and delete Confluence pages and attachments from the terminal. Prefer this skill over `mcp__claude_ai_Atlassian__*` MCP tools when you need: p"
@@ -30,14 +40,54 @@
       "description": "Run frontend E2E tests with video evidence. Generates a Playwright test from the scenario CSV and runs it via CLI with video recording. Supports Chrome profile reuse (--chrome-profile) for testing wit"
     },
     {
+      "name": "en-to-ja-explainer",
+      "source": "./plugins/en-to-ja-explainer",
+      "description": "英語の技術ドキュメント (Hugging Face docs / GitHub README / arXiv 論文 / 技術ブログ等) を、日本人が読んで AI 生成と気づかない自然な日本語の解説サイトに変換します。フェッチ → 構成 → HTML/CSS/JS 生成 → 多角レビュー → 修正 → ローカル配信、まで一気通貫。日本語自然さチェックは `naturalize-ja` スキルに委譲 "
+    },
+    {
+      "name": "gdrive-cli",
+      "source": "./plugins/gdrive-cli",
+      "description": "Operate Google Drive from the terminal via `rclone` — list, upload, download, search, sync, mount, check quota, export Google Docs/Sheets/Slides, browse Shared Drives, and manage trash. Use whenever t"
+    },
+    {
       "name": "jira-cli",
       "source": "./plugins/jira-cli",
       "description": "Use @pchuri/jira-cli to view, search, create, update, and delete Jira issues, comments, sprints, and projects from the terminal. Prefer this skill over `mcp__claude_ai_Atlassian__*` MCP tools when you"
     },
     {
+      "name": "local-skill-factory",
+      "source": "./plugins/local-skill-factory",
+      "description": "Create project-local Claude Code skills (.claude/commands/) in any project directory. Analyzes the project's tech stack, structure, and conventions, then generates tailored local skills (custom slash "
+    },
+    {
       "name": "multi-agent-council",
       "source": "./plugins/multi-agent-council",
       "description": "Multi-LLM council for architecture decisions and code reviews. Use when needing diverse AI perspectives, design validation, cross-model critique, or thorough review of project state. Invokes Claude + "
+    },
+    {
+      "name": "my-gdrive",
+      "source": "./plugins/my-gdrive",
+      "description": "Operate ONLY the user's private (personal) Google Drive via `rclone`, scoped to a single pinned remote (default `my-gdrive:`, override with the `MY_GDRIVE_REMOTE` env var). A safety wrapper around the"
+    },
+    {
+      "name": "my-skill-factory",
+      "source": "./plugins/my-skill-factory",
+      "description": "Create, build, and install custom Claude Code skills into Hideki's local marketplace. End-to-end workflow from requirements gathering to a fully installed and usable skill. Use when the user asks to c"
+    },
+    {
+      "name": "naturalize-ja",
+      "source": "./plugins/naturalize-ja",
+      "description": "任意の日本語テキスト (ファイル / 貼り付けテキスト / ディレクトリ) を読み、AI 生成と気づかれる「不自然な日本語表現」を検出・置換します。プレ AI 時代の技術ブログ調へ整えるための禁止フレーズ辞書 (15 カテゴリ。実フィードバックと公開研究を統合) と、grep + サブエージェントの二段監査を内蔵。en-to-ja-explainer など他スキルから委譲して使うことも想定。Tri"
+    },
+    {
+      "name": "notion-cli",
+      "source": "./plugins/notion-cli",
+      "description": "Operate Notion from the terminal via the official Notion REST API on TypeScript + deno — search workspace, get/create/update/archive pages, query databases with filters and sorts, list/append/delete b"
+    },
+    {
+      "name": "openai-cli",
+      "source": "./plugins/openai-cli",
+      "description": "Call the OpenAI Platform API from the terminal via TypeScript on deno — chat completions, Responses API, reasoning (o-series), embeddings, image generation, audio (Whisper transcription, TTS), files, "
     },
     {
       "name": "orch-qa",
@@ -65,6 +115,11 @@
       "description": "Review a teammate's pull request — Claude reads the diff, analyzes code across multiple perspectives, and stages review comments for user approval before submission. NOT for self-review of your own PR"
     },
     {
+      "name": "recap-to-notion",
+      "source": "./plugins/recap-to-notion",
+      "description": "Sync a session-recap directory (summary.md + note.md + meta.json) to Notion under the explicit \"My Agent Notes / Session Recaps\" database via the notion-cli skill. The Notion target is fixed by design"
+    },
+    {
       "name": "review-local",
       "source": "./plugins/review-local",
       "description": "Review local git changes from 8 expert perspectives using multi-agent team orchestration. Produces a consolidated report with Critical/Important/Nice-to-have severity levels. Lightweight pre-commit or"
@@ -85,6 +140,21 @@
       "description": "Install a PreCompact hook that auto-generates .agent/local/HANDOVER.md before context compaction, plus a SessionStart hook that restores context from a previous handover. Run once to install, then it "
     },
     {
+      "name": "session-recap",
+      "source": "./plugins/session-recap",
+      "description": "Read a Claude Code session's transcript and produce two markdown artifacts plus a meta.json: a scannable Summary (TL;DR, key terms, files, decisions, open threads) and a complementary Detailed Note (f"
+    },
+    {
+      "name": "session-watch",
+      "source": "./plugins/session-watch",
+      "description": "Watch another running Claude Code session in real time and narrate its activity in Japanese with detailed term-by-term explanations. By default targets a session active in the current working director"
+    },
+    {
+      "name": "skill-improve",
+      "source": "./plugins/skill-improve",
+      "description": "Retrofit the OIAE self-improvement loop to existing skills and analyze feedback to propose evidence-based amendments. Adds Retrospective, Feedback Check, and version tracking to skills that lack them."
+    },
+    {
       "name": "slack-cli",
       "source": "./plugins/slack-cli",
       "description": "Operate Slack from the terminal via `slack-cli` (@urugus/slack-cli). Send messages, check unreads, search history, upload files, manage reactions/pins, schedule messages, and manage channels — all thr"
@@ -103,76 +173,6 @@
       "name": "test-scenario",
       "source": "./plugins/test-scenario",
       "description": "Generate test outlines (living documentation) and test code from natural language feature descriptions. Supports .NET (xUnit/NUnit/MSTest), Python (pytest), TypeScript (Vitest/Jest). Strict mode: no i"
-    },
-    {
-      "name": "gdrive-cli",
-      "source": "./plugins/gdrive-cli",
-      "description": "Operate Google Drive from the terminal via `rclone` — list, upload, download, search, sync, mount, check quota, export Google Docs/Sheets/Slides, browse Shared Drives, and manage trash. Use whenever t"
-    },
-    {
-      "name": "openai-cli",
-      "source": "./plugins/openai-cli",
-      "description": "Call the OpenAI Platform API from the terminal via TypeScript on deno — chat completions, Responses API, reasoning (o-series), embeddings, image generation, audio (Whisper transcription, TTS), files, "
-    },
-    {
-      "name": "local-skill-factory",
-      "source": "./plugins/local-skill-factory",
-      "description": "Create project-local Claude Code skills (.claude/commands/) in any project directory. Analyzes the project's tech stack, structure, and conventions, then generates tailored local skills (custom slash "
-    },
-    {
-      "name": "my-gdrive",
-      "source": "./plugins/my-gdrive",
-      "description": "Operate ONLY the user's private (personal) Google Drive via `rclone`, scoped to a single pinned remote (default `my-gdrive:`, override with the `MY_GDRIVE_REMOTE` env var). A safety wrapper around the"
-    },
-    {
-      "name": "session-watch",
-      "source": "./plugins/session-watch",
-      "description": "Watch another running Claude Code session in real time and narrate its activity in Japanese with detailed term-by-term explanations. By default targets a session active in the current working director"
-    },
-    {
-      "name": "notion-cli",
-      "source": "./plugins/notion-cli",
-      "description": "Operate Notion from the terminal via the official Notion REST API on TypeScript + deno — search workspace, get/create/update/archive pages, query databases with filters and sorts, list/append/delete b"
-    },
-    {
-      "name": "session-recap",
-      "source": "./plugins/session-recap",
-      "description": "Read a Claude Code session's transcript and produce two markdown artifacts plus a meta.json: a scannable Summary (TL;DR, key terms, files, decisions, open threads) and a complementary Detailed Note (f"
-    },
-    {
-      "name": "recap-to-notion",
-      "source": "./plugins/recap-to-notion",
-      "description": "Sync a session-recap directory (summary.md + note.md + meta.json) to Notion under the explicit \"My Agent Notes / Session Recaps\" database via the notion-cli skill. The Notion target is fixed by design"
-    },
-    {
-      "name": "codex-cli",
-      "source": "./plugins/codex-cli",
-      "description": "Run OpenAI Codex CLI from the terminal for batch / one-shot `codex exec` invocations with output captured to an `-o` file. Use for fire-and-forget runs, scripted CI, code review batches (`codex review"
-    },
-    {
-      "name": "codex-server",
-      "source": "./plugins/codex-server",
-      "description": "Run OpenAI Codex via the Codex App Server (JSON-RPC-over-stdio) for streaming multi-turn chat sessions with persistent threads, structured output, image input, and rich event streams. Default entry po"
-    },
-    {
-      "name": "my-skill-factory",
-      "source": "./plugins/my-skill-factory",
-      "description": "Create, build, and install custom Claude Code skills into Hideki's local marketplace. End-to-end workflow from requirements gathering to a fully installed and usable skill. Use when the user asks to c"
-    },
-    {
-      "name": "naturalize-ja",
-      "source": "./plugins/naturalize-ja",
-      "description": "任意の日本語テキスト (ファイル / 貼り付けテキスト / ディレクトリ) を読み、AI 生成と気づかれる「不自然な日本語表現」を検出・置換します。プレ AI 時代の技術ブログ調へ整えるための禁止フレーズ辞書 (15 カテゴリ。実フィードバックと公開研究を統合) と、grep + サブエージェントの二段監査を内蔵。en-to-ja-explainer など他スキルから委譲して使うことも想定。Tri"
-    },
-    {
-      "name": "skill-improve",
-      "source": "./plugins/skill-improve",
-      "description": "Retrofit the OIAE self-improvement loop to existing skills and analyze feedback to propose evidence-based amendments. Adds Retrospective, Feedback Check, and version tracking to skills that lack them."
-    },
-    {
-      "name": "en-to-ja-explainer",
-      "source": "./plugins/en-to-ja-explainer",
-      "description": "英語の技術ドキュメント (Hugging Face docs / GitHub README / arXiv 論文 / 技術ブログ等) を、日本人が読んで AI 生成と気づかない自然な日本語の解説サイトに変換します。フェッチ → 構成 → HTML/CSS/JS 生成 → 多角レビュー → 修正 → ローカル配信、まで一気通貫。日本語自然さチェックは `naturalize-ja` スキルに委譲 "
     }
   ]
 }

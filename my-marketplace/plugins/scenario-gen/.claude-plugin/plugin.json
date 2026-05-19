@@ -1,7 +1,7 @@
 {
   "name": "scenario-gen",
-  "version": "1.0.0",
-  "description": ">",
+  "version": "1.1.0",
+  "description": "Generate test scenarios from git branch changes. Compares current branch to main/master, identifies changed files, classifies them by type (frontend, API, backend, config), and generates test scenario",
   "author": {
     "name": "Hideki"
   },

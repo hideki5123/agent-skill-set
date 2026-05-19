@@ -14,6 +14,8 @@ description: >
   cases from changes", "what should I test", "generate test plan", "test
   coverage for my changes", "scenario generator", "test scenario generator",
   "generate scenarios from diff", "create e2e scenarios", "test scenario from branch".
+context: fork
+agent: general-purpose
 ---
 
 # Test Scenario Generator
