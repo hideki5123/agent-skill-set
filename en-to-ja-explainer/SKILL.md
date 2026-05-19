@@ -1,7 +1,7 @@
 ---
 name: en-to-ja-explainer
-description: 英語の技術ドキュメント (Hugging Face docs / GitHub README / arXiv 論文 / 技術ブログ等) を、日本人が読んで AI 生成と気づかない自然な日本語の解説サイトに変換します。フェッチ → 構成 → HTML/CSS/JS 生成 → 多角レビュー → 修正 → ローカル配信、まで一気通貫。日本語自然さチェックは `naturalize-ja` スキルに委譲 (辞書本体・grep・サブエージェント レビューはそちら側に集約)。技術正確性は codex-cli、UX/レスポンシブは汎用 Agent が担当。Triggers: 「英語ドキュメントを日本語で解説するサイトを作って」「Japanese explainer for [URL]」「英語の技術ドキュメントをやさしく日本語にして」「Convert this English doc to a Japanese site」「AI っぽくない日本語で技術解説」「Hugging Face docs を日本語化」「arXiv を日本語で噛み砕いて」「en-to-ja explainer」「/en-to-ja-explainer」
-version: 1.1.0
+description: 英語の技術ドキュメント (Hugging Face docs / GitHub README / arXiv 論文 / 技術ブログ等) を、日本人が読んで AI 生成と気づかない自然な日本語の解説サイトに変換します。フェッチ → 構成 → HTML/CSS/JS 生成 → 多角レビュー → 修正 → ローカル配信、まで一気通貫。日本語自然さチェックは `@agent-naturalize-ja:naturalize-ja` subagent に委譲 (辞書本体・grep・質的レビューはそちら側に集約)。技術正確性は codex-cli、UX/レスポンシブは汎用 Agent が担当。Triggers: 「英語ドキュメントを日本語で解説するサイトを作って」「Japanese explainer for [URL]」「英語の技術ドキュメントをやさしく日本語にして」「Convert this English doc to a Japanese site」「AI っぽくない日本語で技術解説」「Hugging Face docs を日本語化」「arXiv を日本語で噛み砕いて」「en-to-ja explainer」「/en-to-ja-explainer」
+version: 1.1.1
 ---
 
 # en-to-ja-explainer
@@ -73,18 +73,18 @@ version: 1.1.0
 各セクションで:
 
 1. 当たり前の日本語でドラフト
-2. ドラフト直後に `naturalize-ja --policy auto <file>` を実行し、CRITICAL の AI 臭を除去
+2. ドラフト直後に `@agent-naturalize-ja:naturalize-ja <file> --policy auto` を呼んで、CRITICAL の AI 臭を除去
 3. 残った IMPORTANT は文脈を見て個別判断
 
 「読みやすさ」ではなく「ネイティブが読んで引っかからないか」を最適化軸にする。
-用語訳の一貫性と文体は `references/tech-translation-guide.md` を参照。AI 臭のカテゴリ辞書 (A-O) と grep は naturalize-ja 側に集約されているため、このスキルは詳細を抱えない。
+用語訳の一貫性と文体は `references/tech-translation-guide.md` を参照。AI 臭のカテゴリ辞書 (A-O) と grep は `naturalize-ja:naturalize-ja` subagent 側に集約されているため、このスキルは詳細を抱えない。
 
 ### Step 4: 多角レビュー
 
 `references/team-roles.md` の各レビューを並列で走らせる:
 
 - **技術正確性レビュー** — `codex-cli` スキルにデリゲート。英語原文と日本語の対応を機械的にクロスチェック
-- **日本語自然さレビュー** — `naturalize-ja` スキルにデリゲート (`--policy propose` で findings を回収し、Step 5 の Synthesis に統合)
+- **日本語自然さレビュー** — `@agent-naturalize-ja:naturalize-ja` subagent にデリゲート (`--policy propose` で findings を回収し、Step 5 の Synthesis に統合)
 - **UX/レスポンシブレビュー** — 汎用 Agent。SVG overflow、表のはみ出し、コードブロック、clamp() の使用などを静的に検証
 - **(任意) 学習体験レビュー** — 汎用 Agent。読者層に対して説明順序が妥当か
 
@@ -118,14 +118,16 @@ LAN IP も解決して、スマホからアクセスできる URL も併せて�
 
 ## References
 
-- `references/team-roles.md` — レビューの並列実行プロトコルと委譲先 (日本語自然さは naturalize-ja へ)
+- `references/team-roles.md` — レビューの並列実行プロトコルと委譲先 (日本語自然さは `naturalize-ja:naturalize-ja` subagent へ)
 - `references/site-template-guide.md` — HTML / CSS / SVG / レスポンシブの基本パターンと落とし穴
 - `references/tech-translation-guide.md` — 英→日の用語訳と文体方針
 
-## 委譲する外部スキル
+## 委譲する外部サブエージェント / スキル
 
-- `naturalize-ja` — 日本語の AI 臭検出と置換。Step 3 (ドラフト直後の自動修正) と Step 4 (自然さレビュー) の両方で起動する
-- `codex-cli` — 技術正確性レビューで起動 (英↔日のクロスチェック)
+- `@agent-naturalize-ja:naturalize-ja` (subagent) — 日本語の AI 臭検出と置換。
+  Step 3 (ドラフト直後の自動修正) と Step 4 (自然さレビュー) の両方で起動する。
+  辞書本体・grep・質的レビューは subagent 側に集約。
+- `codex-cli` (skill) — 技術正確性レビューで起動 (英↔日のクロスチェック)
 
 ## Behavior Scenarios
 
@@ -146,8 +148,9 @@ Scenario: 既存サイトの日本語自然さ監査
 Scenario: ユーザーが 1 フレーズを「これ AI っぽい」と指摘
   Given サイトは既に生成済み
   When ユーザーが該当フレーズを引用して「これ AI っぽい」と指摘
-  Then スキルは naturalize-ja スキルに該当フレーズと対象ファイルを渡し、
-       一括検出・修正を委譲する。新パターンの辞書登録判断も naturalize-ja 側で行う
+  Then スキルは `@agent-naturalize-ja:naturalize-ja` subagent に該当フレーズと
+       対象ファイルを渡し、一括検出・修正を委譲する。新パターンの辞書登録
+       判断も subagent 側で行う
 
 Scenario: モバイル / レスポンシブの不具合報告
   Given ユーザーが「文字が切れている」「表がはみ出る」等のレイアウト問題を報告

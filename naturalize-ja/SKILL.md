@@ -1,177 +1,71 @@
 ---
 name: naturalize-ja
-description: 任意の日本語テキスト (ファイル / 貼り付けテキスト / ディレクトリ) を読み、AI 生成と気づかれる「不自然な日本語表現」を検出・置換します。プレ AI 時代の技術ブログ調へ整えるための禁止フレーズ辞書 (15 カテゴリ。実フィードバックと公開研究を統合) と、grep + サブエージェントの二段監査を内蔵。en-to-ja-explainer など他スキルから委譲して使うことも想定。Triggers: 「AI っぽい日本語をレビューして」「この文章を自然な日本語にして」「ChatGPT 臭を抜きたい」「日本語の AI 臭をチェック」「ナチュラルな日本語に直して」「AI 生成バレしないように直して」「naturalize Japanese」「naturalize-ja」「/naturalize-ja」
-version: 1.0.0
+description: 任意の日本語テキスト (ファイル / 貼り付けテキスト / ディレクトリ) を読み、AI 生成と気づかれる「不自然な日本語表現」を検出・置換します。プレ AI 時代の技術ブログ調へ整えるための禁止フレーズ辞書 (15 カテゴリ。実フィードバックと公開研究を統合) と、grep + 質的レビューの二段監査を内蔵 (subagent をさらに spawn せず、自分のコンテキスト内で完結)。en-to-ja-explainer など他スキルから委譲して使うことも想定。Triggers: 「AI っぽい日本語をレビューして」「この文章を自然な日本語にして」「ChatGPT 臭を抜きたい」「日本語の AI 臭をチェック」「ナチュラルな日本語に直して」「AI 生成バレしないように直して」「naturalize Japanese」「naturalize-ja」「/naturalize-ja」
+version: 1.1.0
 ---
 
 # naturalize-ja
 
-任意の日本語テキストを、ネイティブが読んで AI 生成と気づかないレベルに整えるスキル。
+`naturalize-ja:naturalize-ja` サブエージェントに処理を委譲する thin wrapper。
+ロール定義 (日本語ネイティブのレビュアー) と二段監査ワークフロー (grep +
+質的レビューを **同一コンテキスト内**で完結) は subagent 側に集約。
 
-## いつ使うか
+## 呼び出し方
 
-- AI が下書きした日本語を、人が書いたかのように整えたいとき
-- 既存のサイト・ドキュメントの「AI 臭」を監査したいとき
-- 他スキル (en-to-ja-explainer 等) からデリゲートされたとき
-- ユーザーが特定フレーズを「これ AI っぽい」と指摘し、似たパターンを全体に広げて潰したいとき
+```text
+@agent-naturalize-ja:naturalize-ja <target> [--policy auto|propose] [--scope <section>]
+```
 
-逆に使わないほうがいいケース:
+引数の意味と挙動は subagent 側の system prompt に書いてある。auto-discovery
+のトリガーフレーズ経由でこの skill が呼ばれたときは、ユーザー入力をその
+まま subagent に渡して実行を委ねる。
 
-- 数行レベルの短い文 (インラインで直接対応)
-- 校正・誤字脱字のチェックがメイン (別ツールに任せる)
-- 「ですます」「だ・である」の文体変換が目的 (これは AI 臭抜きであって、文体切り替えではない)
+## 委譲元から見たインターフェース
 
-## 入力
+他スキル (例: `en-to-ja-explainer`) からこのスキルを呼びたいときは:
 
-ユーザーが指定するもの:
+- `@agent-naturalize-ja:naturalize-ja` を直接呼ぶ (subagent への
+  delegation。スキル経由のホップを省略できる)
+- もしくは `/naturalize-ja` skill 呼出 (本 wrapper 経由)
 
-1. **対象** — ファイルパス (例: `./blog.md`) or 貼り付けテキスト or ディレクトリ
-2. **適用ポリシー** (任意、default: `propose`)
-   - `auto`: CRITICAL を自動で Edit 適用、IMPORTANT/NICE は提示のみ
-   - `propose`: すべて Before/After を提示し、適用は確認後
-3. **対象範囲** (任意): 特定セクションや行範囲を指定可能
+どちらでも、最終的に subagent 側のワークフローが走る。
 
-聞き返しは最小限。曖昧なら `propose` でファイル全体をスキャンする。
+## なぜ subagent 化したか
 
-## ワークフロー
-
-### Step 1: 入力の読み込み
-
-- ファイル: Read で全文取得
-- ディレクトリ: 対象拡張子 (`.md`, `.html`, `.txt`, `.mdx`) を再帰検索し、ファイルごとに後続処理
-- 貼り付けテキスト: そのまま処理 (ファイル書き換えなし)
-
-### Step 2: grep スキャン
-
-`references/ai-japanese-patterns.md` 末尾の一括 grep をファイル対象に実行する。ヒット行を行番号付きで列挙。これは「機械的に確実に拾えるもの」のパス。
-
-### Step 3: サブエージェント レビュー
-
-`references/review-agent-prompt.md` のテンプレートを使い、汎用 Agent (subagent_type: general-purpose) を起動する。重要な実装ポイント:
-
-- 起動前に `references/ai-japanese-patterns.md` を Read で取得
-- その全文をサブエージェントのプロンプトに **直接埋め込む** (サブエージェントは独立コンテキストのため、ファイルパスを渡しても拾える保証がない)
-- 対象テキスト本体もプロンプトに含める。大きい場合はセクション単位で分割して複数 Agent を並列起動
-
-サブエージェントの役割は grep で取れないニュアンスの拾い上げ:
-
-- 文末リズムの単調さ (です。です。です。の連続など)
-- 責任回避表現 (〜と考えられます、一概には言えませんが)
-- 文長 (1 文 80 字超え)
-- 漢字 / かなのバランス崩れ
-- 数の不整合 (「2 つの〜」と書いて 3 件並べる)
-- 機械翻訳調の残り香 (「〜することが可能です」など受動冗長)
-
-### Step 4: 統合と分類
-
-grep ヒットとサブエージェント findings を 1 つのリストに統合する。重複削除のうえ、3 段階で分類:
-
-- **CRITICAL**: ネイティブが「AI 生成だ」と直感する決定打 (例: 「まずスタート地点をそろえます」「〜していきましょう」連発、擬人化動詞「答えてくれます」)
-- **IMPORTANT**: 文章のクオリティに明確に効く改善 (例: 業務臭の「展開できます」、責任回避「と考えられます」、フィラーの「ポイント」)
-- **NICE-TO-HAVE**: 好みや微調整レベル (例: 漢字/かなバランス、句読点の数)
-
-### Step 5: 適用 / 提示
-
-ポリシー別:
-
-`auto`:
-
-- CRITICAL findings を Edit で順次適用
-- 同じ patterns に該当する複数箇所は一括処理 (replace_all は使わず、文脈ごとに個別判断)
-- IMPORTANT / NICE は箇条書きで残件として提示
-
-`propose`:
-
-- 全 findings を「行番号 / Before / After / 理由」の表で提示
-- ユーザーに「全部適用」「個別選択」「保留」を確認
-- 承認分のみ Edit で適用
-
-貼り付けテキストの場合は、Edit ではなく整形済みテキストを返す (ファイル無し)。
-
-### Step 6: 再 grep
-
-適用後に同じ grep をもう一度回し、修正で新規 AI 臭が混入していないかを確認。混入があれば Step 3 から再処理。
-
-### Step 7: 報告
-
-ユーザーに返すもの:
-
-- 元のヒット数 (grep / レビュー / 統合後の総数)
-- 適用件数 / 提案件数 / 残件
-- 残件の中で読み手が一度見直すと良いもの (IMPORTANT の TOP 3)
-- 辞書に無かった新パターンを検出した場合、追加候補として記録 (Retrospective へ)
-
-## 他スキルからの委譲を受けるとき
-
-`en-to-ja-explainer` など他スキルから「日本語自然さチェック」のステップとして呼ばれることがある。その場合:
-
-- ポリシーは呼び出し側の指定に従う (通常 `auto` で CRITICAL は適用、IMPORTANT/NICE はサマリで返す)
-- 結果は呼び出し側に整形済みで返す (CRITICAL 適用件数、残件、新パターン候補のリスト)
-- 呼び出し側の Synthesis Protocol に乗せやすい形式で
+- このスキルの本質は「同じ役割・判断基準を持つ担当者に任せる」(role-based)
+  であり、「毎回同じ手順を回す」(procedure-based) ではない
+- 委譲元 (en-to-ja-explainer など) から呼ぶときに、subagent 呼出のほうが
+  context boundary が綺麗
+- 内部で subagent をさらに spawn しない設計に整理されたことで、subagent
+  化が現実的になった (Claude Code の subagent は further subagent を spawn
+  できない)
 
 ## References
 
-- `references/ai-japanese-patterns.md` — 15 カテゴリの禁止フレーズと置換辞書 (**最重要**)
-- `references/review-agent-prompt.md` — サブエージェント用プロンプトテンプレートと出力フォーマット
+subagent が必要に応じて読む reference:
 
-## Behavior Scenarios
-
-```gherkin
-Scenario: ファイルを propose モードで監査
-  Given ユーザーが `./article.md` を指定
-  When 「この記事の AI っぽい日本語をレビューして」
-  Then スキルは grep + サブエージェントを順に走らせ、findings を CRITICAL/
-       IMPORTANT/NICE で分類して Before/After 表で提示。
-       ユーザーの承認に従って Edit で適用する
-
-Scenario: auto モードで CRITICAL を一気に適用
-  Given ユーザーが `./article.md` と `--policy auto` を指定
-  When 「自動でナチュラル化して」
-  Then CRITICAL findings をすべて Edit で適用し、IMPORTANT/NICE は箇条書きで
-       提示。適用後の再 grep で新規ヒット 0 を確認
-
-Scenario: 貼り付けテキストの直接修正
-  Given ユーザーが日本語の段落を貼り付け
-  When 「この段落 AI っぽいから直して」
-  Then スキルはテキストをファイルに書かず、Before/After 整形済みテキストを
-       1 メッセージで返す
-
-Scenario: ディレクトリ単位の監査
-  Given ユーザーが `./docs/` を対象に指定
-  When 「docs 配下の md ファイル全部レビュー」
-  Then 対象拡張子のファイルを再帰検索、各ファイルで Steps 2-6 を実行し、
-       最後にファイル横断のサマリ (総ヒット数、上位パターン、深刻ファイル) を返す
-
-Scenario: 辞書に無い新パターンを発見
-  Given grep でもサブエージェントでも辞書登録済みカテゴリにマッチしないが、
-        明らかに AI 臭のあるフレーズが検出された
-  When Step 4 の統合時
-  Then スキルは該当フレーズを「新規候補」として feedback/log.md に記録し、
-       既存カテゴリ A-O のどれに近いかをユーザーに提示する
-
-Scenario: 他スキルからの委譲
-  Given en-to-ja-explainer が日本語自然さチェックの段でこのスキルを呼ぶ
-  When 呼び出し側が `--policy auto` で対象ファイルを渡す
-  Then スキルは Step 1-7 を実行し、結果を呼び出し側が受け取りやすい構造化
-       オブジェクト (適用件数、残件、新パターン候補) で返す
-```
+- `references/ai-japanese-patterns.md` — 15 カテゴリの禁止フレーズと置換辞書
+- `references/review-agent-prompt.md` — 質的レビューのチェックリスト
 
 ## Retrospective
 
 セッション完了時:
 
 1. 辞書に無かった新パターンが見つかったか確認する
-2. ユーザーに 1 行で問いかける:「今回直したフレーズで辞書に追加すべきパターンや、見落としていた表現があれば一言だけ (Enter でスキップ)」
+2. ユーザーに 1 行で問いかける:「今回直したフレーズで辞書に追加すべき
+   パターンや、見落としていた表現があれば一言だけ (Enter でスキップ)」
 3. フィードバックがある、または新パターンが現場で出ていた場合:
-   a. `feedback/log.md` を作成 / 追記 (git rev-parse でこのスキルのソースディレクトリを解決)
+   a. `feedback/log.md` を作成 / 追記
    b. エントリには新パターンとカテゴリ案を含める
 4. クリーンに完走でフィードバックも新パターンも無ければ、ログ無しで終了
 
 ## Feedback Check
 
-スキル起動時、`feedback/log.md` に 5 件以上あれば直近 10 件を読む。同じ新パターンが 3 件以上検出されているなら、ユーザーに伝える:
+スキル起動時、`feedback/log.md` に 5 件以上あれば直近 10 件を読む。
+同じ新パターンが 3 件以上検出されているなら、ユーザーに伝える:
 
-「直近のフィードバックで『X』というパターンが繰り返し検出されています。`ai-japanese-patterns.md` のカテゴリ Y への追加を提案します。」
+「直近のフィードバックで『X』というパターンが繰り返し検出されています。
+`ai-japanese-patterns.md` のカテゴリ Y への追加を提案します。」
 
-決定はユーザーに委ね、深い分析が必要なら `/skill-improve --skill naturalize-ja` に進める。
-ログが無い、または 5 件未満なら静かにスキップ。
+決定はユーザーに委ね、深い分析が必要なら `/skill-improve --skill
+naturalize-ja` に進める。ログが無い、または 5 件未満なら静かにスキップ。

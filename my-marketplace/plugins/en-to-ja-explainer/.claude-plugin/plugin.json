@@ -1,7 +1,7 @@
 {
   "name": "en-to-ja-explainer",
-  "version": "1.1.0",
-  "description": "英語の技術ドキュメント (Hugging Face docs / GitHub README / arXiv 論文 / 技術ブログ等) を、日本人が読んで AI 生成と気づかない自然な日本語の解説サイトに変換します。フェッチ → 構成 → HTML/CSS/JS 生成 → 多角レビュー → 修正 → ローカル配信、まで一気通貫。日本語自然さチェックは `naturalize-ja` スキルに委譲 ",
+  "version": "1.1.1",
+  "description": "英語の技術ドキュメント (Hugging Face docs / GitHub README / arXiv 論文 / 技術ブログ等) を、日本人が読んで AI 生成と気づかない自然な日本語の解説サイトに変換します。フェッチ → 構成 → HTML/CSS/JS 生成 → 多角レビュー → 修正 → ローカル配信、まで一気通貫。日本語自然さチェックは `@agent-naturalize-ja:n",
   "author": {
     "name": "Hideki"
   },
