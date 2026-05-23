@@ -1,6 +1,6 @@
 ---
 name: subagent-gen
-version: 1.0.0
+version: 1.1.0
 description: >
   Generate a persistent PROJECT-KNOWLEDGE.md profile for any codebase that gives
   subagents instant deep domain expertise. Analyzes project structure, architecture,
@@ -186,77 +186,50 @@ If the project is a monorepo with multiple packages:
    exhaustive scans
 4. Cap the number of files each agent reads to 30
 
-### Phase 4: Synthesize Profile
+### Phase 4: Synthesize Profile (delegated)
 
-1. Collect findings from all agents
-2. Read `references/profile-template.md` for the exact output structure
-3. Merge agent findings into the template sections:
-   - Structure agent → Identity + Structure sections
-   - Architecture agent → Architecture section
-   - Conventions agent → Conventions section
-   - Domain agent → Domain Concepts + API Surface + Configuration sections
-   - Tech Stack section is assembled from Phase 2 metadata + agent findings
-4. Enforce word-count targets:
-   - `quick`: ~2,000 words
-   - `standard`: ~4,000 words
-   - `deep`: ~6,000 words
-5. Quality check — every bullet must contain at least one of:
-   - A file path (e.g., `src/lib/api-client.ts`)
-   - A function/class/type name (e.g., `DeviceService`)
-   - A specific pattern name (e.g., "repository pattern")
-   - A concrete value (e.g., "PostgreSQL 15", "port 3000")
-6. Remove any vague or generic statements that Claude would already know from training
+Hand the metadata block + all collected agent findings to
+`@agent-subagent-gen:subagent-gen` along with:
 
-#### Update Mode Synthesis
+- target depth (`quick` / `standard` / `deep`)
+- `--focus` filter
+- `--output` path
+- `--update` flag (if set)
+- the skill resource dir so the subagent can read `references/profile-template.md`
+  and `references/prompt-integration-guide.md`
 
-When `--update` is active:
-1. Read the existing profile
-2. Identify sections marked with `<!-- USER: ... -->` — preserve these verbatim
-3. Replace all other sections with fresh findings
-4. Add a `Last updated:` timestamp
-5. At the end, show a brief diff summary of what changed
+The subagent does the synthesis, quality-checks every bullet (every line
+must carry a file path / identifier / pattern name / concrete value),
+enforces word-count targets, preserves `<!-- USER: ... -->` blocks in
+update mode, writes the profile to the canonical path, and creates the
+`.agent/local/PROJECT-KNOWLEDGE.md` symlink (falling back to copy on
+Windows without Developer Mode).
 
-### Phase 5: Save and Guide
+The subagent returns:
 
-#### 5a. Save to Global Store
+```json
+{
+  "profile_path_global": "~/.claude/knowledge/{name}.md",
+  "profile_path_local": ".agent/local/PROJECT-KNOWLEDGE.md",
+  "word_count": 4123,
+  "depth": "standard",
+  "sections_preserved_from_user": ["..."],
+  "key_findings": ["..."],
+  "gitignore_suggestion": ".agent/local/"
+}
+```
 
-1. Create `~/.claude/knowledge/` directory if it doesn't exist:
-   ```bash
-   mkdir -p ~/.claude/knowledge
-   ```
-2. Write the profile to `~/.claude/knowledge/{name}.md` (the canonical location)
-3. If `--output` is explicitly set to a different path, write there instead
+### Phase 5: Present Summary
 
-#### 5b. Create Local Symlink
+Use the subagent's return value to show the user:
 
-1. Create `.agent/local/` in the project directory if it doesn't exist
-2. Create a symlink so the profile is also accessible locally:
-   ```bash
-   # Unix/macOS
-   ln -sf ~/.claude/knowledge/{name}.md .agent/local/PROJECT-KNOWLEDGE.md
-
-   # Windows (requires Developer Mode)
-   mklink ".agent\local\PROJECT-KNOWLEDGE.md" "%USERPROFILE%\.claude\knowledge\{name}.md"
-   ```
-3. If the symlink command fails (e.g., Windows without Developer Mode):
-   - Fall back to copying the file
-   - Warn the user: "Symlink failed — created a copy instead. Changes to
-     one location won't automatically reflect in the other. Re-run with
-     `--update` to refresh both."
-4. Check `.gitignore` for `.agent/local/` — if missing, suggest adding:
-   ```
-   # AI agent local files
-   .agent/local/
-   ```
-
-#### 5c. Present Summary
-
-Show the user:
 - Profile name and word count
 - **Global path**: `~/.claude/knowledge/{name}.md` (accessible from any project)
 - **Local path**: `.agent/local/PROJECT-KNOWLEDGE.md` (symlinked for convenience)
-- 3-5 key findings highlights (most interesting/non-obvious things discovered)
-- How to use the profile — read `references/prompt-integration-guide.md` and relay:
+- 3-5 key findings highlights (most interesting / non-obvious)
+- If `gitignore_suggestion` came back, mention adding `.agent/local/` to
+  `.gitignore`
+- How to use the profile (read `references/prompt-integration-guide.md`):
   - **Same project**: `Read .agent/local/PROJECT-KNOWLEDGE.md for context, then: <task>`
   - **Cross-project**: `Read ~/.claude/knowledge/{name}.md for context, then: <task>`
   - **List all profiles**: `/subagent-gen --list`

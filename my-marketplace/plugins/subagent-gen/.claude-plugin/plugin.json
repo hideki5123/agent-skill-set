@@ -1,7 +1,7 @@
 {
   "name": "subagent-gen",
-  "version": "1.0.0",
-  "description": ">",
+  "version": "1.1.0",
+  "description": "Generate a persistent PROJECT-KNOWLEDGE.md profile for any codebase that gives subagents instant deep domain expertise. Analyzes project structure, architecture, code conventions, tech stack, data flo",
   "author": {
     "name": "Hideki"
   },
@@ -9,5 +9,6 @@
     "subagent-gen"
   ],
   "license": "MIT",
-  "skills": "./skills"
+  "skills": "./skills",
+  "agents": "./agents"
 }
