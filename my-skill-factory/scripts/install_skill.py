@@ -100,8 +100,12 @@ def install(skill_dir: Path, version: str, cache_only: bool = False):
     if not skill_dir.is_dir():
         sys.exit(f"Error: {skill_dir} is not a directory")
 
+    # Guard against CRLF-induced whitespace ending up in the version string
+    # (would result in a cache dir literally named "1.1.0\r").
+    version = (version or "").strip()
+
     meta = extract_skill_meta(skill_dir)
-    name = meta.get("name")
+    name = (meta.get("name") or "").strip()
     desc = meta.get("description", "")
     if not name:
         sys.exit("Error: SKILL.md frontmatter missing 'name' field")
@@ -111,8 +115,13 @@ def install(skill_dir: Path, version: str, cache_only: bool = False):
 
     print(f"Installing skill: {name} v{version}{' (cache-only)' if cache_only else ''}")
 
-    # Directories to exclude from marketplace copies (authoring-side data only)
-    SKIP_DIRS = {"feedback", ".git", "__pycache__"}
+    # Directories to exclude from the skills/<name>/ copy.
+    # - feedback / .git / __pycache__ are authoring-side data.
+    # - "agents" is excluded here because plugin subagents live at
+    #   <plugin>/agents/, NOT under skills/<name>/agents/. They are copied
+    #   separately below (see copy_agents_tree).
+    SKIP_DIRS = {"feedback", ".git", "__pycache__", "agents"}
+    has_agents = (skill_dir / "agents").is_dir()
 
     if cache_only:
         # Build plugin structure in a temp directory, cache it, then clean up
@@ -134,11 +143,18 @@ def install(skill_dir: Path, version: str, cache_only: bool = False):
                 else:
                     shutil.copy2(item, dest)
 
-            write_json(plugin_claude / "plugin.json", {
+            # Plugin subagents live at <plugin>/agents/, NOT under skills/<name>/.
+            if has_agents:
+                shutil.copytree(skill_dir / "agents", plugin_dir / "agents")
+
+            plugin_json = {
                 "name": name, "version": version, "description": desc[:200],
                 "author": {"name": "Hideki"}, "keywords": [name],
                 "license": "MIT", "skills": "./skills"
-            })
+            }
+            if has_agents:
+                plugin_json["agents"] = "./agents"
+            write_json(plugin_claude / "plugin.json", plugin_json)
             write_json(plugin_claude / "marketplace.json", {
                 "name": MARKETPLACE_NAME,
                 "owner": {"name": "Hideki"},
@@ -176,8 +192,12 @@ def install(skill_dir: Path, version: str, cache_only: bool = False):
             else:
                 shutil.copy2(item, dest)
 
+        # Plugin subagents live at <plugin>/agents/, NOT under skills/<name>/.
+        if has_agents:
+            shutil.copytree(skill_dir / "agents", plugin_dir / "agents")
+
         # Write plugin.json
-        write_json(plugin_claude / "plugin.json", {
+        plugin_json = {
             "name": name,
             "version": version,
             "description": desc[:200],
@@ -185,7 +205,10 @@ def install(skill_dir: Path, version: str, cache_only: bool = False):
             "keywords": [name],
             "license": "MIT",
             "skills": "./skills"
-        })
+        }
+        if has_agents:
+            plugin_json["agents"] = "./agents"
+        write_json(plugin_claude / "plugin.json", plugin_json)
 
         # Write per-plugin marketplace.json
         write_json(plugin_claude / "marketplace.json", {
