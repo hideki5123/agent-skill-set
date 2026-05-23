@@ -14,7 +14,7 @@
         "path": "."
       },
       "description": "Autonomously fetch and apply AI reviewer comments on a GitHub PR — creating a draft PR and requesting reviewers if needed. Default mode processes Copilot/Gemini bot comments without human intervention",
-      "version": "1.0.0"
+      "version": "1.1.0"
     }
   ]
 }

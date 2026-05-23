@@ -1,6 +1,10 @@
 ---
 name: address-pr-comments
+version: 1.1.0
 description: Autonomously fetch and apply AI reviewer comments on a GitHub PR — creating a draft PR and requesting reviewers if needed. Default mode processes Copilot/Gemini bot comments without human intervention. Use when the user asks to address PR comments, fix review comments, handle PR feedback, respond to reviewer comments, apply review suggestions, act on PR feedback, get AI review, run copilot review, auto-review, address review, fix PR feedback.
+context: fork
+agent: general-purpose
+disable-model-invocation: true
 ---
 
 # Address PR Review Comments
@@ -273,6 +277,48 @@ When `--interactive` is passed, fall back to the previous human-review behavior:
 - Per-comment approval with diff preview before applying
 - `--reply` is OFF by default (user opts in)
 - Classification and processing logic is the same as Step 5, but every change requires user confirmation
+
+### Interactive mode is inline-only
+
+`--interactive` requires user prompts (comment selection, per-comment
+approval). It is **not compatible** with this skill's `context: fork`
+default — inside a background subagent, prompts are auto-denied and the
+skill would hang silently. The skill detects this and refuses:
+
+- If invoked under `context: fork` (i.e., the env var
+  `CLAUDE_CODE_FORK_SUBAGENT=1` is active and the frontmatter takes
+  effect) with `--interactive`, fail fast with the message:
+  `--interactive cannot run in a forked subagent context. Invoke the
+  skill inline (without context: fork) or drop --interactive to use the
+  default autonomous mode.`
+- Do not attempt to read comments, do not request reviewers, do not
+  create the draft PR. Exit with status `interactive-not-supported-in-fork`.
+
+The autonomous default (no `--interactive`) is the fork-compatible path:
+classification is deterministic and the design-concern case below is
+the only place that previously needed user input — see "Design-concern
+fail-fast" below.
+
+## Design-concern fail-fast (autonomous mode under fork)
+
+The Step 5b classification table marks **Design concern** as "Ask user
+only if it conflicts with PR intent". Under `context: fork`, that
+question cannot be asked. The skill must therefore:
+
+- Auto-apply only the unambiguous categories: `Clear fix`, `Suggestion
+  with code`, `Style/formatting`.
+- For any comment classified as `Design concern` where the proposed
+  resolution conflicts with the PR intent, **skip with a structured
+  reason** rather than guessing:
+  `skipped: design-concern-conflicts-pr-intent — needs human judgement`.
+- Include the skip list in the final report so the user can re-run
+  inline (without fork) to handle those specific comments via
+  `--interactive`.
+
+`disable-model-invocation: true` is set so Claude cannot auto-trigger
+this skill from a generic phrase — destructive operations (commit,
+push, reply on GitHub) only happen when the user explicitly types
+`/address-pr-comments`.
 
 ## Edge Cases
 
