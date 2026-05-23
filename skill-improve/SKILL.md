@@ -1,6 +1,6 @@
 ---
 name: skill-improve
-version: 1.1.0
+version: 1.2.0
 description: >
   Retrofit the OIAE self-improvement loop to existing skills and analyze feedback
   to propose evidence-based amendments. Adds Retrospective, Feedback Check, and
@@ -13,9 +13,26 @@ description: >
   "skill improvement".
 ---
 
-# Skill Improve
+# Skill Improve (orchestrator)
 
 Retrofit the OIAE (Observe/Inspect/Amend/Evaluate) self-improvement loop to existing skills and analyze accumulated feedback to propose evidence-based amendments.
+
+## Role definition lives in the subagent
+
+The auditor **judgment** — OIAE opt-in level assessment, retrofit content
+generation, path-discipline grep, feedback pattern detection, amendment
+proposal text, and previous-amendment evaluation — lives in the
+`@agent-skill-improve:skill-improve` subagent.
+
+This skill is the **orchestrator**: it resolves the target skill path,
+hands the bundle (SKILL.md, references, feedback log, amendments file) to
+the subagent, presents the subagent's proposals to the user for approval,
+applies approved amendments, runs the install script, performs the smoke
+check, and commits/pushes.
+
+Use this skill when running the full retrofit + amendment cycle. Use
+`@agent-skill-improve:skill-improve` directly when another agent just
+needs the auditor judgment without the install/commit flow.
 
 ## Paths
 
