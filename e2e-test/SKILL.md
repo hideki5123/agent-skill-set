@@ -1,7 +1,9 @@
 ---
 name: e2e-test
-description: Run frontend E2E tests with video evidence. Generates a Playwright test from the scenario CSV and runs it via CLI with video recording. Supports Chrome profile reuse (--chrome-profile) for testing with existing cookies, sessions, and extensions via launchPersistentContext. Generates a test report with video, screenshots, and trace. Does NOT modify application code — only creates documents (markdown, CSV, test scripts). Use when the user asks to run E2E tests, verify frontend behavior, do end-to-end testing, check UI flows, or test a web app. Trigger phrases include "e2e", "E2E test", "end-to-end test", "e2e testing", "frontend test", "UI test", "playwright test", "browser test", "verify the UI", "test this page".
-version: 1.1.0
+description: Run frontend E2E tests with video evidence. Generates a Playwright test from the scenario CSV and runs it via CLI with video recording. Supports Chrome profile reuse (--chrome-profile) for testing with existing cookies, sessions, and extensions via launchPersistentContext. Generates a test report with video, screenshots, and trace. Does NOT modify application code — only creates documents (markdown, CSV, test scripts). Supports --non-interactive for fork / CI use (fails fast on scenario gaps instead of asking). Use when the user asks to run E2E tests, verify frontend behavior, do end-to-end testing, check UI flows, or test a web app. Trigger phrases include "e2e", "E2E test", "end-to-end test", "e2e testing", "frontend test", "UI test", "playwright test", "browser test", "verify the UI", "test this page".
+version: 1.2.0
+context: fork
+agent: general-purpose
 ---
 
 # E2E Test
@@ -20,6 +22,7 @@ Run frontend E2E tests with video and screenshot evidence. Generates a Playwrigh
 | Argument | Default | Description |
 |----------|---------|-------------|
 | `--chrome-profile` | `off` | `off`: normal isolated Chromium context; `on`: use system Chrome with `Default` profile; `<name>`: use named profile (e.g., `Profile 1`). Chrome must be closed before running. |
+| `--non-interactive` | `false` | Fail fast on any condition that would otherwise prompt the user (scenario gaps, unknown actions, ambiguous expected results, missing target URL). For use when invoked from a fork / CI / another skill where user prompts cannot be answered. With `context: fork` in this file, the skill runs in a forked subagent context by default; treat that as implicit `--non-interactive` regardless of the flag. |
 
 ## Workflow
 
@@ -115,6 +118,23 @@ Please update the scenario and I'll proceed with testing.
 ```
 
 Do NOT proceed with execution until the scenario is adequate or the user explicitly says to continue anyway.
+
+### Non-interactive / fork behavior
+
+When invoked under `context: fork` (the default in this skill's frontmatter)
+or with explicit `--non-interactive`, do not prompt. Instead:
+
+- If any gap above is detected, **fail fast** with a structured error
+  summarising the gaps (unknown actions, ambiguous expected results,
+  missing target URL, etc.). Return exit code / status `scenario-incomplete`.
+- Do not generate a Playwright script, do not run any tests, and do not
+  produce a report.
+- The orchestrator that invoked you (or the user, on the next inline run)
+  fixes the scenario and re-invokes.
+
+This matches the official guidance for background subagents: any tool
+call that would prompt is auto-denied, so a fork-invoked skill must
+fail-fast rather than appear to hang.
 
 ## Step 3: Generate and Run Playwright Test
 
