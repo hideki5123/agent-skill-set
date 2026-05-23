@@ -1,0 +1,20 @@
+{
+  "name": "hideki-plugins",
+  "owner": {
+    "name": "Hideki"
+  },
+  "metadata": {
+    "description": "Custom Claude Code plugins by Hideki"
+  },
+  "plugins": [
+    {
+      "name": "agents-init",
+      "source": {
+        "type": "local",
+        "path": "."
+      },
+      "description": "Generate AGENTS.md (cross-tool agent context — Codex CLI, Aider, Cursor, etc.) and wire CLAUDE.md as a symlink so Claude Code reads the same file. Delegates content generation to Claude's built-in /in",
+      "version": "1.0.0"
+    }
+  ]
+}
