@@ -1,7 +1,10 @@
 ---
 name: self-pr-review
 description: Self-review loop for YOUR OWN PR — request AI reviews (Copilot + Gemini), apply their fixes, push, re-request, and repeat until clean. NOT for reviewing someone else's PR. Use when the user asks to self-review their PR, run the AI review loop, or wants Copilot + Gemini to review their own code. Trigger phrases include "self-review", "self-pr-review", "review my PR", "AI review my PR", "review loop", "copilot + gemini review", "run self-review on my PR".
-version: 1.0.1
+version: 1.1.0
+context: fork
+agent: general-purpose
+disable-model-invocation: true
 ---
 
 # Self-Review Loop
@@ -264,6 +267,26 @@ After applying a fix:
 **Between rounds:** If a new comment in round N reverses a fix applied in round N-1:
 - Present the original comment, the fix applied, and the new comment
 - Ask the user how to proceed
+
+### 5g. Conflicting feedback under `context: fork` (fail-fast)
+
+This skill ships with `context: fork`. In a forked subagent context the
+user cannot answer prompts — any tool call that would prompt is
+auto-denied. The "ask the user which direction to take" branches above
+therefore cannot complete inside a fork.
+
+Under fork, when conflicting feedback is detected:
+
+- Do **not** auto-pick a side and do **not** silently skip.
+- Stop the loop, record both comments with full context in the round
+  report, and exit with status `conflict-requires-user`.
+- The next run of this skill (inline, no fork) sees the conflict in the
+  open thread and the user can resolve it via interactive prompts.
+
+The skill is also marked `disable-model-invocation: true` because every
+iteration commits and pushes — Claude must not auto-trigger this skill
+from a generic phrase. The user explicitly types
+`/self-pr-review` to start a loop.
 
 ### 5f. Track Processed Comments
 
