@@ -12,10 +12,10 @@ description: >
   "test coverage", "missing tests", "gap analysis", "quality report",
   "fix failing tests", "diagnose test failures", "quality check",
   "evaluate test quality", "test health".
-version: 1.0.0
+version: 1.1.0
 ---
 
-# QA Engineer
+# QA Engineer (orchestrator)
 
 A framework-agnostic senior QA/QC engineer that evaluates existing codebases
 from multiple quality perspectives. Runs existing tests, triages failures,
@@ -24,6 +24,21 @@ identifies missing test coverage, and optionally writes missing tests.
 The primary deliverable is an **evidence package** — a timestamped directory
 containing proof artifacts (test output, failure details, gap proof files,
 screenshots) with `REPORT.md` as the index/navigator.
+
+## Role definition lives in the subagent
+
+The QA engineer **judgment** — lens definitions, failure triage rubric,
+severity calibration, test-writing rules, evidence shape — lives in the
+`@agent-orch-qa:orch-qa` subagent. This skill is the **orchestrator**: it
+runs the long-lived shell-heavy phases (recon, monorepo selection, stack
+confirmation, preflight safety, test execution with recording, parallel
+team spawn for gap analysis) and delegates judgment calls to the subagent.
+
+Use this skill when the workflow needs all of: project recon + execution +
+gap analysis + report. Use `@agent-orch-qa:orch-qa` directly when another
+agent has the project context and only needs the judgment call (failure
+triage on a specific failure, gap classification under a single lens,
+test-writing for a specific gap).
 
 ## Arguments
 

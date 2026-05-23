@@ -13,8 +13,8 @@
         "type": "local",
         "path": "."
       },
-      "description": ">",
-      "version": "1.0.0"
+      "description": "Senior QA/QC engineer that evaluates existing codebases for test quality. Runs existing tests, diagnoses failures, identifies missing test coverage, and writes missing tests. Framework-agnostic — work",
+      "version": "1.1.0"
     }
   ]
 }
