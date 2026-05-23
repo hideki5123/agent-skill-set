@@ -13,8 +13,8 @@
         "type": "local",
         "path": "."
       },
-      "description": "Review a teammate's pull request — Claude reads the diff, analyzes code across multiple perspectives, and stages review comments for user approval before submission. NOT for self-review of your own PR",
-      "version": "1.0.0"
+      "description": "Review a teammate's pull request. The reviewer role (multi-lens analysis, severity calibration, suggestion writing) lives in the `pr-review:pr-review` subagent; this skill is the orchestrator — it res",
+      "version": "1.1.0"
     }
   ]
 }

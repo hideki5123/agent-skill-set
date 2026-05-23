@@ -112,7 +112,7 @@
     {
       "name": "pr-review",
       "source": "./plugins/pr-review",
-      "description": "Review a teammate's pull request — Claude reads the diff, analyzes code across multiple perspectives, and stages review comments for user approval before submission. NOT for self-review of your own PR"
+      "description": "Review a teammate's pull request. The reviewer role (multi-lens analysis, severity calibration, suggestion writing) lives in the `pr-review:pr-review` subagent; this skill is the orchestrator — it res"
     },
     {
       "name": "recap-to-notion",
