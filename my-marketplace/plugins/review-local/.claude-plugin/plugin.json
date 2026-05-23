@@ -1,7 +1,7 @@
 {
   "name": "review-local",
-  "version": "1.0.0",
-  "description": ">",
+  "version": "2.0.0",
+  "description": "Review local git changes from 8 expert perspectives by spawning the matching reviewer subagents in parallel. Produces a consolidated report with Critical/Important/Nice-to-have severity. Lightweight p",
   "author": {
     "name": "Hideki"
   },
@@ -9,5 +9,6 @@
     "review-local"
   ],
   "license": "MIT",
-  "skills": "./skills"
+  "skills": "./skills",
+  "agents": "./agents"
 }

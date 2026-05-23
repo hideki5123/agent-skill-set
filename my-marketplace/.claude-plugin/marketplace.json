@@ -122,7 +122,7 @@
     {
       "name": "review-local",
       "source": "./plugins/review-local",
-      "description": "Review local git changes from 8 expert perspectives using multi-agent team orchestration. Produces a consolidated report with Critical/Important/Nice-to-have severity levels. Lightweight pre-commit or"
+      "description": "Review local git changes from 8 expert perspectives by spawning the matching reviewer subagents in parallel. Produces a consolidated report with Critical/Important/Nice-to-have severity. Lightweight p"
     },
     {
       "name": "scenario-gen",
