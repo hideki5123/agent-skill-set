@@ -13,7 +13,7 @@
         "type": "local",
         "path": "."
       },
-      "description": ">",
+      "description": "Generate test outlines (living documentation) and test code from natural language feature descriptions. Supports .NET (xUnit/NUnit/MSTest), Python (pytest), TypeScript (Vitest/Jest). Strict mode: no i",
       "version": "1.0.0"
     }
   ]

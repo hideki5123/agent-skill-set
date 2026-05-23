@@ -1,7 +1,7 @@
 {
   "name": "slack-cli",
   "version": "1.0.0",
-  "description": ">",
+  "description": "Operate Slack from the terminal via `slack-cli` (@urugus/slack-cli). Send messages, check unreads, search history, upload files, manage reactions/pins, schedule messages, and manage channels — all thr",
   "author": {
     "name": "Hideki"
   },

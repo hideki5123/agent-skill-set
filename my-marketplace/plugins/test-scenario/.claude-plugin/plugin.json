@@ -1,7 +1,7 @@
 {
   "name": "test-scenario",
   "version": "1.0.0",
-  "description": ">",
+  "description": "Generate test outlines (living documentation) and test code from natural language feature descriptions. Supports .NET (xUnit/NUnit/MSTest), Python (pytest), TypeScript (Vitest/Jest). Strict mode: no i",
   "author": {
     "name": "Hideki"
   },

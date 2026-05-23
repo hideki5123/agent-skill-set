@@ -13,7 +13,7 @@
         "type": "local",
         "path": "."
       },
-      "description": ">",
+      "description": "Use @pchuri/jira-cli to view, search, create, update, and delete Jira issues, comments, sprints, and projects from the terminal. Prefer this skill over `mcp__claude_ai_Atlassian__*` MCP tools when you",
       "version": "1.0.0"
     }
   ]

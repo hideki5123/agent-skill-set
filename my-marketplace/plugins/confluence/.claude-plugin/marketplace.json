@@ -13,7 +13,7 @@
         "type": "local",
         "path": "."
       },
-      "description": ">",
+      "description": "Use confluence-cli to read, search, create, update, move, and delete Confluence pages and attachments from the terminal. Prefer this skill over `mcp__claude_ai_Atlassian__*` MCP tools when you need: p",
       "version": "1.0.0"
     }
   ]

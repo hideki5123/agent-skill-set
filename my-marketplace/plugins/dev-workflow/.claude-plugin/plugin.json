@@ -1,7 +1,7 @@
 {
   "name": "dev-workflow",
   "version": "1.0.0",
-  "description": ">",
+  "description": "End-to-end TDD development workflow with multi-agent team review and skill-based quality gates. Plans, discusses, and implements features using strict RED-GREEN-REFACTOR test-driven development. Handl",
   "author": {
     "name": "Hideki"
   },
