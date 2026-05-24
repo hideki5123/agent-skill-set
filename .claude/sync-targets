@@ -1,0 +1,13 @@
+# Sync targets for /sync-skills. One host per line.
+# Format: <ssh-alias>[:<remote-repo-path>]
+# Default remote path (when :<path> omitted): ~/private/repos/agent-skill-set
+#
+# One entry per *physical* machine — list each box only once to avoid
+# redundant rsync/sync_skills.py runs against the same host via different
+# routes.
+
+# DGX workstation via Tailscale. Works both on home LAN and roaming.
+# The LAN-only alias `dgx` (-> 192.168.0.50) points at the same physical
+# box; do NOT add it as a separate entry — Tailscale already uses the LAN
+# route automatically when both peers are on the same network.
+tail-dgx
