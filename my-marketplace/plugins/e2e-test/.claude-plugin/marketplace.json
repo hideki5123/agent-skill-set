@@ -14,7 +14,7 @@
         "path": "."
       },
       "description": "Run frontend E2E tests with video evidence. Generates a Playwright test from the scenario CSV and runs it via CLI with video recording. Supports Chrome profile reuse (--chrome-profile) for testing wit",
-      "version": "1.0.0"
+      "version": "1.2.0"
     }
   ]
 }
