@@ -24,6 +24,9 @@ A collection of agent skills and tools for Claude Code and Cursor.
 | [slack-cli](slack-cli/) | Operate Slack from the terminal via `slack-cli` — messages, unreads, search, uploads |
 | [subagent-gen](subagent-gen/) | Generate PROJECT-KNOWLEDGE.md profiles for subagent deep domain expertise |
 | [address-pr-comments](address-pr-comments/) | Autonomously fetch and apply AI reviewer comments on a GitHub PR |
+| [well-arch-security](well-arch-security/) | Review changes / docs against the Security pillar of Google's Well-Architected Framework, with per-risk Accept/Mitigate/Defer/Block prompts |
+| [well-arch-reliability](well-arch-reliability/) | Review changes / docs against the Reliability pillar of Google's Well-Architected Framework, with per-risk Accept/Mitigate/Defer/Block prompts |
+| [well-arch-cost](well-arch-cost/) | Review changes / docs against the Cost Optimization pillar of Google's Well-Architected Framework, with per-risk Accept/Mitigate/Defer/Block prompts |
 
 ### Supporting directories
 
