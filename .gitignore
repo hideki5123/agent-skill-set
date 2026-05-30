@@ -55,3 +55,6 @@ coverage/
 
 # Generated marketplace skill payloads (build artifacts)
 my-marketplace/plugins/*/skills/
+
+# Deno
+deno.lock
