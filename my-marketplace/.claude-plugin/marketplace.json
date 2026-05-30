@@ -178,6 +178,16 @@
       "name": "agents-init",
       "source": "./plugins/agents-init",
       "description": "Generate AGENTS.md (cross-tool agent context — Codex CLI, Aider, Cursor, etc.) and wire CLAUDE.md as a symlink so Claude Code reads the same file. Delegates content generation to Claude's built-in /in"
+    },
+    {
+      "name": "grill-me",
+      "source": "./plugins/grill-me",
+      "description": "Interview the user relentlessly about a plan or design until reaching shared understanding, resolving each branch of the decision tree. Use when user wants to stress-test a plan, get grilled on their "
+    },
+    {
+      "name": "grill-with-docs",
+      "source": "./plugins/grill-with-docs",
+      "description": "Grilling session that challenges your plan against the existing domain model, sharpens terminology, and updates documentation (CONTEXT.md, ADRs) inline as decisions crystallise. Use when user wants to"
     }
   ]
 }

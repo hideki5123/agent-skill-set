@@ -1,0 +1,13 @@
+{
+  "name": "grill-with-docs",
+  "version": "1.0.0",
+  "description": "Grilling session that challenges your plan against the existing domain model, sharpens terminology, and updates documentation (CONTEXT.md, ADRs) inline as decisions crystallise. Use when user wants to",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "grill-with-docs"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}
