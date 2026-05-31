@@ -2,6 +2,11 @@
 
 A collection of agent skills and tools for Claude Code and Cursor.
 
+> **Upstream skill workflow:** several skills are vendored from
+> [mattpocock/skills](https://github.com/mattpocock/skills) and form a composable
+> workflow (align → specify → build → improve). See
+> [docs/upstream-skill-workflow.md](docs/upstream-skill-workflow.md).
+
 ## Skills
 
 | Skill | Description |
