@@ -10,4 +10,8 @@
 # The LAN-only alias `dgx` (-> 192.168.0.50) points at the same physical
 # box; do NOT add it as a separate entry — Tailscale already uses the LAN
 # route automatically when both peers are on the same network.
-tail-dgx
+#
+# Explicit path required: DGX checks the repo out at ~/private/agent-skill-set,
+# NOT the default ~/private/repos/agent-skill-set (which has no `repos/` level
+# and makes rsync fail with a receiver IO error).
+tail-dgx:~/private/agent-skill-set
