@@ -48,6 +48,35 @@ Some skills require external CLI tools. Install them before use.
 - Do not hand-edit `my-marketplace/plugins/*/skills/*`; those are generated artifacts.
 - Generated trees under `my-marketplace/plugins/*/skills/*` are build artifacts and are gitignored.
 
+### Vendoring Upstream Skills (on-demand)
+
+Pull individual skills from an upstream GitHub repo on demand — no package
+manager, no install-time code execution, pinned to a commit. Only the skills
+you choose enter this repo; everything is plain file copies you can review in
+the resulting diff.
+
+```bash
+# List what's available upstream (default repo: mattpocock/skills)
+python scripts/vendor_skill.py --list
+
+# Vendor one skill into a top-level <name>/ dir (auto-locates the upstream path)
+python scripts/vendor_skill.py handoff
+
+# Pin to a specific commit / tag / branch
+python scripts/vendor_skill.py handoff --ref e3b90b5
+
+# Vendor, then install into the local marketplace in one step
+python scripts/vendor_skill.py handoff --install
+
+# Use a different upstream repo / explicit path
+python scripts/vendor_skill.py foo --repo owner/repo --path skills/foo
+```
+
+Each vendored skill gets a `LICENSE` file recording provenance (upstream URL,
+source path, resolved commit SHA, retrieval date). The fetch step does not run
+`install_skill.py` unless `--install` is passed — review the files first, then
+install. To re-pull a newer upstream version, re-run with a later `--ref`.
+
 ### Sync Marketplace Artifacts
 
 ```bash
