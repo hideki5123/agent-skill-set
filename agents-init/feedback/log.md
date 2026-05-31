@@ -2,6 +2,16 @@
 
 <!-- Append new entries at the top. Do not edit previous entries. -->
 
+## 2026-06-01T03:32Z
+- **Skill Version**: 1.1.0
+- **Task**: Wire AGENTS.md / CLAUDE.md in agent-skill-set (state `needs-init`), with the user's added requirement to bake a "no ASCII-art diagrams" convention into the generated context file.
+- **Outcome**: success
+- **Rating**: 3/5
+- **Rating reason**: Not about agents-init itself — the user was frustrated by the broader session pattern of having to explicitly say "push" after every change ("いちいちプッシュしろって言わないといけない"). The needs-init → /init → wire → verify flow ran clean and the symlink committed correctly (mode 120000).
+- **Corrections**: User had to interject "変更はプッシュ" mid-task to get changes pushed.
+- **Issues**: Agent treated push as an outward-facing action needing per-turn confirmation; user wants commit→merge→push to be the standing default for this repo. Captured as memory `feedback_auto_push_after_commit`.
+- **User Note**: "3 / いちいちプッシュしろって言わないといけない"
+
 ## 2026-05-25T01:14+09:00
 - **Skill Version**: 1.0.0
 - **Task**: Wire AGENTS.md / CLAUDE.md in /Users/hidekikoike/private/nix-config (fresh repo, state = `needs-init`).
