@@ -110,10 +110,19 @@ def install(skill_dir: Path, version: str, cache_only: bool = False):
     if not name:
         sys.exit("Error: SKILL.md frontmatter missing 'name' field")
 
+    # A skill marked `deprecated: true` in its SKILL.md frontmatter is still
+    # cached/registered (so it stays in the catalog for reference), but is NOT
+    # enabled. This makes deprecation durable: re-running install — including
+    # the pre-push hook's --cache-only path — keeps it disabled instead of
+    # silently re-enabling it.
+    deprecated = (meta.get("deprecated") or "").strip().lower() in ("true", "yes", "1")
+
     plugin_key = f"{name}@{MARKETPLACE_NAME}"
     now = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.000Z")
 
-    print(f"Installing skill: {name} v{version}{' (cache-only)' if cache_only else ''}")
+    print(f"Installing skill: {name} v{version}"
+          f"{' (cache-only)' if cache_only else ''}"
+          f"{' [DEPRECATED — will stay disabled]' if deprecated else ''}")
 
     # Directories to exclude from the skills/<name>/ copy.
     # - feedback / .git / __pycache__ are authoring-side data.
@@ -256,15 +265,19 @@ def install(skill_dir: Path, version: str, cache_only: bool = False):
     write_json(INSTALLED_JSON, installed)
     print(f"  [+] installed_plugins.json updated")
 
-    # 5. Enable in settings.json
+    # 5. Enable in settings.json (but keep deprecated skills disabled)
     settings = read_json(SETTINGS_JSON)
     if "enabledPlugins" not in settings:
         settings["enabledPlugins"] = {}
-    settings["enabledPlugins"][plugin_key] = True
+    settings["enabledPlugins"][plugin_key] = not deprecated
     write_json(SETTINGS_JSON, settings)
-    print(f"  [+] settings.json: {plugin_key} enabled")
+    print(f"  [+] settings.json: {plugin_key} {'disabled (deprecated)' if deprecated else 'enabled'}")
 
-    print(f"\nDone! '{name}' is now available as '{name}:{name}' in new Claude Code sessions.")
+    if deprecated:
+        print(f"\nDone! '{name}' is cached and registered but left DISABLED (deprecated). "
+              f"Re-running install will keep it disabled.")
+    else:
+        print(f"\nDone! '{name}' is now available as '{name}:{name}' in new Claude Code sessions.")
 
 
 def main():

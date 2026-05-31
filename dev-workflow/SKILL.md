@@ -1,5 +1,6 @@
 ---
 name: dev-workflow
+deprecated: true
 description: >
   End-to-end TDD development workflow with multi-agent team review and skill-based
   quality gates. Plans, discusses, and implements features using strict RED-GREEN-REFACTOR
