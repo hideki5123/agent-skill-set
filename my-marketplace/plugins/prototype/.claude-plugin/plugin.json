@@ -1,0 +1,13 @@
+{
+  "name": "prototype",
+  "version": "1.0.0",
+  "description": "Build a throwaway prototype to flesh out a design before committing to it. Routes between two branches — a runnable terminal app for state/business-logic questions, or several radically different UI v",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "prototype"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}

@@ -1,0 +1,13 @@
+{
+  "name": "diagnose",
+  "version": "1.0.0",
+  "description": "Disciplined diagnosis loop for hard bugs and performance regressions. Reproduce → minimise → hypothesise → instrument → fix → regression-test. Use when user says \"diagnose this\" / \"debug this\", report",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "diagnose"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}
