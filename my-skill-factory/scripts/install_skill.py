@@ -72,6 +72,44 @@ def write_json(path: Path, data: dict):
     path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
 
 
+TOP_LEVEL_KEY = re.compile(r"^([A-Za-z0-9_-]+):(.*)$")
+
+
+def parse_frontmatter(fm: str) -> dict:
+    """Parse the subset of YAML these SKILL.md frontmatters use.
+
+    Handles top-level ``key: value`` plus folded (``>``) and literal (``|``)
+    block scalars whose continuation lines are indented. Continuation lines are
+    never mistaken for their own keys — which is why a naive line-by-line
+    ``partition(':')`` mangled folded ``description: >`` blocks down to ``>``.
+    Not a general YAML parser; just enough for name / description / deprecated.
+    """
+    meta = {}
+    lines = fm.splitlines()
+    i, n = 0, len(lines)
+    while i < n:
+        m = TOP_LEVEL_KEY.match(lines[i])
+        if not m:
+            i += 1
+            continue
+        key, rest = m.group(1).strip(), m.group(2).strip()
+        i += 1
+        if rest and rest[0] in (">", "|"):
+            # Block scalar — gather indented (or blank) continuation lines.
+            folded = rest[0] == ">"
+            block = []
+            while i < n and (lines[i].strip() == "" or lines[i][:1] in (" ", "\t")):
+                block.append(lines[i].strip())
+                i += 1
+            if folded:
+                meta[key] = " ".join(b for b in block if b)
+            else:
+                meta[key] = "\n".join(block).strip()
+        else:
+            meta[key] = rest
+    return meta
+
+
 def extract_skill_meta(skill_dir: Path) -> dict:
     """Read name and description from SKILL.md frontmatter."""
     skill_md = skill_dir / "SKILL.md"
@@ -87,12 +125,7 @@ def extract_skill_meta(skill_dir: Path) -> dict:
     if len(parts) < 3:
         sys.exit("Error: SKILL.md frontmatter not properly closed")
 
-    meta = {}
-    for line in parts[1].strip().splitlines():
-        if ":" in line:
-            key, _, val = line.partition(":")
-            meta[key.strip()] = val.strip()
-    return meta
+    return parse_frontmatter(parts[1])
 
 
 def install(skill_dir: Path, version: str, cache_only: bool = False):
