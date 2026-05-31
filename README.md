@@ -7,7 +7,7 @@ A collection of agent skills and tools for Claude Code and Cursor.
 | Skill | Description |
 |-------|-------------|
 | [confluence](confluence/) | Read, search, create, update, move, and delete Confluence pages via `confluence-cli` |
-| [dev-workflow](dev-workflow/) | End-to-end TDD development workflow with multi-agent team review |
+| [dev-workflow](dev-workflow/) | **⚠️ DEPRECATED** (disabled; superseded by upstream `grill-me`→`to-prd`→`tdd`→`improve-codebase-architecture`). End-to-end TDD development workflow with multi-agent team review |
 | [jira-cli](jira-cli/) | View, search, create, update, and delete Jira issues, comments, sprints via `@pchuri/jira-cli` |
 | [e2e-test](e2e-test/) | Run frontend E2E tests using Playwright MCP browser tools with screenshot evidence |
 | [multi-agent-council](multi-agent-council/) | Multi-LLM council for architecture decisions and code reviews (submodule) |

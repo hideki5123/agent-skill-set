@@ -17,6 +17,18 @@ description: >
   or when the user invokes /dev-workflow.
 ---
 
+> [!WARNING]
+> **DEPRECATED (2026-06-01).** Superseded by the upstream
+> [mattpocock/skills](https://github.com/mattpocock/skills) workflow:
+> `grill-me` / `grill-with-docs` → `to-prd` → `tdd` →
+> `improve-codebase-architecture` (plus `diagnose`, `triage`, `zoom-out`,
+> `prototype`, `handoff`). This plugin is **disabled globally** and kept here
+> for reference only. Re-enable by flipping
+> `dev-workflow@hideki-plugins` back to `true` in `~/.claude/settings.json`.
+>
+> Not covered by the upstream replacement: multi-agent team review and
+> automated PR creation (`self-pr-review` / `address-pr-comments`).
+
 # Dev Workflow
 
 End-to-end development with team review, skill agents, and strict TDD discipline.
