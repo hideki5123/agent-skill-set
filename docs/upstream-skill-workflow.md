@@ -25,27 +25,28 @@ and vocabulary those first skills establish.
 
 ## The workflow
 
-```
-                ┌─────────────────────────────────────────────┐
-   ALIGN        │  grill-me            (general / non-code)     │
-                │  grill-with-docs     (code: + CONTEXT.md/ADR) │
-                └───────────────────────┬─────────────────────┘
-                                        │  shared understanding
-                                        │  + domain language (CONTEXT.md, ADRs)
-                                        ▼
-   SPECIFY      ┌─────────────────────────────────────────────┐
-                │  to-prd   conversation → PRD → issue tracker  │
-                └───────────────────────┬─────────────────────┘
-                                        ▼
-   BUILD        ┌─────────────────────────────────────────────┐
-                │  tdd      red → green → refactor (vertical)   │
-                └───────────────────────┬─────────────────────┘
-                                        ▼
-   IMPROVE      ┌─────────────────────────────────────────────┐
-                │  improve-codebase-architecture (deepening)    │
-                └─────────────────────────────────────────────┘
+```mermaid
+flowchart TD
+    subgraph ALIGN["1 · Align"]
+        direction TB
+        A1["grill-me<br/>(general / non-code)"]
+        A2["grill-with-docs<br/>(code · CONTEXT.md + ADRs)"]
+    end
+    subgraph SPECIFY["2 · Specify"]
+        B["to-prd<br/>conversation → PRD → issue tracker"]
+    end
+    subgraph BUILD["3 · Build"]
+        C["tdd<br/>red → green → refactor (vertical)"]
+    end
+    subgraph IMPROVE["4 · Improve"]
+        D["improve-codebase-architecture<br/>(deepening)"]
+    end
 
-   SUPPORTING (use any time): diagnose · triage · zoom-out · prototype · handoff
+    ALIGN -- "shared understanding + domain language (CONTEXT.md, ADRs)" --> SPECIFY
+    SPECIFY --> BUILD
+    BUILD --> IMPROVE
+
+    SUP["Supporting, any time:<br/>diagnose · triage · zoom-out · prototype · handoff"]
 ```
 
 ## Stage-by-stage
