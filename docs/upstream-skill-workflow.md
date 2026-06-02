@@ -45,6 +45,7 @@ flowchart TD
     ALIGN -- "shared understanding + domain language (CONTEXT.md, ADRs)" --> SPECIFY
     SPECIFY --> BUILD
     BUILD --> IMPROVE
+    ALIGN -. "building in the same session — skip to-prd" .-> BUILD
 
     SUP["Supporting, any time:<br/>diagnose · triage · zoom-out · prototype · handoff"]
 ```
@@ -80,6 +81,14 @@ seams** (preferring existing, highest-level seams) and confirms them with you,
 then writes Problem / Solution / extensive User Stories / Implementation
 Decisions / Testing Decisions, and applies a `ready-for-agent` label.
 
+**`to-prd` is the handoff artifact, not a mandatory stage.** The `ready-for-agent`
+label is the tell — its payoff is persisting alignment so a *different* agent,
+session, or person can pick the work up. It also *publishes* a PRD to the
+tracker, so when you started from an **existing issue**, point it at that issue
+(or just add a comment) rather than letting it create a duplicate. When to reach
+for it — and when to skip straight to Build — is in
+[After Align: picking the next skill](#after-align-picking-the-next-skill).
+
 ### 3. Build — `tdd`
 
 Red → green → refactor, done as **vertical slices** (one test → one
@@ -100,6 +109,24 @@ concentrates complexity, it earns its keep; if complexity just moves, it was a
 pass-through. Output is a self-contained HTML report (Tailwind + Mermaid, written
 to a temp dir, never the repo) with before/after diagrams. Informed by
 `CONTEXT.md` and ADRs — it won't re-litigate recorded decisions.
+
+## After Align: picking the next skill
+
+Grilling is the "every change" step; what follows is **not** automatically
+`to-prd`. Default to *Build*, and treat *Specify* (`to-prd`) as conditional on a
+handoff boundary:
+
+| Situation after grilling | Best next skill |
+|---|---|
+| Building it yourself, in the same live session | `tdd` — pin the test seams inline at the start (the one bit of to-prd value you still want) |
+| Handing off to another agent / session / person | `to-prd` → tracker (`ready-for-agent`), then `tdd` later |
+| It's a **bug** whose root cause isn't pinned yet | `diagnose` first — build the deterministic pass/fail loop, reproduce, then fix + regression-test |
+| A decision hinges on an unknown | `prototype` to answer the one question, capture the answer (ADR / issue / commit), then `tdd` |
+| You don't know the area well | `zoom-out` first (usually before or during grilling, not after) |
+
+The common case — you grilled a fix on an existing issue and you're about to
+implement it yourself — is `tdd` directly, **skipping `to-prd`**. Reach for
+`to-prd` only when the alignment must survive a handoff boundary.
 
 ## Supporting skills (use any time)
 
