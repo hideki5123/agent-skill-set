@@ -87,7 +87,7 @@ session, or person can pick the work up. It also *publishes* a PRD to the
 tracker, so when you started from an **existing issue**, point it at that issue
 (or just add a comment) rather than letting it create a duplicate. When to reach
 for it — and when to skip straight to Build — is in
-[After Align: picking the next skill](#after-align-picking-the-next-skill).
+[Picking the next skill](#picking-the-next-skill).
 
 ### 3. Build — `tdd`
 
@@ -110,23 +110,42 @@ pass-through. Output is a self-contained HTML report (Tailwind + Mermaid, writte
 to a temp dir, never the repo) with before/after diagrams. Informed by
 `CONTEXT.md` and ADRs — it won't re-litigate recorded decisions.
 
-## After Align: picking the next skill
+## Picking the next skill
 
-Grilling is the "every change" step; what follows is **not** automatically
-`to-prd`. Default to *Build*, and treat *Specify* (`to-prd`) as conditional on a
-handoff boundary:
+> This section is **this repo's own synthesis**, not upstream guidance. Upstream
+> ships each skill self-contained; the only ordering it states is that the
+> *grilling* skills should precede `tdd` / `to-prd` /
+> `improve-codebase-architecture` (it does **not** mention `diagnose`). Treat the
+> ordering below as a heuristic, not a pipeline.
 
-| Situation after grilling | Best next skill |
+The real question is *which uncertainty dominates*, because that decides the
+entry point — grilling is not always first:
+
+- **Design / plan uncertainty** ("what should we do, is this sound") → `grill`
+  first. This is the "every change" step for features.
+- **Causal uncertainty** ("what is actually broken, and why") → `diagnose`
+  first. You cannot grill a fix for a bug whose cause you don't know — you'd be
+  aligning on vapour. For bugs, `diagnose` is usually the *entry point*, not a
+  post-grill step, and it absorbs part of grilling itself (Phase 3 shows you the
+  ranked hypotheses; Phase 6 hands off to `improve-codebase-architecture`).
+
+| Situation | Best skill | Order |
+|---|---|---|
+| Feature / design work | `grill` → then Build | grill first |
+| **Bug**, expected behaviour clear, cause unknown | `diagnose` | **diagnose first**; grill only after, if the fix approach is genuinely contested |
+| **Bug**, but even "what's correct" is unclear | short `grill` to pin expected behaviour → then `diagnose` | grill first, briefly |
+| A decision hinges on an unknown | `prototype` to answer the one question, capture the answer (ADR / issue / commit) | before committing |
+| You don't know the area well | `zoom-out` | before / during grilling |
+
+Once aligned (whichever way you got there), the Build/Specify choice is a
+separate axis:
+
+| After alignment | Best next skill |
 |---|---|
-| Building it yourself, in the same live session | `tdd` — pin the test seams inline at the start (the one bit of to-prd value you still want) |
+| Building it yourself, in the same live session (the common case) | `tdd` directly — pin the test seams inline at the start (the one bit of `to-prd` value you still want), **skipping `to-prd`** |
 | Handing off to another agent / session / person | `to-prd` → tracker (`ready-for-agent`), then `tdd` later |
-| It's a **bug** whose root cause isn't pinned yet | `diagnose` first — build the deterministic pass/fail loop, reproduce, then fix + regression-test |
-| A decision hinges on an unknown | `prototype` to answer the one question, capture the answer (ADR / issue / commit), then `tdd` |
-| You don't know the area well | `zoom-out` first (usually before or during grilling, not after) |
 
-The common case — you grilled a fix on an existing issue and you're about to
-implement it yourself — is `tdd` directly, **skipping `to-prd`**. Reach for
-`to-prd` only when the alignment must survive a handoff boundary.
+Reach for `to-prd` only when the alignment must survive a handoff boundary.
 
 ## Supporting skills (use any time)
 
