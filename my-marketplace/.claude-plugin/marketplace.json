@@ -10,6 +10,21 @@
       "description": "Autonomously fetch and apply AI reviewer comments on a GitHub PR — creating a draft PR and requesting reviewers if needed. Default mode processes Copilot/Gemini bot comments without human intervention"
     },
     {
+      "name": "agents-init",
+      "source": "./plugins/agents-init",
+      "description": "Generate AGENTS.md (cross-tool agent context — Codex CLI, Aider, Cursor, etc.) and wire CLAUDE.md as a symlink so Claude Code reads the same file. Delegates content generation to Claude's built-in /in"
+    },
+    {
+      "name": "auto-mode",
+      "source": "./plugins/auto-mode",
+      "description": "Switch the user's Claude Code session back to classifier-guided auto mode by clearing the bypass-toggle flag. Use after approving a plan from the iPhone Claude app (or anywhere bypass-toggle is on) wh"
+    },
+    {
+      "name": "bypass-toggle",
+      "source": "./plugins/bypass-toggle",
+      "description": "Toggle effective bypassPermissions for the user's Claude Code sessions via a PreToolUse hook + flag file. Use when the user wants to skip further permission prompts after approving a plan — especially"
+    },
+    {
       "name": "codex-cli",
       "source": "./plugins/codex-cli",
       "description": "Run OpenAI Codex CLI from the terminal for batch / one-shot `codex exec` invocations with output captured to an `-o` file. Use for fire-and-forget runs, scripted CI, code review batches (`codex review"
@@ -30,6 +45,11 @@
       "description": "End-to-end TDD development workflow with multi-agent team review and skill-based quality gates. Plans, discusses, and implements features using strict RED-GREEN-REFACTOR test-driven development. Handl"
     },
     {
+      "name": "diagnose",
+      "source": "./plugins/diagnose",
+      "description": "Disciplined diagnosis loop for hard bugs and performance regressions. Reproduce → minimise → hypothesise → instrument → fix → regression-test. Use when user says \"diagnose this\" / \"debug this\", report"
+    },
+    {
       "name": "dotnet-senior",
       "source": "./plugins/dotnet-senior",
       "description": "Senior-level .NET development guidance for architecture, code review, scaffolding, EF Core, ASP.NET Core, Blazor, and MAUI targeting .NET 8 and .NET 10. Provides opinionated best practices, modern C# "
@@ -48,6 +68,26 @@
       "name": "gdrive-cli",
       "source": "./plugins/gdrive-cli",
       "description": "Operate Google Drive from the terminal via `rclone` — list, upload, download, search, sync, mount, check quota, export Google Docs/Sheets/Slides, browse Shared Drives, and manage trash. Use whenever t"
+    },
+    {
+      "name": "grill-me",
+      "source": "./plugins/grill-me",
+      "description": "Interview the user relentlessly about a plan or design until reaching shared understanding, resolving each branch of the decision tree. Use when user wants to stress-test a plan, get grilled on their "
+    },
+    {
+      "name": "grill-with-docs",
+      "source": "./plugins/grill-with-docs",
+      "description": "Grilling session that challenges your plan against the existing domain model, sharpens terminology, and updates documentation (CONTEXT.md, ADRs) inline as decisions crystallise. Use when user wants to"
+    },
+    {
+      "name": "handoff",
+      "source": "./plugins/handoff",
+      "description": "Compact the current conversation into a handoff document for another agent to pick up."
+    },
+    {
+      "name": "improve-codebase-architecture",
+      "source": "./plugins/improve-codebase-architecture",
+      "description": "Find deepening opportunities in a codebase, informed by the domain language in CONTEXT.md and the decisions in docs/adr/. Use when the user wants to improve architecture, find refactoring opportunitie"
     },
     {
       "name": "jira-cli",
@@ -115,6 +155,11 @@
       "description": "Review a teammate's pull request. The reviewer role (multi-lens analysis, severity calibration, suggestion writing) lives in the `pr-review:pr-review` subagent; this skill is the orchestrator — it res"
     },
     {
+      "name": "prototype",
+      "source": "./plugins/prototype",
+      "description": "Build a throwaway prototype to flesh out a design before committing to it. Routes between two branches — a runnable terminal app for state/business-logic questions, or several radically different UI v"
+    },
+    {
       "name": "recap-to-notion",
       "source": "./plugins/recap-to-notion",
       "description": "Sync a session-recap directory (summary.md + note.md + meta.json) to Notion under the explicit \"My Agent Notes / Session Recaps\" database via the notion-cli skill. The Notion target is fixed by design"
@@ -170,49 +215,19 @@
       "description": "Generate a persistent PROJECT-KNOWLEDGE.md profile for any codebase that gives subagents instant deep domain expertise. Analyzes project structure, architecture, code conventions, tech stack, data flo"
     },
     {
-      "name": "test-scenario",
-      "source": "./plugins/test-scenario",
-      "description": "Generate test outlines (living documentation) and test code from natural language feature descriptions. Supports .NET (xUnit/NUnit/MSTest), Python (pytest), TypeScript (Vitest/Jest). Strict mode: no i"
-    },
-    {
-      "name": "agents-init",
-      "source": "./plugins/agents-init",
-      "description": "Generate AGENTS.md (cross-tool agent context — Codex CLI, Aider, Cursor, etc.) and wire CLAUDE.md as a symlink so Claude Code reads the same file. Delegates content generation to Claude's built-in /in"
-    },
-    {
-      "name": "grill-me",
-      "source": "./plugins/grill-me",
-      "description": "Interview the user relentlessly about a plan or design until reaching shared understanding, resolving each branch of the decision tree. Use when user wants to stress-test a plan, get grilled on their "
-    },
-    {
-      "name": "grill-with-docs",
-      "source": "./plugins/grill-with-docs",
-      "description": "Grilling session that challenges your plan against the existing domain model, sharpens terminology, and updates documentation (CONTEXT.md, ADRs) inline as decisions crystallise. Use when user wants to"
-    },
-    {
-      "name": "handoff",
-      "source": "./plugins/handoff",
-      "description": "Compact the current conversation into a handoff document for another agent to pick up."
-    },
-    {
-      "name": "to-prd",
-      "source": "./plugins/to-prd",
-      "description": "Turn the current conversation context into a PRD and publish it to the project issue tracker. Use when user wants to create a PRD from the current context."
-    },
-    {
       "name": "tdd",
       "source": "./plugins/tdd",
       "description": "Test-driven development with red-green-refactor loop. Use when user wants to build features or fix bugs using TDD, mentions \"red-green-refactor\", wants integration tests, or asks for test-first develo"
     },
     {
-      "name": "improve-codebase-architecture",
-      "source": "./plugins/improve-codebase-architecture",
-      "description": "Find deepening opportunities in a codebase, informed by the domain language in CONTEXT.md and the decisions in docs/adr/. Use when the user wants to improve architecture, find refactoring opportunitie"
+      "name": "test-scenario",
+      "source": "./plugins/test-scenario",
+      "description": "Generate test outlines (living documentation) and test code from natural language feature descriptions. Supports .NET (xUnit/NUnit/MSTest), Python (pytest), TypeScript (Vitest/Jest). Strict mode: no i"
     },
     {
-      "name": "diagnose",
-      "source": "./plugins/diagnose",
-      "description": "Disciplined diagnosis loop for hard bugs and performance regressions. Reproduce → minimise → hypothesise → instrument → fix → regression-test. Use when user says \"diagnose this\" / \"debug this\", report"
+      "name": "to-prd",
+      "source": "./plugins/to-prd",
+      "description": "Turn the current conversation context into a PRD and publish it to the project issue tracker. Use when user wants to create a PRD from the current context."
     },
     {
       "name": "triage",
@@ -225,9 +240,9 @@
       "description": "Tell the agent to zoom out and give broader context or a higher-level perspective. Use when you're unfamiliar with a section of code or need to understand how it fits into the bigger picture."
     },
     {
-      "name": "prototype",
-      "source": "./plugins/prototype",
-      "description": "Build a throwaway prototype to flesh out a design before committing to it. Routes between two branches — a runnable terminal app for state/business-logic questions, or several radically different UI v"
+      "name": "chrome-use",
+      "source": "./plugins/chrome-use",
+      "description": "Drive an already-running, LOGGED-IN Chromium browser on macOS via AppleScript — navigate, click, fill forms, scroll, and extract page content from the user's REAL session, with the browser left open a"
     }
   ]
 }
