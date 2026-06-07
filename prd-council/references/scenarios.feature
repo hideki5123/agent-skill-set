@@ -12,14 +12,33 @@ Feature: prd-council — adversarial PRD authoring and execution-ready doc gener
   Scenario: Happy path — grill, draft, Codex approval, technical docs, tasks
     Given Codex is available via the user's ChatGPT login
     When prd-council runs
-    Then it first grills the user one question at a time with recommended answers
-    And it drafts prd.md from the grilled requirements and codebase
+    Then it runs the Phase-1 requirements checkpoint (assess context, then grill open branches)
+    And it drafts prd.md from the agreed requirements and codebase
     And it debates prd.md with Codex round-by-round requesting structured verdicts
     And it stops when Codex returns approve and Claude has no unresolved objection
     And it writes debate-log.md with every round
     And it writes technical-prd-summary.md and one technical-prd-<usecase>.md per UseCase
     And it writes tasks.md grouped by UseCase with role, dependencies, and acceptance
     And all files are written under docs/prd/<slug>/
+
+  Scenario: Already grilled — confirm, do not re-interrogate
+    Given the requirements are already resolved (a prior grill-me pass in this
+      conversation, or a passed-in PRD/ticket, or rich codebase signal)
+    When prd-council runs Phase 1 with --grill auto
+    Then it runs the shared-understanding assessment first and builds a grill ledger
+    And it presents a consolidated requirements summary for a single confirm-or-correct
+    And it grills only the still-open branches, not the resolved ones
+
+  Scenario: Thin context — full grill
+    Given little about the feature is resolvable from context or the codebase
+    When prd-council runs Phase 1 with --grill auto
+    Then it runs the full one-question-at-a-time grill
+
+  Scenario: Grill depth overrides
+    Given --grill full is passed
+    Then prd-council runs a complete grill even if context looks sufficient
+    Given --grill skip is passed
+    Then prd-council trusts the context but still shows the summary for one confirm
 
   Scenario: Codex requests revisions before approving
     Given Codex returns verdict "revise" with blocking_issues

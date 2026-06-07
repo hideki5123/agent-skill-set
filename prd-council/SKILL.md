@@ -68,6 +68,7 @@ Parse from the invocation. All optional.
 | `--model <M>` | from `~/.codex/config.toml` | Codex model override. |
 | `--no-codex` | off | Skip Codex; run degraded Claude-only council. |
 | `--lang <auto\|ja\|en\|…>` | `auto` | Document body language. `auto` = the session/invocation language. Commit messages are ALWAYS English regardless. |
+| `--grill <auto\|full\|skip>` | `auto` | Phase-1 depth. `auto` = assess existing context and grill only unresolved branches (confirm-only if already grilled). `full` = force a complete re-grill. `skip` = trust context as-is (still shows the summary for one confirm). |
 
 ## Feedback Check
 
@@ -94,14 +95,28 @@ the technical docs and tasks from the approved PRD — never the other way aroun
    the setup/degradation detail.
 4. Determine `<slug>` and create the output dir.
 
-### Phase 1 — Grill (always)
+### Phase 1 — Grill (always a checkpoint; depth adapts to existing context)
 
-**Always** interview the user before drafting — this skill does NOT inherit
-to-prd's synthesize-only stance. Read `references/grill-protocol.md` and run it:
-one question at a time, recommend an answer for each, resolve the decision tree,
-and explore the codebase to answer questions you can answer yourself. Stop when
-you and the user share an understanding of problem, solution, scope, UseCases,
-and constraints.
+There is **always** a user-facing requirements checkpoint before drafting — this
+skill never silently synthesizes like to-prd. But its *depth adapts to what's
+already known*, so a user who was just grilled is not re-interrogated.
+
+Read `references/grill-protocol.md` and run the **shared-understanding assessment
+first**: scan what the available context already resolves (this conversation, any
+prior `grill-me`/`grill-with-docs` output, a passed-in draft/ticket, the codebase),
+then act on coverage:
+
+- **Already grilled / context-rich** (decision tree largely resolved): do NOT
+  re-walk the tree. Present a consolidated requirements summary and ask for a
+  single confirm-or-correct pass; grill only the genuinely-unresolved branches.
+- **Thin context**: run the full one-question-at-a-time grill (recommend an answer
+  each, explore the codebase for what you can answer yourself).
+- `--grill full` forces a complete re-grill; `--grill skip` trusts the context
+  as-is but still shows the summary for one confirm. `auto` (default) decides by
+  coverage.
+
+Either way, stop only when you and the user share an understanding of problem,
+solution, scope, UseCases, and constraints.
 
 ### Phase 2 — Draft the PRD
 

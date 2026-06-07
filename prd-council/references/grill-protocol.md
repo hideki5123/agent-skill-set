@@ -1,12 +1,40 @@
 # Grill Protocol (Phase 1)
 
-**WHEN TO READ:** at the start of Phase 1 (always — prd-council interviews before
-drafting). Not needed otherwise.
+**WHEN TO READ:** at the start of Phase 1 (always — prd-council holds a
+requirements checkpoint before drafting). Not needed otherwise.
 
 The goal of Phase 1 is a *shared understanding* of the feature before a single
-line of PRD is written. This is the grill-me approach applied to PRD intake.
+line of PRD is written. This is the grill-me approach applied to PRD intake. The
+checkpoint is mandatory; its **depth adapts** to what context already resolves, so
+an already-grilled user gets a confirmation, not a re-interrogation.
 
-## Rules
+## Shared-understanding assessment (run this FIRST)
+
+Before asking anything, find out how much is already settled.
+
+1. **Gather existing signal.** Read what the context already provides:
+   - this conversation (a prior `grill-me` / `grill-with-docs` pass, or decisions
+     the user already stated);
+   - any artifact passed in or referenced (an existing PRD/requirements draft, a
+     ticket, a design doc);
+   - the codebase (stack, modules, conventions, ADRs, prior art).
+2. **Build the grill ledger.** For each item the PRD needs — problem, solution,
+   scope/out-of-scope, **UseCases**, seams/test boundaries, constraints, roster
+   hints, council depth — mark it **resolved** or **open** from that signal.
+3. **Branch on coverage (respecting `--grill`):**
+   - **`--grill full`** → run the full grill regardless.
+   - **`--grill skip`** → trust the context; render the requirements summary and
+     ask for one confirm-or-correct, then proceed.
+   - **`auto` (default):**
+     - *Mostly resolved* (only minor gaps): present a **consolidated requirements
+       summary** (problem, solution, UseCases, scope, constraints) and ask for a
+       **single confirm-or-correct pass**. Grill only the still-open items. Do not
+       re-walk resolved branches.
+     - *Thin* (much is open): run the full grill below.
+4. **Never zero-touch.** Even when everything looks resolved, always show the
+   summary and get one explicit confirmation — that is the mandatory checkpoint.
+
+## Rules (for the branches that still need grilling)
 
 1. **One question at a time.** Walk down each branch of the decision tree,
    resolving dependencies between decisions one-by-one. A later question often
