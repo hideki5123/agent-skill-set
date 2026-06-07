@@ -18,7 +18,9 @@
 //
 // Run with:
 //   deno run --allow-read --allow-write --allow-env=PATH,HOME,USERPROFILE \
-//            --allow-run=<codex-path>,<deno-path> --allow-net=api.openai.com <this> <subcommand> ...
+//            --allow-run=<codex-path>,<deno-path>,kill --allow-net=api.openai.com <this> <subcommand> ...
+// <deno-path> (= Deno.execPath()): new/continue fork a detached deno worker.
+// kill: wait/tail/status liveness-check the worker via `kill -0`.
 
 import { join } from "jsr:@std/path@1";
 import { parseArgs } from "jsr:@std/cli@1/parse-args";
@@ -145,20 +147,23 @@ async function cmdNew(rest: string[], resume?: { threadId: string }): Promise<vo
   await Deno.writeTextFile(promptFile, prompt);
 
   const cwd = parsed.cwd ?? Deno.cwd();
-  await writeTurnMeta({
+  const meta = {
     turn_id: turnId,
     thread_id: null,
     started_at: new Date().toISOString(),
     cwd,
     model: parsed.model ?? null,
-    pid: 0, // worker writes its real pid shortly
+    pid: 0, // placeholder; overwritten with the real worker pid below
     resumed_from: resume?.threadId ?? null,
-  });
+  };
+  // Write a placeholder first so the detached worker always finds meta.json to
+  // read and augment (it exits 64 otherwise).
+  await writeTurnMeta(meta);
 
   // deno-lint-ignore no-explicit-any
   const images = (parsed.image as any) as string[] | undefined;
 
-  await forkWorker({
+  const pid = await forkWorker({
     turnId,
     cwd,
     promptFile,
@@ -168,6 +173,11 @@ async function cmdNew(rest: string[], resume?: { threadId: string }): Promise<vo
     model: parsed.model ?? undefined,
     skipGitCheck: !!parsed["skip-git-check"],
   });
+  // Record the real worker pid synchronously, so a `wait`/`tail`/`status` that
+  // races in right after `new` liveness-checks the worker instead of pid 0.
+  // The worker also writes its own Deno.pid (the same value) once it boots.
+  meta.pid = pid;
+  await writeTurnMeta(meta);
 
   console.log(
     JSON.stringify({

@@ -52,13 +52,24 @@ events.jsonl tail-line.
 State decision tree (used by `status` and `wait`):
 
 ```
-if turn-dir does not exist                       → state="missing"
-else if done marker exists                       → state="complete"
-else if error marker exists                      → state="failed"
-else if meta.json missing or unparsable          → state="missing"
-else if process meta.pid is alive (kill -0)      → state="running"
-else                                              → state="abandoned"
+if turn-dir does not exist                          → state="missing"
+else if done marker exists                          → state="complete"
+else if error marker exists                         → state="failed"
+else if meta.json missing or unparsable             → state="missing"
+else if within ~10s startup grace of started_at     → state="running"
+else if worker pid > 0 and alive (kill -0)          → state="running"
+else                                                → state="abandoned"
 ```
+
+The startup-grace step covers the brief window between `new` creating the
+turn-dir and the worker recording its real pid; without it a poll in that gap
+would see no marker and a not-yet-live pid and wrongly report "abandoned".
+
+The `kill -0` liveness check requires `kill` in the caller's `--allow-run`
+(see SKILL.md "Required deno permissions"). Without it the probe throws
+`NotCapable` and the turn reads as not-alive — so a turn outliving the grace
+window would falsely report "abandoned". pid 0 is treated as not-alive because
+`kill -0 0` targets the caller's process group and spuriously succeeds.
 
 `abandoned` means the worker crashed before writing a marker. Treat it as
 failed; no recovery is attempted (just start a new turn). The 7-day GC will

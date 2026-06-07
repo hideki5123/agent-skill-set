@@ -104,7 +104,7 @@ The setup script pins the codex binary path. After setup, every
 
 - `--allow-read` and `--allow-write` — workspace + working dir + turn files
 - `--allow-env=PATH,HOME,USERPROFILE` — only; deliberately omits `OPENAI_API_KEY`
-- `--allow-run=<codex-path>` (read from `~/.codex-server/config.json`)
+- `--allow-run=<codex-path>,<deno-path>,kill` — `<codex-path>` from `~/.codex-server/config.json`; `<deno-path>` (`Deno.execPath()`) because `new`/`continue` fork a detached deno worker; `kill` because `wait`/`tail`/`status` liveness-check the worker via `kill -0`
 - `--allow-net=api.openai.com` — defensive
 
 ## Streaming and events

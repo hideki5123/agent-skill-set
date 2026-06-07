@@ -49,8 +49,16 @@ Feature: codex-server — ChatGPT-subscription chat via Codex App Server
     When Claude invokes `chat.ts status <turn-id>`
     Then chat.ts prints JSON with state="running", thread_id, cwd, started_at, last_event_at, pid
 
+  Scenario: A freshly forked turn is not mistaken for abandoned
+    Given a turn was just created by `new` and the worker is still starting up
+    And neither `done` nor `error` marker exists yet
+    When Claude invokes `chat.ts wait <turn-id>` immediately
+    Then within the ~10s startup grace chat.ts reports state="running"
+    And it does not exit early as "abandoned"
+
   Scenario: Detect an orphaned (crashed) worker
     Given a turn-dir exists but neither `done` nor `error` marker is present
+    And the turn is past its ~10s startup grace
     And the worker pid is no longer alive
     When Claude invokes `chat.ts status <turn-id>`
     Then chat.ts prints JSON with state="abandoned"

@@ -74,9 +74,11 @@ The worker guarantees exactly one of these terminal states for every turn:
   (`turn.failed`, uncaught exception, stream ended without `turn.completed`,
   unhandled rejection)
 
-If **neither** marker is present and the worker's pid is no longer alive,
-the turn is considered **abandoned** (worker crashed before the catch-all
-fired). `chat.ts status` reports this as `state: "abandoned"`.
+If **neither** marker is present, the turn is past its ~10s startup grace, and
+the worker's pid is no longer alive, the turn is considered **abandoned**
+(worker crashed before the catch-all fired). `chat.ts status` reports this as
+`state: "abandoned"`. (The liveness check needs `kill` in `--allow-run`; see
+SKILL.md "Required deno permissions".)
 
 ## Parsing tips
 

@@ -13,7 +13,7 @@ Throughout, the deno permission set is the same:
 
 ```
 --allow-read --allow-write --allow-env=PATH,HOME,USERPROFILE \
---allow-run=<codex-path>,<deno-path> --allow-net=api.openai.com
+--allow-run=<codex-path>,<deno-path>,kill --allow-net=api.openai.com
 ```
 
 For brevity below it's abbreviated as `--allow-...`.
@@ -177,7 +177,7 @@ deno run --allow-... ~/.codex-server/lib/chat.ts new --skip-git-check --cwd /tmp
 cat ~/.codex-server/turns/<turn-id>/meta.json | jq .pid
 # Then:
 kill <pid>
-# Next `status` call reports state="abandoned".
+# Once past the ~10s startup grace, the next `status` call reports state="abandoned".
 ```
 
 ## 15. Wipe state for one turn

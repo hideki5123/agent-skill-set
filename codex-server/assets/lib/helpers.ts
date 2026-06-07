@@ -65,8 +65,14 @@ export async function pathExists(p: string): Promise<boolean> {
 }
 
 export async function isProcessAlive(pid: number): Promise<boolean> {
+  // Reject non-positive pids. `kill -0 0` targets the *caller's* process group
+  // and spuriously succeeds, so pid 0 — the placeholder a turn briefly carries
+  // between fork and the worker recording its real pid — would look alive.
+  if (!Number.isInteger(pid) || pid <= 0) return false;
   // Posix-ish liveness probe: signal 0 = check only, no actual signal sent.
   // deno's Deno.kill doesn't accept 0; use Deno.Command("kill", ["-0", pid]).
+  // Requires `kill` in the caller's --allow-run (see SKILL.md "Required deno
+  // permissions"); without it this throws NotCapable and we report not-alive.
   try {
     const r = await new Deno.Command("kill", {
       args: ["-0", String(pid)],
@@ -138,6 +144,14 @@ export type TurnState =
   | "abandoned"
   | "missing";
 
+// Grace window after `started_at` during which a marker-less turn is reported
+// "running" even if its pid can't yet be confirmed alive. `new`/`continue`
+// create the turn-dir and fork the worker detached; the worker records its real
+// pid and begins streaming a beat later. Without this window a poll landing in
+// that gap would see no marker and a not-yet-live pid and wrongly say
+// "abandoned" — the bug this guards against.
+const STARTUP_GRACE_MS = 10_000;
+
 export async function turnState(turnId: string): Promise<TurnState> {
   const dir = turnDir(turnId);
   if (!(await pathExists(dir))) return "missing";
@@ -145,6 +159,10 @@ export async function turnState(turnId: string): Promise<TurnState> {
   if (await pathExists(join(dir, "error"))) return "failed";
   const meta = await readTurnMeta(turnId);
   if (!meta) return "missing";
+  const startedMs = Date.parse(meta.started_at);
+  if (Number.isFinite(startedMs) && Date.now() - startedMs < STARTUP_GRACE_MS) {
+    return "running";
+  }
   if (await isProcessAlive(meta.pid)) return "running";
   return "abandoned";
 }
