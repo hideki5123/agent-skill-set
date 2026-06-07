@@ -28,27 +28,50 @@ consult its SKILL.md.
 ## Invocation pattern
 
 Per codex-server's contract, each `chat.ts` call runs through deno with scoped
-flags. The codex binary path for `--allow-run` is pinned in
-`~/.codex-server/config.json`.
+flags. **`--allow-run` must permit BOTH the codex binary AND deno itself**:
+`new`/`continue` fork a *detached deno worker* (the decoupled-async design), and
+that worker in turn spawns codex. The codex path is pinned in
+`~/.codex-server/config.json`; the deno path is `command -v deno`. (codex-server's
+own SKILL.md under-documents this as codex-path-only — the authoritative form is in
+the header of `chat.ts`: `--allow-run=<codex-path>,<deno-path>`. Verified by smoke
+test: codex-path-only fails the first `new` with `NotCapable: Requires run access
+to .../deno`.)
 
 ```bash
+CODEX="$(deno eval 'console.log(JSON.parse(Deno.readTextFileSync(Deno.env.get("HOME")+"/.codex-server/config.json")).codexPath)')"
+DENO="$(command -v deno)"
+
 # Round 1 — open the thread, request a structured verdict.
 deno run --allow-read --allow-write \
   --allow-env=PATH,HOME,USERPROFILE \
-  --allow-run="$(deno eval 'console.log(JSON.parse(Deno.readTextFileSync(Deno.env.get("HOME")+"/.codex-server/config.json")).codexPath)')" \
+  --allow-run="$CODEX,$DENO" \
   --allow-net=api.openai.com \
   ~/.codex-server/lib/chat.ts new "<review request + PRD body>" \
   --schema <verdict-schema.json> --cwd <project> --skip-git-check
 # → returns {turn_id, out_path} in <1s. A detached worker runs the turn.
 
 # Later rounds — same thread, send changelog + revised PRD.
-… ~/.codex-server/lib/chat.ts continue --last "<changelog + revised PRD>" --schema <verdict-schema.json>
+… --allow-run="$CODEX,$DENO" … ~/.codex-server/lib/chat.ts continue --last "<changelog + revised PRD>" --schema <verdict-schema.json>
 ```
 
-Wait for completion by Monitoring `out_path` until the `done` marker appears, then
-read `out.txt` (with `--schema`, it is the structured JSON verdict). The blocking
-alternative is `chat.ts wait <turn-id>`; if it may exceed 2 min, run it in the
-background and Monitor the output file (same as any streaming command).
+> Shell note: pass `--allow-run="$CODEX,$DENO"` as one quoted token. Do not collapse
+> the whole deno flag list into a single unquoted variable — zsh does not word-split
+> it, and deno will reject it as one argument.
+
+**Source of truth = the `done` / `error` marker files + `out.txt`.** Detect
+completion by Monitoring the turn dir for the `done` marker (success) or `error`
+marker (failure); then read `out.txt` — with `--schema` it is the structured JSON
+verdict. Parse that JSON; do not scrape prose.
+
+> **Do not trust `chat.ts wait`'s exit code right after `new`.** codex-server's
+> `turnState` classifies a turn as `abandoned` when there is no marker yet and the
+> recorded pid is not alive — but `new` writes `pid: 0` and the worker records its
+> real pid a beat later, so a poll in that startup gap returns `abandoned` even
+> though the turn then completes normally (confirmed by smoke test: `wait` reported
+> `abandoned` while the `done` marker + a valid verdict appeared seconds later). If
+> you use `wait` and it reports `abandoned`/`failed`, **re-check the `done` marker
+> and `out.txt` before treating it as a real failure.** Prefer marker-based
+> detection over `wait`.
 
 ## Verdict schema
 
