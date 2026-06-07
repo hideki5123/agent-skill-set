@@ -1,0 +1,13 @@
+{
+  "name": "prd-council",
+  "version": "1.0.0",
+  "description": "Turn a feature idea into an execution-ready document set through an adversarial PRD \"council\": grill the user for requirements, draft a PRD, then debate it with OpenAI Codex round-by-round until BOTH ",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "prd-council"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}
