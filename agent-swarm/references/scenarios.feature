@@ -16,6 +16,18 @@ Feature: Agent Swarm orchestration and consistency observation
     Then it starts the server in the background
     And tells the user MCP loads at session start so they must open a new session and re-run
 
+  Scenario: Orchestrator auto-loops the observe cycle
+    Given the user runs /agent-swarm in orchestrator mode
+    When the first observe cycle completes
+    Then the skill starts a recurring watch via the /loop skill at the interval
+         from the args (default 30s) without the user invoking /loop
+    And it stops scheduling when the user says stop or all tasks are done and acked
+
+  Scenario: Disable auto-loop
+    Given the user runs /agent-swarm orchestrator off
+    When orchestrator mode initializes
+    Then auto-looping is skipped and observe cycles are run manually
+
   Scenario: Join as a worker
     Given the orchestrator has assigned a task to this session
     When /agent-swarm worker <name> <task> runs

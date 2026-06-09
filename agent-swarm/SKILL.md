@@ -1,6 +1,6 @@
 ---
 name: agent-swarm
-description: Orchestrate multiple coding-agent sessions (Claude Code, Codex, Gemini) over the mcp_agent_mail MCP server, observe their progress, and prevent inconsistencies (file/edit conflicts and contradictory decisions) between concurrent tasks. Auto-manages the agent-mail server, derives the shared room key from the git repo, and runs either as the orchestrator/observer or as a participating worker. Handles the operational details (server startup, room key, reservation conventions) so the user does not have to remember them. Use when coordinating several agent sessions on different tasks at once, watching a swarm of sessions for conflicts, or wiring already-running sessions into a shared coordination room. Trigger phrases: "agent-swarm", "/agent-swarm", "orchestrate agents", "orchestrate multiple claude sessions", "coordinate sessions", "watch for conflicts between agents", "observe the swarm", "prevent inconsistency between sessions", "multi-agent observe", "複数セッションを協調", "エージェント協調", "セッション間の不整合監視", "スウォーム監視", "複数のClaudeを束ねて".
+description: Orchestrate multiple coding-agent sessions (Claude Code, Codex, Gemini) over the mcp_agent_mail MCP server, observe their progress on a recurring auto-loop, and prevent inconsistencies (file/edit conflicts and contradictory decisions) between concurrent tasks. Auto-manages the agent-mail server, derives the shared room key from the git repo, and runs either as the orchestrator/observer or as a participating worker. Handles the operational details (server startup, room key, reservation conventions) so the user does not have to remember them. Use when coordinating several agent sessions on different tasks at once, watching a swarm of sessions for conflicts, or wiring already-running sessions into a shared coordination room. Trigger phrases: "agent-swarm", "/agent-swarm", "orchestrate agents", "orchestrate multiple claude sessions", "coordinate sessions", "watch for conflicts between agents", "observe the swarm", "prevent inconsistency between sessions", "multi-agent observe", "複数セッションを協調", "エージェント協調", "セッション間の不整合監視", "スウォーム監視", "複数のClaudeを束ねて".
 ---
 
 # Agent Swarm
@@ -57,6 +57,9 @@ git worktrees give physical isolation as a backstop.
 - Otherwise read `resource://agents/{project_key}` and ask the user once: run as
   the orchestrator/observer, or join as a worker? Default to orchestrator when no
   agents are registered yet.
+- An interval token in the args (e.g. `30s`, `60s`, `2m`) sets the orchestrator
+  observe cadence; default `30s`. `off` disables auto-looping (manual cycles
+  only). The interval is ignored in worker mode.
 
 ## Orchestrator mode
 
@@ -77,7 +80,7 @@ git worktrees give physical isolation as a backstop.
    if a reservation is blocked or overlaps, do not edit — message the
    orchestrator." Shared-contract files (types, API schemas, migrations, config,
    shared modules) belong to no one by default and require orchestrator approval.
-4. **Observe loop** (run each turn, or drive it with `/loop`):
+4. **One observe cycle** — the steps below; Step 7 makes this recur automatically:
    - `fetch_inbox(project_key, "orchestrator", unread_only=true)` — deltas only;
      re-fetch with `include_bodies=true` only for messages that need a decision.
    - Read `resource://tooling/locks` (all active reservations) and flag: two
@@ -97,6 +100,15 @@ git worktrees give physical isolation as a backstop.
    contracts through a single worker while others wait. After resolution, send
    the release, and `force_release_file_reservation` any dead reservation.
 6. **Never edit code** — this session coordinates and observes only.
+7. **Run continuously (auto-loop)** — after the first cycle, start the recurring
+   watch yourself; do not make the user run `/loop` manually. Invoke the `/loop`
+   skill with the chosen interval and an observe-cycle prompt, e.g.
+   `/loop 30s run one agent-swarm observe cycle: fetch unread inbox, read
+   resource://tooling/locks and resource://tooling/recent/600, update the status
+   table, and intervene on any conflict per the playbook`. Use the interval from
+   the args (default `30s`). If the args say `off`, skip auto-looping and run
+   cycles manually instead. The loop ends when the user says stop or when all
+   tasks are completed and acknowledged — say so and stop scheduling.
 
 Read `references/playbook.md` for the conflict taxonomy, the full intervention
 protocol, token-discipline rules, and the ready-to-paste worker join prompt.
@@ -134,8 +146,11 @@ sessions.
 
 ## Observe cadence and token discipline
 
-- MCP is pull-based: cadence = effective latency. For near-real-time watching,
-  run this session with `/loop 30s run one observe cycle`.
+- MCP is pull-based: cadence = effective latency. The orchestrator starts its
+  own recurring watch (orchestrator mode Step 7) via the `/loop` skill at the
+  interval from the args (default `30s`) — the user does not invoke `/loop`
+  manually. Pass `off` to run cycles by hand instead, or a larger interval
+  (`2m`, `5m`) for calmer watching.
 - Prefer read-only `resource://...` views and `unread_only=true`; condense long
   threads with `summarize_thread`; pull full bodies only when a decision needs
   them; pass large diffs/logs as file paths or git commits, never inline.

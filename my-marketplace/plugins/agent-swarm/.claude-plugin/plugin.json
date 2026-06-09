@@ -1,7 +1,7 @@
 {
   "name": "agent-swarm",
   "version": "1.0.0",
-  "description": "Orchestrate multiple coding-agent sessions (Claude Code, Codex, Gemini) over the mcp_agent_mail MCP server, observe their progress, and prevent inconsistencies (file/edit conflicts and contradictory d",
+  "description": "Orchestrate multiple coding-agent sessions (Claude Code, Codex, Gemini) over the mcp_agent_mail MCP server, observe their progress on a recurring auto-loop, and prevent inconsistencies (file/edit conf",
   "author": {
     "name": "Hideki"
   },
