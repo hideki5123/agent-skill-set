@@ -1,0 +1,20 @@
+{
+  "name": "hideki-plugins",
+  "owner": {
+    "name": "Hideki"
+  },
+  "metadata": {
+    "description": "Custom Claude Code plugins by Hideki"
+  },
+  "plugins": [
+    {
+      "name": "grill-to-impl",
+      "source": {
+        "type": "local",
+        "path": "."
+      },
+      "description": "Turn a finished grill-me (or any design-finalizing) session into a running implementation kickoff. Synthesizes the session's shared understanding into a self-contained implementation brief, hardens it",
+      "version": "1.0.0"
+    }
+  ]
+}

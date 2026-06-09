@@ -1,0 +1,13 @@
+{
+  "name": "grill-to-impl",
+  "version": "1.0.0",
+  "description": "Turn a finished grill-me (or any design-finalizing) session into a running implementation kickoff. Synthesizes the session's shared understanding into a self-contained implementation brief, hardens it",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "grill-to-impl"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}
