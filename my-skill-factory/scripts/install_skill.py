@@ -56,11 +56,36 @@ MARKETPLACE_NAME = "hideki-plugins"
 
 
 def strip_comments(text: str) -> str:
-    # Remove // comments
-    text = re.sub(r'//.*', '', text)
-    # Remove /* */ comments (not handling nested or string-embedded specifically but good enough for config)
-    text = re.sub(r'/\*[\s\S]*?\*/', '', text)
-    return text
+    # Remove // line comments and /* */ block comments, but NOT when they appear
+    # inside a JSON string — e.g. the // in an "http://..." URL must survive.
+    # String-aware scan (honors backslash escapes); preserves newlines so line
+    # numbers in any parse error still match the source.
+    out = []
+    i, n = 0, len(text)
+    in_str = False
+    while i < n:
+        c = text[i]
+        if in_str:
+            out.append(c)
+            if c == '\\' and i + 1 < n:
+                out.append(text[i + 1]); i += 2; continue
+            if c == '"':
+                in_str = False
+            i += 1; continue
+        if c == '"':
+            in_str = True; out.append(c); i += 1; continue
+        if c == '/' and i + 1 < n and text[i + 1] == '/':
+            j = i + 2
+            while j < n and text[j] != '\n':
+                j += 1
+            i = j; continue
+        if c == '/' and i + 1 < n and text[i + 1] == '*':
+            j = i + 2
+            while j + 1 < n and not (text[j] == '*' and text[j + 1] == '/'):
+                j += 1
+            i = j + 2; continue
+        out.append(c); i += 1
+    return ''.join(out)
 
 def read_json(path: Path) -> dict:
     text = path.read_text(encoding="utf-8")
