@@ -2,6 +2,16 @@
 
 <!-- Append new entries at the top. Do not edit previous entries. -->
 
+## 2026-06-09T14:27:43Z
+- **Skill Version**: 1.1.0
+- **Task**: create grill-to-impl skill (grill→brief→codex-server review loop→claude-bg prd-council launch)
+- **Outcome**: success
+- **Rating**: 5/5
+- **Corrections**: none — design converged via grill-me-style interview; the user's free-text answers redefined the spawn mechanism to the ccb/claude-bg background remote-control launcher (emulated on PATH, not hardcoded).
+- **Issues**: install_skill.py `strip_comments` used `re.sub(r'//.*','')`, which also stripped the `//` inside an `"http://..."` mcp-server URL in the user's settings.json — corrupting it and crashing the "enable in settings.json" step on round 1. Fixed with a string-aware comment scanner (commit 4e47c4e). Lesson: naive `//` comment stripping breaks any JSONC config containing URL string values; read_json now skips comments only outside strings.
+- **User Note**: —
+---
+
 ## 2026-05-12T04:10:00Z (smoke-test follow-up to the codex-server creation)
 - **Skill Version**: (factory v current)
 - **Task**: end-to-end smoke test of codex-server v1.0.0 (user request: "実際に使ってテストして")
