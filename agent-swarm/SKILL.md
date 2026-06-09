@@ -60,9 +60,13 @@ git worktrees give physical isolation as a backstop.
 
 ## Orchestrator mode
 
-1. **Register**: `register_agent(project_key, program="claude-code",
-   model=<this model id>, name="orchestrator", task_description="orchestration + consistency watch")`.
-   Keep the returned `registration_token` for later calls.
+1. **Register**: ensure the room exists first, then register. Call
+   `ensure_project(project_key)`, then `register_agent(project_key,
+   program="claude-code", model=<this model id>, name="orchestrator",
+   task_description="orchestration + consistency watch")` — or equivalently
+   `macro_start_session` with no reservation paths, which ensures the project,
+   registers, and returns the first inbox snapshot in one call. Keep the
+   returned `registration_token` for later calls.
 2. **Build the roster**: read `resource://agents/{project_key}`; `whois` each
    worker for its program/model/task. Maintain an internal map of
    task → owner agent → owned file paths, with **non-overlapping** path sets.
