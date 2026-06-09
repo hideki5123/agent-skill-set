@@ -253,6 +253,11 @@
       "name": "grill-to-impl",
       "source": "./plugins/grill-to-impl",
       "description": "Turn a finished grill-me (or any design-finalizing) session into a running implementation kickoff. Synthesizes the session's shared understanding into a self-contained implementation brief, hardens it"
+    },
+    {
+      "name": "agent-swarm",
+      "source": "./plugins/agent-swarm",
+      "description": "Orchestrate multiple coding-agent sessions (Claude Code, Codex, Gemini) over the mcp_agent_mail MCP server, observe their progress, and prevent inconsistencies (file/edit conflicts and contradictory d"
     }
   ]
 }
