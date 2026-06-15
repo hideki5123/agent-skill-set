@@ -257,7 +257,7 @@
     {
       "name": "chrome-use",
       "source": "./plugins/chrome-use",
-      "description": "Drive the user's already-running, LOGGED-IN Chrome via the Chrome DevTools Protocol (chrome-devtools-mcp --autoConnect) ON DEMAND — navigate, read page content, run JS, take a11y snapshots, click/fill"
+      "description": "Drive an already-running, LOGGED-IN Chromium browser on macOS via AppleScript — navigate, click, fill forms, scroll, and extract page content from the user's REAL session, with the browser left open a"
     }
   ]
 }
