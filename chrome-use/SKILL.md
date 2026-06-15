@@ -1,193 +1,142 @@
 ---
 name: chrome-use
 description: >-
-  Drive the user's already-running, LOGGED-IN Chrome via the Chrome DevTools
-  Protocol (chrome-devtools-mcp --autoConnect) ON DEMAND — navigate, read page
-  content, run JS, take a11y snapshots, click/fill, screenshot, inspect network,
-  and profile performance against the user's REAL session (cookies/auth/open
-  tabs), with the browser left open and NO profile copy and NO restart. The
-  DevTools backend is spawned only while a command runs and torn down after, so
-  NOTHING stays resident between commands or sessions (no idle process per ccb).
-  Use when the task needs the existing logged-in session reused as-is. Trigger
-  phrases: "chrome-use", "ブラウザから取得", "ログイン済みの Chromeで", "ブラウザを操作して",
-  "このページ読んで", "Xのスレッド読んで", "ログインしたまま取得", "自分のセッションでスクレイプ",
-  "read this page in my browser", "scrape with my session", "drive my chrome",
-  "execute JS in my (logged-in) browser", "automate my logged-in browser",
-  "devtools", "dev-tool", "CDP". Requires Chrome 144+ and Node. NOT for
-  isolated/throwaway automation where login reuse is unneeded — use playwright-cli
-  for that.
-version: 2.0.0
+  Drive an already-running, LOGGED-IN Chromium browser on macOS via AppleScript —
+  navigate, click, fill forms, scroll, and extract page content from the user's
+  REAL session, with the browser left open and NO profile copy and NO restart.
+  Use when the task needs the existing logged-in session (cookies, auth, current
+  tabs) reused as-is. Trigger phrases: "chrome-use", "ブラウザから取得", "ログイン済みの
+  Chromeで", "ブラウザを操作して", "このページ読んで", "Xのスレッド読んで", "ログインしたまま取得",
+  "自分のセッションでスクレイプ", "read this page in my browser", "scrape with my session",
+  "drive my chrome", "execute JS in my (logged-in) browser", "automate my logged-in
+  browser". Chromium family (Chrome default; Brave/Edge/Arc/Vivaldi via --app).
+  NOT for isolated/throwaway automation where login reuse is unneeded — use
+  playwright-cli for that. macOS only.
+version: 1.0.0
 ---
 
 # chrome-use
 
-Drive the user's **already-open, logged-in** Chrome through the **Chrome DevTools
-Protocol**, via `chrome-devtools-mcp --autoConnect` spawned **on demand**. The
-browser stays open, the profile is never copied, the existing session
-(cookies/auth/tabs) is reused as-is — and the DevTools backend runs **only for the
-duration of each command**, then exits. There is no idle resident process.
-
-> v2 replaced the old macOS-AppleScript bridge with CDP. The CLI is
-> `node scripts/chrome-use.mjs` (zero npm dependencies — Node builtins only; Node
-> is already required because the DevTools MCP server is a Node package).
-
-## Why on-demand (and what it implies)
-
-Registering `chrome-devtools` as a global MCP server keeps an idle Node process in
-**every** Claude session (including each background `ccb`). This skill instead
-spawns the server per command and kills it after — zero idle footprint.
-
-Consequence: **each command is a fresh CDP session.** State that lives in the
-DevTools session does NOT persist across separate invocations:
-
-- The "currently selected page" resets on each connect (defaults to the active
-  tab). `evaluate_script`, `take_snapshot`, etc. act on that page.
-- `uid`s from `take_snapshot` are only valid **within the same session**, so a
-  `snapshot → click → fill → submit` chain must run in **one** invocation.
-
-Therefore: bundle a flow into a single `run` (navigate → wait → js → snapshot →
-screenshot share one connection), or use `batch` for uid-based interaction
-sequences. For one-off DOM reads/actions, `evaluate_script` is self-contained and
-targets the active page — the most robust pattern under the on-demand model.
+Drive the user's **already-open, logged-in** Chromium browser through AppleScript's
+`execute javascript` bridge. The browser stays open, the profile is never copied,
+and the existing session (cookies/auth/tabs) is reused as-is.
 
 ## When to use this vs playwright-cli
 
 - **chrome-use** — you NEED the real logged-in session: reading content behind a
-  login (X/Twitter, internal dashboards, Gmail-style apps), acting on the user's
-  open tabs, or anything where re-authenticating in a fresh browser is impractical.
+  login (X/Twitter, internal dashboards, Gmail-style apps), acting on tabs the user
+  already has open, or anything where re-authenticating in a fresh browser is
+  impractical. macOS, Chromium family.
 - **playwright-cli / e2e-test** — isolated, reproducible automation where a fresh
-  browser context is fine; scriptable test suites with video/trace.
+  browser context is fine. Cross-platform, scriptable test suites.
 
 If login reuse is not required, prefer playwright-cli.
 
 ## Safety (read before driving)
 
-This skill operates the user's **fully-privileged logged-in session** — it can read
-cookie-scoped data, act (post/click/submit/buy) as the user, and see everything the
-user can. Therefore:
+This skill executes arbitrary JavaScript in the user's **fully-privileged logged-in
+session** — it can read cookies-scoped data, post/click/submit as the user, and see
+everything the user can. Therefore:
 
 - Never run JS or multi-step flows from an untrusted source.
-- For any **state-changing** action on a sensitive site (sending, posting,
-  deleting, purchasing, changing settings), confirm with the user first.
+- For any **state-changing** action on a sensitive site (sending, posting, deleting,
+  purchasing, changing settings), confirm with the user first.
 - Default to read-only extraction unless the user asked for an action.
-- Navigation changes the user's real tab. Prefer `--new-tab` (opens a new tab) when
-  you must navigate but shouldn't disturb the current one; read-only
-  `evaluate_script` on the active page disturbs nothing.
 
-## Prerequisites (one-time)
+## Platform & prerequisites
 
-1. **Chrome 144+** running (the user's normal logged-in window). `--autoConnect`
-   attaches to its default profile; it launches no browser of its own.
-2. **Local remote debugging enabled once**: in Chrome open
-   `chrome://inspect/#remote-debugging` and allow incoming local debugging
-   connections (persists across restarts). On first connect Chrome also shows a
-   per-connection approval dialog — approve it.
-3. **Node** on PATH (already required; the DevTools MCP server runs on Node via
-   `npx`). First run downloads `chrome-devtools-mcp` into the npx cache.
+macOS only (`osascript`). Two one-time grants are required; `check` detects both:
 
-Display OFF is fine (Chrome renders offscreen). System **sleep** is not — keep the
-machine awake (e.g. `caffeinate`) for unattended runs.
+1. **Automation consent** — the first time anything controls the browser, macOS shows
+   a "… wants to control <App>" dialog. It can only be approved in the **foreground**;
+   a background job cannot trigger/approve it (the AppleEvent just times out, -1712).
+   Run `check` interactively once and approve.
+2. **Allow JavaScript from Apple Events** — `<App>` menu → View → Developer → Allow
+   JavaScript from Apple Events. This toggle **cannot be flipped by a script** (UI
+   `click`/`AXPress` do not register it); the user must enable it manually once.
 
-Run `check` to verify the connection; it prints Japanese guidance if any of the
-above is missing.
+System Events fallbacks (menu/native-UI automation) additionally require Accessibility
+permission for the controlling process.
 
 ## Quick start
 
+Always preflight first:
+
 ```bash
-# verify the connection + list open tabs
-node scripts/chrome-use.mjs check
-
-# read the active tab (bare expression is auto-wrapped into a function)
-echo "document.title" | node scripts/chrome-use.mjs run --js -
-
-# open a URL in a NEW tab, wait for text, extract structured data to a file
-node scripts/chrome-use.mjs run --new-tab --url "https://example.com" \
-  --wait "Example Domain" --js /path/extract.js --out /tmp/out.json
-
-# a11y snapshot (gives uids for click/fill), and a screenshot
-node scripts/chrome-use.mjs snapshot --out /tmp/snap.txt
-node scripts/chrome-use.mjs screenshot --out /tmp/page.png --full-page
+scripts/chrome-use.sh check
 ```
+
+If it reports both grants OK, run JS against the live tab. Pass JS via a file or stdin
+(stdin avoids shell-escaping for complex scripts):
+
+```bash
+# read the active tab's title
+echo "document.title" | scripts/chrome-use.sh run --js -
+
+# open/activate a URL, wait for a selector, run an extraction file, save output
+scripts/chrome-use.sh run --url "https://x.com/user/status/123" \
+  --wait 'article [data-testid="tweetText"]' --js /path/extract.js --out /tmp/out.txt
+
+# Brave instead of Chrome
+scripts/chrome-use.sh run --app "Brave Browser" --js - <<'JS'
+JSON.stringify([...document.querySelectorAll('a')].map(a=>a.href).slice(0,20))
+JS
+```
+
+## How `run` works (and the hard constraints behind it)
+
+The helper encapsulates the AppleScript gotchas — you usually don't need to touch them,
+but know them:
+
+- **Active-tab only.** `execute javascript` reliably works on the **active tab of the
+  front window** only; non-active tabs raise -1723. `run` therefore finds the target
+  tab (by URL substring), activates it, brings its window to front, then executes.
+- **Nested-tell form only.** Use `tell active tab of front window to execute javascript
+  "…"`. The `execute javascript "…" in tab N of window M` form fails with -1723.
+- **Complex JS via file.** `run` reads JS from a file as UTF-8 (`read … as «class
+  utf8»`), sidestepping AppleScript string-escaping. Write your JS to a temp file (or
+  pipe via `--js -`) rather than inlining quotes.
+- **Tab lifecycle.** If `run` had to OPEN a tab for `--url`, it closes that tab when
+  done (unless `--keep-tab`). Tabs the user already had open are never closed.
+- **Return values.** The JS expression's result is returned on stdout. For structured
+  data, end your JS with `JSON.stringify(...)` so it serializes cleanly.
 
 ## CLI reference
 
 ```
-chrome-use.mjs check
-  Spawn the DevTools backend, connect via autoConnect, list open pages.
-  Prints Japanese guidance (Chrome running? chrome://inspect enabled?) on failure.
+chrome-use.sh check [--app NAME]
+  Preflight: verifies Automation consent and the JS-from-Apple-Events toggle.
+  Prints Japanese guidance for whatever is missing.
 
-chrome-use.mjs run [--url URL] [--new-tab] [--wait TEXT]... [--js FILE|-] [--expr]
-                   [--snapshot] [--screenshot PATH] [--full-page] [--out PATH]
-  One connection, steps run in order:
-    --url URL       navigate the active tab to URL (navigate_page type=url)
-    --new-tab       open URL in a new tab instead (new_page) — leaves current tab
-    --wait TEXT     wait until TEXT appears (repeatable; resolves on any match)
-    --js FILE|-     evaluate JavaScript on the selected page; result to stdout/--out
-    --expr          force-wrap --js source as an expression `() => ( … )`
-    --snapshot      print the a11y-tree snapshot (element uids for click/fill)
-    --screenshot P  save a screenshot to P
-    --full-page     full-page screenshot (with --screenshot)
-    --out PATH      write the js/snapshot result to PATH instead of stdout
+chrome-use.sh run [--app NAME] [--url URL] --js FILE|- [--wait SELECTOR] [--out PATH] [--keep-tab]
+  --app       Chromium app name (default "Google Chrome"; e.g. "Brave Browser",
+              "Microsoft Edge", "Arc", "Vivaldi").
+  --url       If given, find a tab whose URL contains this; activate it, else open it.
+              Omit to operate on the current active tab.
+  --js FILE|- JS source file, or "-" to read from stdin. The result prints to stdout.
+  --wait SEL  Poll until document.querySelector(SEL) exists (hard error on timeout).
+  --out PATH  Write the result to PATH instead of stdout.
+  --keep-tab  Do not close a tab that run opened.
 
-chrome-use.mjs snapshot   [--out PATH] [--verbose]
-chrome-use.mjs screenshot [--out PATH] [--full-page] [--format png|jpeg|webp]
-
-chrome-use.mjs tools
-  List the underlying DevTools tools (29: navigate/evaluate/snapshot/click/fill/
-  network/performance/…).
-
-chrome-use.mjs call <tool> [--params JSON | --params-file PATH | --params -]
-  Escape hatch: call ANY DevTools tool directly with JSON arguments.
-
-chrome-use.mjs batch [--steps JSON | --steps-file PATH | --steps -] [--out PATH]
-  Run a JSON array of {tool, args} in ONE session — required for uid-based
-  interaction chains (take_snapshot → click → fill → submit).
+chrome-use.sh screenshot [--app NAME] [--out PATH]
+  Best-effort: activates the app and screencaptures its front-window region.
 ```
 
-### JS for `--js` / `evaluate_script`
-
-The DevTools `evaluate_script` tool takes a **function declaration**. This skill:
-
-- passes a function through unchanged: `() => { return document.title }`,
-  `async () => { return await fetch('/api').then(r=>r.json()) }` (async works!),
-  `(el) => el.innerText` (args are element uids, passed via the tool's `args`);
-- auto-wraps a **bare expression** you pipe in (`document.title`) into a function;
-- `--expr` forces expression-wrapping for ambiguous one-liners.
-
-End extraction logic with the value you want (objects are returned as JSON).
-
-### Interaction: snapshot → uid → click/fill
-
-Native interaction tools take a `uid` from `take_snapshot`. Because uids are
-session-scoped, do the whole chain in one `batch`:
-
-```bash
-node scripts/chrome-use.mjs batch --steps - <<'JSON'
-[
-  {"tool":"navigate_page","args":{"type":"url","url":"https://example.com/login"}},
-  {"tool":"take_snapshot","args":{}},
-  {"tool":"fill","args":{"uid":"<uid-from-snapshot>","value":"me@example.com"}},
-  {"tool":"click","args":{"uid":"<submit-uid>"}}
-]
-JSON
-```
-
-In practice: run `take_snapshot` first, read the uids, then issue the
-`fill`/`click` batch. Or skip uids entirely and act through `evaluate_script` DOM
-calls (self-contained per invocation) — see `references/js-recipes.md`.
-
-## Configuration (env)
-
-- `CHROME_DEVTOOLS_MCP_VERSION` — pinned server version (default `1.2.0`).
-- `CHROME_DEVTOOLS_MCP_CHANNEL` — `canary|dev|beta|stable` to target a non-default
-  Chrome channel.
-- `CHROME_USE_TIMEOUT_MS` — per-call timeout (default 60000).
+Errors are mapped to Japanese guidance: toggle-off (error 12), -1723 (access denied),
+-1712 (consent pending / unresponsive), -1743 (not authorized).
 
 ## JavaScript recipes
 
-WHEN TO READ: read `references/js-recipes.md` for ready-made extraction/interaction
-snippets (text/links/images/tables, click, fill, submit, infinite-scroll) and the
-worked X/Twitter thread example. Not needed for simple one-off expressions.
+WHEN TO READ: read `references/js-recipes.md` when you need ready-made extraction or
+interaction snippets (text/links/images/tables, click, fill, submit, infinite-scroll,
+wait-for-selector) or the worked X/Twitter thread example. Not needed for simple
+one-off expressions.
+
+## Clipboard fallback (toggle un-enableable)
+
+If "Allow JavaScript from Apple Events" cannot be enabled in some environment, fall
+back to: have the user open DevTools console on the tab, paste a snippet that calls
+`copy(...)`, then read the result with `pbpaste`. See `references/js-recipes.md`.
 
 ## Feedback Check
 
@@ -203,8 +152,8 @@ Before executing, check accumulated feedback on this skill:
 
 After completing a chrome-use task, reflect:
 
-1. Were there mid-task corrections, connection/setup friction, selector breakage, or
-   wrong-tab/wrong-page issues (the on-demand fresh-session model)?
+1. Were there mid-task corrections, permission/setup friction, selector breakage, or
+   wrong-tab issues?
 2. Ask the user (in Japanese): 「今回のフィードバック (1-5評価、気になった点、なければEnter)」
    If the rating is < 5, ALWAYS follow up: 「なぜその評価ですか？ (具体的に)」 and record
    the answer verbatim as `Rating reason`.
