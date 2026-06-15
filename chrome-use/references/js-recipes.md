@@ -1,166 +1,161 @@
-# chrome-use JavaScript recipes
+# chrome-use JavaScript & interaction recipes
 
 WHEN TO READ: load this when you need ready-made extraction or interaction snippets,
-or the worked X/Twitter example. Each recipe is the JS you feed to
-`chrome-use.sh run --js -` (or save to a file and pass the path). End extraction
-snippets with a string (`JSON.stringify(...)` for structured data) so AppleScript
-returns it cleanly on stdout.
+or the worked X/Twitter example. Each JS recipe is fed to
+`node scripts/chrome-use.mjs run --js -` (or saved to a file and passed by path),
+and runs via the DevTools `evaluate_script` tool against the **active page**.
 
 ## Conventions
 
-- Results are returned as the value of the final expression. Wrap multi-statement
-  logic in an IIFE: `(function(){ ...; return X; })()`.
-- For structured output, `return JSON.stringify(obj)` and parse on the bash side.
-- Selectors with single quotes need escaping; prefer double quotes inside JS and
-  single quotes for `--wait` selectors (the helper wraps `--wait` in single quotes).
+- `evaluate_script` takes a **function**. You may hand the CLI a full function
+  (`() => { … }`, `async () => { … }`, `(el) => …`) or a **bare expression**
+  (`document.title`) — the CLI wraps a bare expression for you. Use `--expr` to
+  force expression-wrapping for ambiguous one-liners.
+- The function's return value is serialized to JSON on stdout. Return objects
+  directly — no manual `JSON.stringify` needed (though it's harmless).
+- **async works**: `async () => { const r = await fetch('/api'); return r.json(); }`
+  resolves properly (unlike the old AppleScript bridge).
+- Each invocation is a fresh CDP session on the active tab. To act on a specific
+  URL, prefix with `--url` (same `run`) so navigation + JS share one connection.
 
 ## Extraction
 
 Visible text of the page:
 
 ```js
-document.body.innerText
+() => document.body.innerText
 ```
 
 innerText of a specific selector:
 
 ```js
-(document.querySelector('main')||document.body).innerText
+() => (document.querySelector('main') || document.body).innerText
 ```
 
-All links (href + text), as JSON:
+All links (href + text):
 
 ```js
-JSON.stringify([...document.querySelectorAll('a[href]')].map(a=>({href:a.href,text:a.innerText.trim()})))
+() => [...document.querySelectorAll('a[href]')].map(a => ({ href: a.href, text: a.innerText.trim() }))
 ```
 
 All image URLs:
 
 ```js
-JSON.stringify([...document.images].map(i=>i.currentSrc||i.src).filter(Boolean))
+() => [...document.images].map(i => i.currentSrc || i.src).filter(Boolean)
 ```
 
 A table to rows:
 
 ```js
-JSON.stringify([...document.querySelectorAll('table tr')].map(tr=>[...tr.children].map(td=>td.innerText.trim())))
+() => [...document.querySelectorAll('table tr')].map(tr => [...tr.children].map(td => td.innerText.trim()))
 ```
 
 Page metadata:
 
 ```js
-JSON.stringify({title:document.title,url:location.href,desc:(document.querySelector('meta[name=description]')||{}).content||''})
+() => ({ title: document.title, url: location.href, desc: (document.querySelector('meta[name=description]') || {}).content || '' })
 ```
 
-## Interaction
+## Interaction — two ways
+
+### A) DOM via evaluate_script (self-contained, no uid)
+
+Best under the on-demand model: each call is independent and targets the active
+page. Use for clicks/fills that you can express as DOM operations.
 
 Click the first element matching a selector:
 
 ```js
-(function(){var e=document.querySelector('button[type=submit]');if(!e)return 'not found';e.click();return 'clicked';})()
+() => { const e = document.querySelector('button[type=submit]'); if (!e) return 'not found'; e.click(); return 'clicked'; }
 ```
 
-Set an input value and fire events React/Vue listen for:
+Set an input value and fire the events React/Vue listen for:
 
 ```js
-(function(){var el=document.querySelector('input[name=q]');if(!el)return 'no input';
-var set=Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype,'value').set;
-set.call(el,'hello world');
-el.dispatchEvent(new Event('input',{bubbles:true}));
-el.dispatchEvent(new Event('change',{bubbles:true}));
-return el.value;})()
+() => {
+  const el = document.querySelector('input[name=q]'); if (!el) return 'no input';
+  const set = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value').set;
+  set.call(el, 'hello world');
+  el.dispatchEvent(new Event('input', { bubbles: true }));
+  el.dispatchEvent(new Event('change', { bubbles: true }));
+  return el.value;
+}
 ```
 
 Submit a form:
 
 ```js
-(function(){var f=document.querySelector('form');if(!f)return 'no form';f.requestSubmit?f.requestSubmit():f.submit();return 'submitted';})()
+() => { const f = document.querySelector('form'); if (!f) return 'no form'; f.requestSubmit ? f.requestSubmit() : f.submit(); return 'submitted'; }
 ```
 
-Select an option:
+Scroll to the bottom (call repeatedly to lazy-load):
 
 ```js
-(function(){var s=document.querySelector('select#country');if(!s)return 'no select';
-s.value='JP';s.dispatchEvent(new Event('change',{bubbles:true}));return s.value;})()
+() => { window.scrollTo(0, document.body.scrollHeight); return document.body.scrollHeight; }
 ```
 
-Scroll to the bottom once (call repeatedly between runs to lazy-load):
+### B) Native tools via batch (uid-based, one session)
 
-```js
-(function(){window.scrollTo(0,document.body.scrollHeight);return document.body.scrollHeight;})()
+When you want the DevTools-native `click`/`fill`/`fill_form` (robust hit-testing,
+real input events), drive them with uids from `take_snapshot` — all in one `batch`
+so the uids stay valid:
+
+```bash
+node scripts/chrome-use.mjs batch --steps - <<'JSON'
+[
+  {"tool":"navigate_page","args":{"type":"url","url":"https://example.com/login"}},
+  {"tool":"take_snapshot","args":{}}
+]
+JSON
+# read the uids from the snapshot, then:
+node scripts/chrome-use.mjs batch --steps - <<'JSON'
+[
+  {"tool":"fill_form","args":{"elements":[{"uid":"<user-uid>","value":"me@example.com"},{"uid":"<pass-uid>","value":"…"}]}},
+  {"tool":"click","args":{"uid":"<submit-uid>"}}
+]
+JSON
 ```
 
-Wait-for-selector inside one run (returns when present or after ~maxMs):
+`fill_form` fills multiple fields in one call — prefer it over several `fill`/`click`.
 
-```js
-// prefer the helper's --wait flag; use this only when you need it inline
-(async function(){var sel='[data-testid="cellInnerDiv"]';for(var i=0;i<30;i++){if(document.querySelector(sel))return 'present';await new Promise(r=>setTimeout(r,300));}return 'timeout';})()
-```
-
-Note: Chromium's `execute javascript` returns the value synchronously; an async/Promise
-result may come back as `[object Promise]`. For awaited results, keep the wait loop in
-AppleScript (the `--wait` flag) rather than in JS, or poll across multiple `run` calls.
-
-## Infinite-scroll collection pattern (across multiple runs)
+## Infinite-scroll collection (across runs)
 
 1. `run --js -` with the extraction snippet to grab what's currently rendered.
 2. `run --js -` with the scroll snippet.
-3. Repeat 1-2 until the count stops growing or you have enough; dedupe in bash.
+3. Repeat 1–2 until the count stops growing; dedupe in your own logic.
 
-This avoids long-running async JS and keeps each `run` fast and observable.
+Keep the active tab on the target page between calls (each invocation reconnects to
+the active tab). For a long single flow, prefer one `batch` with repeated
+`evaluate_script` steps so it shares a session.
 
 ## Worked example: X/Twitter thread extraction
 
-The example that motivated this skill. Save as a file and run with `--url` + `--wait`:
+Save as a file and run with `--url` + `--wait`:
 
 ```js
-(function(){
-  var arts=[].slice.call(document.querySelectorAll('article'));
-  return arts.map(function(a,i){
-    var who=(a.querySelector('[data-testid="User-Name"]')||{}).innerText||'';
-    who=who.replace(/\n+/g,' ').trim();
-    var tEl=a.querySelector('[data-testid="tweetText"]');
-    var t=tEl?tEl.innerText:'';
-    var timeEl=a.querySelector('time');
-    var tm=timeEl?(timeEl.getAttribute('datetime')||''):'';
-    var imgs=[].slice.call(a.querySelectorAll('[data-testid="tweetPhoto"] img'))
-      .map(function(im){return im.src;}).join(' , ');
-    return '=== ARTICLE '+(i+1)+' ===\n'+who+'\n'+tm+(imgs?('\nIMAGES: '+imgs):'')+'\n\n'+t;
-  }).join('\n\n##########\n\n');
-})();
+() => {
+  const arts = [...document.querySelectorAll('article')];
+  return arts.map((a, i) => {
+    let who = (a.querySelector('[data-testid="User-Name"]') || {}).innerText || '';
+    who = who.replace(/\n+/g, ' ').trim();
+    const t = (a.querySelector('[data-testid="tweetText"]') || {}).innerText || '';
+    const tm = (a.querySelector('time') || {}).getAttribute?.('datetime') || '';
+    const imgs = [...a.querySelectorAll('[data-testid="tweetPhoto"] img')].map(im => im.src);
+    return { i: i + 1, who, tm, imgs, text: t };
+  });
+}
 ```
 
 Invocation:
 
 ```bash
-scripts/chrome-use.sh run \
-  --url "x.com/USER/status/ID" \
-  --wait 'article [data-testid="tweetText"]' \
-  --js /path/to/xtweet.js
+node scripts/chrome-use.mjs run \
+  --url "https://x.com/USER/status/ID" \
+  --wait 'tweetText' --wait '@' \
+  --js /path/to/xtweet.js --out /tmp/thread.json
 ```
 
 Scroll first (repeat the scroll recipe) to pull in more of a long thread before
-extracting. This is an *example application of the generic recipes*, not a maintained
-site-specific extractor — X's DOM (`data-testid` values) changes over time; adjust
-selectors if it breaks.
-
-## Clipboard fallback (when the JS-from-Apple-Events toggle is unavailable)
-
-If the toggle truly cannot be enabled, drive extraction through the DevTools console
-instead and read the clipboard:
-
-1. Ask the user to open the target tab and DevTools console (Cmd+Option+J).
-2. Have them paste a snippet ending in `copy(...)`, e.g.:
-
-   ```js
-   copy([...document.querySelectorAll('article')].map(a=>{
-     var w=(a.querySelector('[data-testid="User-Name"]')||{}).innerText||'';
-     var t=(a.querySelector('[data-testid="tweetText"]')||{}).innerText||'';
-     return w.replace(/\n+/g,' ')+'\n'+t;
-   }).filter(x=>x.trim()).join('\n\n----\n\n'))
-   ```
-
-3. Read it on the bash side: `pbpaste`.
-
-`copy()` is a DevTools console helper and is reliable regardless of the AppleScript
-toggle.
+extracting. This is an *example application of the generic recipes*, not a
+maintained site-specific extractor — X's DOM (`data-testid` values) changes over
+time; adjust selectors if it breaks.
