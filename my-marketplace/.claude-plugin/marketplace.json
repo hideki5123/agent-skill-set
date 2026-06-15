@@ -235,11 +235,6 @@
       "description": "Tell the agent to zoom out and give broader context or a higher-level perspective. Use when you're unfamiliar with a section of code or need to understand how it fits into the bigger picture."
     },
     {
-      "name": "chrome-use",
-      "source": "./plugins/chrome-use",
-      "description": "Drive an already-running, LOGGED-IN Chromium browser on macOS via AppleScript — navigate, click, fill forms, scroll, and extract page content from the user's REAL session, with the browser left open a"
-    },
-    {
       "name": "prd-council",
       "source": "./plugins/prd-council",
       "description": "Turn a feature idea into an execution-ready document set through an adversarial PRD \"council\": grill the user for requirements, draft a PRD, then debate it with OpenAI Codex round-by-round until BOTH "
@@ -258,6 +253,11 @@
       "name": "agent-swarm",
       "source": "./plugins/agent-swarm",
       "description": "Orchestrate multiple coding-agent sessions (Claude Code, Codex, Gemini) over the mcp_agent_mail MCP server, observe their progress on a recurring auto-loop, and prevent inconsistencies (file/edit conf"
+    },
+    {
+      "name": "chrome-use",
+      "source": "./plugins/chrome-use",
+      "description": "Drive the user's already-running, LOGGED-IN Chrome via the Chrome DevTools Protocol (chrome-devtools-mcp --autoConnect) ON DEMAND — navigate, read page content, run JS, take a11y snapshots, click/fill"
     }
   ]
 }
