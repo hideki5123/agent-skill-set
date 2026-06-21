@@ -1,7 +1,7 @@
 ---
 name: self-pr-review
 description: Self-review loop for YOUR OWN PR — request AI reviews (Copilot + Gemini), apply their fixes, push, re-request, and repeat until clean. NOT for reviewing someone else's PR. Use when the user asks to self-review their PR, run the AI review loop, or wants Copilot + Gemini to review their own code. Trigger phrases include "self-review", "self-pr-review", "review my PR", "AI review my PR", "review loop", "copilot + gemini review", "run self-review on my PR".
-version: 1.1.0
+version: 1.2.0
 context: fork
 agent: general-purpose
 disable-model-invocation: true
@@ -17,7 +17,7 @@ Request AI reviews (Copilot + Gemini), apply their fixes, push, re-request revie
 - `--reviewers` — Comma-separated list of AI reviewers. Default: `copilot,gemini`. Supported: `copilot`, `gemini`.
 - `--max-iterations` — Max review-fix cycles. Default: `3`.
 - `--timeout` — Max wait time per review round in minutes. Default: `5`.
-- `--resolve` — Resolve addressed threads on GitHub after replying.
+- `--no-resolve` — Don't resolve threads. By default, every thread whose comment was *addressed* (a fix was applied and pushed) is resolved on GitHub after replying; skipped / acknowledged-without-change threads are never resolved.
 - `--no-draft` — Don't auto-create a draft PR; error if no PR exists.
 
 ### Feedback Check
@@ -35,7 +35,7 @@ If a pattern is apparent (same issue in 3+ entries, or average rating below 3):
 │   3. Wait for Reviews
 │   4. Fetch New Comments (filter already-processed)
 │   5. Process & Apply Fixes
-│   6. Commit, Push, Reply
+│   6. Commit, Push, Reply, Resolve addressed threads
 │   7. Loop Decision ──► changes made? ─── yes ──┐
 │                        no changes? ─── exit     │
 │                        max iterations? ─── exit │
@@ -334,9 +334,13 @@ if ! echo "${REPLIED_IDS[@]}" | grep -qw "$COMMENT_ID"; then
 fi
 ```
 
-### Resolve Threads (when `--resolve`)
+### Resolve Threads (default — pass `--no-resolve` to skip)
 
-Only resolve threads where the comment was actually addressed (fixed), not skipped:
+This runs by default at the end of every round, right after replying. Skip the entire step **only** when `--no-resolve` is set.
+
+Resolve **every thread whose comment was actually addressed (a fix was applied and pushed) this round** — including ones already addressed and replied to in a previous round but not yet resolved. **Never** resolve a thread for a comment that was skipped, acknowledged without a code change, or that you escalated to the user.
+
+Resolve via the thread node id, not the REST comment id. The same `reviewThreads` GraphQL query used in Step 4 to detect already-resolved/outdated threads returns each thread `id` and its first comment — match those back to the comments you fixed. (Some AI reviewers, e.g. Copilot, post under a login that only surfaces through `reviewThreads`, so thread-id resolution is the reliable path.)
 
 ```bash
 gh api graphql -f query='
@@ -349,6 +353,8 @@ gh api graphql -f query='
   }
 ' -f threadId="<thread_node_id>"
 ```
+
+Resolving is best-effort: if a `resolveReviewThread` call fails, log it and continue — a failed resolve must not abort the run or block the loop decision.
 
 ## Step 7: Loop Decision
 

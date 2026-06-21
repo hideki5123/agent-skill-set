@@ -14,7 +14,7 @@
         "path": "."
       },
       "description": "Self-review loop for YOUR OWN PR — request AI reviews (Copilot + Gemini), apply their fixes, push, re-request, and repeat until clean. NOT for reviewing someone else's PR. Use when the user asks to se",
-      "version": "1.1.0"
+      "version": "1.2.0"
     }
   ]
 }
