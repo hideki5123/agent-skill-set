@@ -1,7 +1,7 @@
 ---
 name: self-pr-review
 description: Self-review loop for YOUR OWN PR — request AI reviews (Copilot + Gemini), apply their fixes, push, re-request, and repeat until clean. NOT for reviewing someone else's PR. Use when the user asks to self-review their PR, run the AI review loop, or wants Copilot + Gemini to review their own code. Trigger phrases include "self-review", "self-pr-review", "review my PR", "AI review my PR", "review loop", "copilot + gemini review", "run self-review on my PR".
-version: 1.2.0
+version: 1.3.0
 context: fork
 agent: general-purpose
 disable-model-invocation: true
@@ -44,13 +44,33 @@ If a pattern is apparent (same issue in 3+ entries, or average rating below 3):
 
 ## Step 1: Resolve or Create PR
 
+> **Worktree / divergent-branch safety.** In a git worktree the **local**
+> branch name often differs from the **PR head ref** and from the **upstream**
+> remote branch. Two operations break when they assume those match: PR lookup by
+> current branch, and a bare `git push`. Resolve the remote branch up front and
+> use it for both:
+>
+> ```bash
+> LOCAL_BRANCH=$(git branch --show-current)
+> # The remote-tracking branch, if one is configured (e.g. origin/hideki/feat-x)
+> UPSTREAM=$(git rev-parse --abbrev-ref --symbolic-full-name @{u} 2>/dev/null)
+> # Strip the remote prefix -> the actual head branch name on the remote
+> REMOTE_BRANCH=${UPSTREAM#*/}              # falls back to "" if no upstream
+> REMOTE=${UPSTREAM%%/*}                    # e.g. "origin"; "" if no upstream
+> [ -n "$REMOTE" ] || REMOTE=origin
+> [ -n "$REMOTE_BRANCH" ] || REMOTE_BRANCH=$LOCAL_BRANCH
+> ```
+
 - If `<pr>` given → use it (`gh pr view <number>`)
-- If no `<pr>` → check for existing PR on current branch (`gh pr view`)
+- If no `<pr>` → find the PR by the **remote** head branch, not the local name:
+  `gh pr list --head "$REMOTE_BRANCH" --state open --json number --jq '.[0].number'`.
+  (Plain `gh pr view` keys off the local branch and falsely reports "no PR" when
+  the names diverge.)
 - If no PR exists and `--no-draft` is not set → create a draft PR:
 
 ```bash
 BASE=$(gh repo view --json defaultBranchRef --jq '.defaultBranchRef.name')
-BRANCH=$(git branch --show-current)
+BRANCH=$REMOTE_BRANCH   # push/create against the remote head branch name
 ```
 
   Before creating, check for a PR template in the repo:
@@ -111,19 +131,30 @@ ROUND=0
 
 Bot usernames:
 
-| Alias | GitHub Username |
-|-------|----------------|
-| `copilot` | `copilot-pull-request-reviewer[bot]` |
-| `gemini` | `gemini-code-assist[bot]` |
+| Alias | Login to **request** (`requested_reviewers`) | Login it **posts / reviews as** |
+|-------|----------------|----------------|
+| `copilot` | `copilot-pull-request-reviewer[bot]` | `Copilot` (also appears pending as `Copilot`) |
+| `gemini` | `gemini-code-assist[bot]` | `gemini-code-assist[bot]` |
+
+> **Critical — Copilot's identity is asymmetric.** You *request* it as
+> `copilot-pull-request-reviewer[bot]`, but its review comments, submitted
+> reviews, and pending-reviewer entry all use `user.login == "Copilot"`.
+> Every filter that **reads** comments / reviews / pending reviewers must match
+> **both** Copilot logins, or Copilot's feedback is silently dropped — wrong
+> comment counts in the summary, no replies posted, and mis-counted polling.
+> Only the request / re-request `POST` and `DELETE` calls use the `[bot]` handle.
 
 Before requesting, check if a reviewer has already reviewed the current HEAD commit:
 
 ```bash
 HEAD_SHA=$(gh pr view <number> --json headRefOid --jq '.headRefOid')
 
-# Check if reviewer already submitted a review on this commit
+# Check if reviewer already submitted a review on this commit.
+# Match BOTH Copilot logins on the read side.
 gh api /repos/{owner}/{repo}/pulls/{number}/reviews \
-  | jq --arg sha "$HEAD_SHA" '[.[] | select(.user.login == "copilot-pull-request-reviewer[bot]" and .commit_id == $sha)] | length'
+  | jq --arg sha "$HEAD_SHA" '[.[] | select(
+    (.user.login == "Copilot" or .user.login == "copilot-pull-request-reviewer[bot]")
+    and .commit_id == $sha)] | length'
 ```
 
 If already reviewed current HEAD, skip requesting that reviewer.
@@ -140,7 +171,14 @@ If requesting fails (403 — app not installed), warn and skip that reviewer. Co
 
 ## Step 3: Wait for Reviews
 
-Poll every 15 seconds, up to `--timeout` minutes (default 5):
+Poll every 15 seconds, up to `--timeout` minutes (default 5). The pending
+reviewer's login is matched on the **read** side, so Copilot must be matched as
+`Copilot` (its `[bot]` request handle does **not** appear here).
+
+> **The Bash tool blocks foreground `sleep`.** Run this poll loop with
+> `run_in_background: true` and read its output, rather than as a normal
+> foreground command — a foreground `sleep 15` will be rejected and the loop
+> will never wait correctly.
 
 ```bash
 ELAPSED=0
@@ -148,6 +186,7 @@ TIMEOUT_SECS=$((TIMEOUT * 60))
 while [ $ELAPSED -lt $TIMEOUT_SECS ]; do
   PENDING=$(gh api /repos/{owner}/{repo}/pulls/{number}/requested_reviewers \
     | jq '[.users[] | select(
+      .login == "Copilot" or
       .login == "copilot-pull-request-reviewer[bot]" or
       .login == "gemini-code-assist[bot]"
     )] | length')
@@ -171,7 +210,7 @@ Fetch line-level review comments. Read `references/gh-comment-api.md` for full A
 ```bash
 gh api repos/{owner}/{repo}/pulls/{number}/comments --paginate \
   | jq '[.[] | select(
-    (.user.login == "copilot-pull-request-reviewer[bot]" or .user.login == "gemini-code-assist[bot]")
+    (.user.login == "Copilot" or .user.login == "copilot-pull-request-reviewer[bot]" or .user.login == "gemini-code-assist[bot]")
     and .in_reply_to_id == null
     and (.line != null or .position != null)
   )]'
@@ -185,7 +224,7 @@ After processing root comments, also fetch reviewer replies to OUR previous repl
 gh api repos/{owner}/{repo}/pulls/{number}/comments --paginate \
   | jq --argjson ours '[<comma-separated OUR_REPLY_IDS>]' \
   '[.[] | select(
-    (.user.login == "copilot-pull-request-reviewer[bot]" or .user.login == "gemini-code-assist[bot]")
+    (.user.login == "Copilot" or .user.login == "copilot-pull-request-reviewer[bot]" or .user.login == "gemini-code-assist[bot]")
     and (.in_reply_to_id as $rid | $ours | index($rid) | . != null)
   )]'
 ```
@@ -310,8 +349,10 @@ fix: address AI review (round N) for PR #<number>
 EOF
 )"
 
-# Push
-git push
+# Push to the resolved remote head branch. A bare `git push` is rejected in a
+# worktree when the local branch name differs from the remote head branch, so
+# push HEAD explicitly to "$REMOTE_BRANCH" (resolved in Step 1).
+git push "$REMOTE" "HEAD:$REMOTE_BRANCH"
 ```
 
 Reply to each processed comment on GitHub — **one reply per comment maximum**. Before posting, check `REPLIED_IDS`: if the comment was already replied to in a previous round, skip the reply (the fix is still applied, but no duplicate notification is sent).

@@ -36,11 +36,16 @@ Paginate with `--paginate` flag in `gh api`.
 ```bash
 gh api repos/{owner}/{repo}/pulls/{number}/comments --paginate \
   | jq '[.[] | select(
-    (.user.login == "copilot-pull-request-reviewer[bot]" or .user.login == "gemini-code-assist[bot]")
+    (.user.login == "Copilot" or .user.login == "copilot-pull-request-reviewer[bot]" or .user.login == "gemini-code-assist[bot]")
     and .in_reply_to_id == null
     and (.line != null or .position != null)
   )]'
 ```
+
+> **Copilot posts as `Copilot`, not `copilot-pull-request-reviewer[bot]`.** The
+> `[bot]` handle is only what you *request*; on the read side (comments,
+> reviews, pending reviewers) Copilot's `user.login` is `Copilot`. Match both,
+> or Copilot's comments are silently dropped.
 
 This filters to:
 - Only AI reviewer comments (by username)
@@ -282,7 +287,8 @@ HEAD_SHA=$(gh pr view <number> --json headRefOid --jq '.headRefOid')
 # Check if reviewer already submitted on this specific commit
 REVIEWED=$(gh api /repos/{owner}/{repo}/pulls/{number}/reviews \
   | jq --arg sha "$HEAD_SHA" '[.[] | select(
-    .user.login == "copilot-pull-request-reviewer[bot]" and .commit_id == $sha
+    (.user.login == "Copilot" or .user.login == "copilot-pull-request-reviewer[bot]")
+    and .commit_id == $sha
   )] | length')
 
 if [ "$REVIEWED" -gt 0 ]; then
@@ -292,10 +298,10 @@ fi
 
 ## AI Reviewer Bot Usernames
 
-| Alias | GitHub Username | Notes |
-|-------|----------------|-------|
-| `copilot` | `copilot-pull-request-reviewer[bot]` | GitHub Copilot code review |
-| `gemini` | `gemini-code-assist[bot]` | Google Gemini Code Assist |
+| Alias | Request handle (`requested_reviewers`) | Login it posts/reviews as | Notes |
+|-------|----------------|----------------|-------|
+| `copilot` | `copilot-pull-request-reviewer[bot]` | `Copilot` | Asymmetric — read filters must match `Copilot`; only requests use the `[bot]` handle |
+| `gemini` | `gemini-code-assist[bot]` | `gemini-code-assist[bot]` | Same login for request and read |
 
 ## Checking Review Completion
 
@@ -312,12 +318,15 @@ gh api /repos/{owner}/{repo}/pulls/{number}/requested_reviewers \
 
 ```bash
 gh api /repos/{owner}/{repo}/pulls/{number}/reviews \
-  | jq '[.[] | select(.user.login == "copilot-pull-request-reviewer[bot]")]'
+  | jq '[.[] | select(.user.login == "Copilot" or .user.login == "copilot-pull-request-reviewer[bot]")]'
 ```
 
 A reviewer is **done** when it is no longer in `requested_reviewers` AND has at least one entry in `/reviews`.
 
 ### Polling Pattern
+
+> The Bash tool blocks foreground `sleep` — run this loop with
+> `run_in_background: true` and read its output.
 
 ```bash
 ELAPSED=0
@@ -325,6 +334,7 @@ TIMEOUT_SECS=$((TIMEOUT * 60))
 while [ $ELAPSED -lt $TIMEOUT_SECS ]; do
   PENDING=$(gh api /repos/{owner}/{repo}/pulls/{number}/requested_reviewers \
     | jq '[.users[] | select(
+      .login == "Copilot" or
       .login == "copilot-pull-request-reviewer[bot]" or
       .login == "gemini-code-assist[bot]"
     )] | length')
