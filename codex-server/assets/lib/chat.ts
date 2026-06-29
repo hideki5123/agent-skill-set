@@ -41,7 +41,7 @@ import {
   writeTurnMeta,
 } from "./helpers.ts";
 
-// Best-effort version-skew warning. The SDK (@openai/codex-sdk@^0.130.0) and
+// Best-effort version-skew warning. The SDK (@openai/codex-sdk@^0.142.4) and
 // the `codex` binary share an app-server protocol that tracks the codex minor;
 // a binary that has drifted far from the SDK's expected minor is a likely
 // cause of stream hangs. Checked at most once per 24h (stamp file) so `new`
@@ -67,7 +67,7 @@ async function maybeWarnVersionSkew(): Promise<void> {
     if (liveMinor && liveMinor !== SDK_CODEX_MINOR) {
       console.error(
         `[codex-server] version skew: codex binary is ${liveStr} but the ` +
-          `pinned SDK (@openai/codex-sdk@^0.130.0) targets the ${SDK_CODEX_MINOR}.x ` +
+          `pinned SDK (@openai/codex-sdk@^0.142.4) targets the ${SDK_CODEX_MINOR}.x ` +
           `app-server protocol. Large gaps can cause stream hangs. Run ` +
           `\`chat.ts doctor\` for detail; consider bumping the SDK pin in ` +
           `worker.ts to match the binary, or pinning codex to ${SDK_CODEX_MINOR}.x.`,

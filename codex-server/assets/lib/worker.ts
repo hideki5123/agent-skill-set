@@ -58,7 +58,8 @@ interface ThreadEvent {
     | "item.updated"
     | "item.completed"
     | "turn.completed"
-    | "turn.failed";
+    | "turn.failed"
+    | "error";
   thread_id?: string;
   item?: ThreadItem;
   usage?: {
@@ -68,6 +69,9 @@ interface ThreadEvent {
     reasoning_output_tokens?: number;
   };
   error?: { message?: string };
+  // ThreadErrorEvent (type: "error") carries its message at the top level, not
+  // under `error` — a fatal, unrecoverable stream error.
+  message?: string;
 }
 
 const args = parseArgs(Deno.args, {
@@ -155,7 +159,7 @@ try {
   // Dynamic import of the SDK. Using a dynamic import keeps the import error
   // (if any) catchable so we can still write the error marker.
   // deno-lint-ignore no-explicit-any
-  const sdk: any = await import("npm:@openai/codex-sdk@^0.130.0");
+  const sdk: any = await import("npm:@openai/codex-sdk@^0.142.4");
   const Codex = sdk.Codex;
 
   const sdkConfig: Record<string, unknown> = {
@@ -172,7 +176,14 @@ try {
 
   let thread;
   if (args["thread-id"]) {
-    thread = codex.resumeThread(args["thread-id"]);
+    // resumeThread gained a ThreadOptions arg in codex-sdk ≥0.131; passing the
+    // cwd + skip-git-check lets a resumed turn run in a non-git directory
+    // without pre-trusting it in ~/.codex/config.toml (it was ignored, and
+    // documented as unsupported, on the old 0.130 pin).
+    thread = codex.resumeThread(args["thread-id"], {
+      workingDirectory: cwd,
+      skipGitRepoCheck: !!args["skip-git-check"],
+    });
     existingMeta.resumed_from = args["thread-id"];
   } else {
     thread = codex.startThread({
@@ -281,6 +292,11 @@ try {
       await appendOut(turnId, `\n[turn.failed] ${msg}\n`);
       markerWritten = true;
       await touchMarker(turnId, "error");
+    } else if (ev.type === "error") {
+      // ThreadErrorEvent: a fatal, unrecoverable stream error. Surface it now
+      // rather than waiting for the stream to end or the watchdog to trip.
+      await failWith(`stream error: ${ev.message ?? "(no message)"}`);
+      break;
     }
   }
 

@@ -26,7 +26,7 @@ description: >
   show me what gpt thinks / structured output from gpt / json schema gpt /
   resume codex thread / continue codex conversation / continue codex session /
   /codex-server
-version: 1.1.0
+version: 1.2.0
 ---
 
 # Codex Server Skill
@@ -95,10 +95,11 @@ I/O). `wait`/`tail` treat `stalled` as non-terminal and print a one-time notice;
 `status`/`doctor` report it directly.
 
 If hangs persist, the likeliest root cause is **version skew**: the worker pins
-`@openai/codex-sdk@^0.130.0`, which expects the codex binary's `0.130.x`
+`@openai/codex-sdk@^0.142.4`, which expects the codex binary's `0.142.x`
 app-server protocol. `new`/`continue` warn (at most once per 24h) and `setup.ts`
-warns when the live `codex` binary minor has drifted. Fix at the root by bumping
-the SDK pin in `worker.ts` to track the binary, or pinning codex to `0.130.x`.
+warns when the live `codex` binary minor has drifted from `SDK_CODEX_MINOR`
+(`helpers.ts`). Fix at the root by bumping the SDK pin in `worker.ts` (and
+`SDK_CODEX_MINOR`) to track the binary, or pinning codex to that minor.
 
 ## CLI surface
 
@@ -174,7 +175,7 @@ These are intentionally out of scope for v1.0.0. Pull them in only on demand.
 - [ ] Persistent app-server (warm process) — amortize ~500ms–2 s startup per turn.
 - [ ] Per-session model upgrade detection à la openai-cli's `resolveModel.ts`. Currently defers to `~/.codex/config.toml`.
 - [ ] Raw JSON-RPC sub-mode using `codex app-server generate-ts` bindings.
-- [ ] Bump the `@openai/codex-sdk` pin (currently `^0.130.0`) to track the installed codex binary (≥ 0.142.x as of this writing). The idle watchdog now *contains* protocol-skew hangs, but aligning the SDK to the binary's app-server protocol is the root fix. Deferred pending a turn-streaming + structured-output + resume regression pass against the newer SDK. Update `SDK_CODEX_MINOR` in `helpers.ts` when done.
+- [x] ~~Bump the `@openai/codex-sdk` pin to track the installed codex binary.~~ Done in v1.2.0: pin moved `^0.130.0` → `^0.142.4`, `SDK_CODEX_MINOR` → `0.142`, `resumeThread` regained its `ThreadOptions` arg (non-git resume now works), and fatal `error` stream events are surfaced. Keep the pin and `SDK_CODEX_MINOR` in lockstep with the codex binary minor on future bumps.
 
 ## Behavior Scenarios
 
