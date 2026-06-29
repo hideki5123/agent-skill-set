@@ -14,6 +14,8 @@ import {
   configPath,
   gcOldTurns,
   loginGuide,
+  parseCodexMinor,
+  SDK_CODEX_MINOR,
   turnsDir,
   workspaceDir,
   writeConfig,
@@ -79,6 +81,20 @@ console.log(
   `[ok] codex: ${ver.out.trim() || "(version unknown)"} @ ${codexPath}`,
 );
 
+// Surface version skew between the codex binary and the SDK the worker pins.
+// They share an app-server protocol that tracks the codex minor; a large gap
+// is a likely cause of stream hangs (the watchdog will abort such turns, but
+// the underlying mismatch is worth fixing at the root).
+const liveMinor = parseCodexMinor(ver.out.trim());
+if (liveMinor && liveMinor !== SDK_CODEX_MINOR) {
+  console.log(
+    `[warn] version skew: codex binary ${liveMinor}.x vs SDK-expected ` +
+      `${SDK_CODEX_MINOR}.x (worker pins @openai/codex-sdk@^0.130.0). ` +
+      `If you hit stream hangs, bump the SDK pin in worker.ts to track the ` +
+      `binary, or pin codex to ${SDK_CODEX_MINOR}.x.`,
+  );
+}
+
 // 3. Ensure workspace dirs.
 await Deno.mkdir(workspace, { recursive: true });
 await Deno.mkdir(libDir, { recursive: true });
@@ -132,6 +148,12 @@ await writeConfig({
   setupDate: new Date().toISOString(),
 });
 console.log(`[ok] wrote ${configPath()}`);
+
+// Reset the per-`new` version-skew check stamp so the next invocation
+// re-baselines against the freshly pinned binary.
+try {
+  await Deno.remove(join(workspace, ".version-check"));
+} catch { /* absent — fine */ }
 
 // 9. Check ChatGPT login. This skill is ChatGPT-subscription-only by design —
 //    if ~/.codex/auth.json is absent, fail fast with the login guide. No

@@ -142,6 +142,7 @@ export type TurnState =
   | "complete"
   | "failed"
   | "abandoned"
+  | "stalled"
   | "missing";
 
 // Grace window after `started_at` during which a marker-less turn is reported
@@ -151,6 +152,30 @@ export type TurnState =
 // that gap would see no marker and a not-yet-live pid and wrongly say
 // "abandoned" — the bug this guards against.
 const STARTUP_GRACE_MS = 10_000;
+
+// Backstop stall threshold. MUST stay larger than the worker's default idle
+// watchdog (CODEX_SERVER_IDLE_SECS, default 180s) so a healthy worker writes
+// its own `error` marker — surfacing as `failed` — before turnState would ever
+// call a turn `stalled`. `stalled` therefore only appears when the worker is
+// alive yet its own watchdog failed to fire (e.g. wedged in uninterruptible
+// I/O, or an old worker binary without the watchdog). A worker that's quietly
+// reasoning resets this clock on every emitted event.
+const STALL_THRESHOLD_MS = 300_000;
+
+// Newest mtime across the turn's streamed outputs, in ms. null if the worker
+// has not written either file yet. Used to tell "actively streaming" from
+// "alive but wedged with no progress".
+export async function lastActivityMs(turnId: string): Promise<number | null> {
+  let newest: number | null = null;
+  for (const f of ["events.jsonl", "out.txt"]) {
+    try {
+      const st = await Deno.stat(join(turnDir(turnId), f));
+      const m = st.mtime?.getTime() ?? 0;
+      if (newest === null || m > newest) newest = m;
+    } catch { /* not present yet */ }
+  }
+  return newest;
+}
 
 export async function turnState(turnId: string): Promise<TurnState> {
   const dir = turnDir(turnId);
@@ -163,8 +188,15 @@ export async function turnState(turnId: string): Promise<TurnState> {
   if (Number.isFinite(startedMs) && Date.now() - startedMs < STARTUP_GRACE_MS) {
     return "running";
   }
-  if (await isProcessAlive(meta.pid)) return "running";
-  return "abandoned";
+  if (!(await isProcessAlive(meta.pid))) return "abandoned";
+  // Worker is alive but has written no completion marker. Distinguish a turn
+  // that is actively streaming from one wedged with no progress for a long
+  // time. Reference the newest output mtime, falling back to started_at when
+  // the worker has not emitted anything at all.
+  const act = await lastActivityMs(turnId);
+  const ref = act ?? (Number.isFinite(startedMs) ? startedMs : null);
+  if (ref !== null && Date.now() - ref > STALL_THRESHOLD_MS) return "stalled";
+  return "running";
 }
 
 export async function appendOut(turnId: string, text: string): Promise<void> {
@@ -203,6 +235,39 @@ export async function touchMarker(
   const p = join(turnDir(turnId), kind);
   const f = await Deno.open(p, { write: true, create: true });
   f.close();
+}
+
+// Append a diagnostic line to the turn's worker.log. This is how the detached
+// worker preserves *why* it failed: forkWorker discards the worker's real
+// stderr (piping it to the short-lived `new` parent would risk SIGPIPE-killing
+// the worker once the parent exits — and Deno.Command cannot redirect stdio to
+// a file directly), so the worker self-reports here instead. Best-effort: a
+// failing diagnostic write must never mask the original error.
+export async function appendDiag(turnId: string, text: string): Promise<void> {
+  try {
+    const f = await Deno.open(join(turnDir(turnId), "worker.log"), {
+      append: true,
+      create: true,
+    });
+    try {
+      await f.write(new TextEncoder().encode(text));
+    } finally {
+      f.close();
+    }
+  } catch { /* diagnostics are best-effort */ }
+}
+
+// The codex CLI minor (major.minor) the pinned SDK was built against. The
+// worker imports `@openai/codex-sdk@^0.130.0`; the SDK and the `codex` CLI ship
+// from the same monorepo in lockstep, so the binary's app-server protocol is
+// expected to track this minor. A large gap is a likely cause of stream hangs.
+export const SDK_CODEX_MINOR = "0.130";
+
+// Parse a `codex --version` string ("codex-cli 0.142.3") down to its
+// major.minor ("0.142"). Returns null when no version-looking token is found.
+export function parseCodexMinor(s: string): string | null {
+  const m = s.match(/(\d+)\.(\d+)(?:\.\d+)?/);
+  return m ? `${m[1]}.${m[2]}` : null;
 }
 
 export async function gcOldTurns(olderThanDays = 7): Promise<number> {

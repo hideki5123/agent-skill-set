@@ -10,7 +10,10 @@
 | `setup.ts`: "mise is not installed"                  | mise binary missing                              | `brew install mise` (macOS) or `curl https://mise.run \| sh` (Linux). Re-run setup.                                    |
 | `setup.ts`: "`codex` is not installed"               | codex binary missing on PATH                     | `brew install codex` or `npm install -g @openai/codex`. Re-run setup.                                                  |
 | `chat.ts new`: spawn worker fails                    | deno binary path wrong, or `--allow-run` denied  | Re-run `setup.ts` to refresh `~/.codex-server/config.json`. Ensure caller's `--allow-run` includes the deno path.      |
-| `status` reports `state: "abandoned"`                | Worker process crashed before marker write       | Just `new` a fresh turn — there is no recovery. The turn-dir stays around until 7-day GC; can `rm -rf` it manually.    |
+| `status` reports `state: "abandoned"`                | Worker process crashed before marker write       | Inspect `worker.log` in the turn-dir for `[boot]`/`[fail]` lines (no `[boot]` ⇒ worker never started). Then `new` a fresh turn — no recovery. Turn-dir stays until 7-day GC. |
+| Turn hangs: `status` stuck on `running`, `out.txt` not growing for minutes | SDK event stream stalled (network drop, app-server protocol mismatch, wedged child) | The idle watchdog auto-fails it after `CODEX_SERVER_IDLE_SECS` (default 180s) → state flips to `failed`; `worker.log` shows `[watchdog]`. If it never flips, the worker binary predates the watchdog — re-run `setup.ts`. Run `chat.ts doctor`. |
+| `status` reports `state: "stalled"`                  | Worker alive but no output progress >5 min and its own watchdog didn't fire | Backstop signal; usually self-heals to `failed` shortly. If persistent, the worker binary is stale — re-run `setup.ts`. |
+| Hangs are frequent / intermittent across turns       | Version skew: `codex` binary minor drifted far from the SDK's pinned `0.130.x` app-server protocol | `chat.ts doctor` (or `setup.ts`) reports the skew. Fix at root: bump `@openai/codex-sdk` pin in `worker.ts` to track the binary, or pin codex to `0.130.x`. |
 | `wait`/`tail`/`status` says `abandoned` but the turn is really still running | Caller's `--allow-run` omits `kill`, so the `kill -0` liveness probe throws `NotCapable` → the worker reads as not-alive once past the startup grace | Add `kill`: `--allow-run=<codex-path>,<deno-path>,kill`. See SKILL.md "Required deno permissions". |
 | `status` reports `state: "missing"`                  | Turn-id has no turn-dir (typo or GC'd)           | Verify the turn-id; check `list-turns` for recent ones.                                                                |
 | `out.txt` contains `[turn.failed] sandbox denied...` | codex's sandbox blocked the action               | Inspect the command; consider `--config sandbox_mode=workspace-write` already on; check the SDK's sandbox rules.       |
@@ -25,6 +28,12 @@
 ## Quick triage commands
 
 ```bash
+# One-shot health report (auth + version skew + stuck turns) — start here.
+deno run --allow-... ~/.codex-server/lib/chat.ts doctor
+
+# Why did a worker die? (boot/fail/watchdog diagnostics)
+cat ~/.codex-server/turns/<turn-id>/worker.log
+
 # Auth ready?
 ls -la ~/.codex/auth.json
 

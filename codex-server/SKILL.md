@@ -26,7 +26,7 @@ description: >
   show me what gpt thinks / structured output from gpt / json schema gpt /
   resume codex thread / continue codex conversation / continue codex session /
   /codex-server
-version: 1.0.0
+version: 1.1.0
 ---
 
 # Codex Server Skill
@@ -78,6 +78,28 @@ deno invocation that Bash spawns exits in <1 s regardless of turn duration.
 If you need a blocking call, use `chat.ts wait <turn-id>` — it polls the markers
 and prints the final `out.txt` on completion.
 
+## Hang handling (idle watchdog)
+
+The worker wraps the SDK event stream in an **idle watchdog**: if no stream
+event arrives for `CODEX_SERVER_IDLE_SECS` (default **180s**), the turn is
+presumed hung (network drop, app-server protocol stall, wedged child), marked
+`error`, and the worker hard-exits — so a hung turn surfaces as `failed`
+instead of reading as `running` forever. Every event resets the clock, so
+legitimate long reasoning (which still emits `item.*` events) is never killed.
+Override the threshold by exporting `CODEX_SERVER_IDLE_SECS` before invoking.
+
+`turnState` adds a backstop `stalled` state: worker alive, no marker, yet no
+output progress for >5 min (longer than the watchdog, so it only appears if the
+worker's own watchdog failed to fire — e.g. an old worker binary or wedged
+I/O). `wait`/`tail` treat `stalled` as non-terminal and print a one-time notice;
+`status`/`doctor` report it directly.
+
+If hangs persist, the likeliest root cause is **version skew**: the worker pins
+`@openai/codex-sdk@^0.130.0`, which expects the codex binary's `0.130.x`
+app-server protocol. `new`/`continue` warn (at most once per 24h) and `setup.ts`
+warns when the live `codex` binary minor has drifted. Fix at the root by bumping
+the SDK pin in `worker.ts` to track the binary, or pinning codex to `0.130.x`.
+
 ## CLI surface
 
 All subcommands of `~/.codex-server/lib/chat.ts`. See `references/examples.md`
@@ -87,10 +109,11 @@ for worked examples (only read when an unfamiliar invocation is needed).
 - `continue [--last | --thread <id>] "<prompt>" [same flags]`
 - `tail <turn-id> [--follow]`
 - `wait <turn-id> [--timeout SECS]`
-- `status <turn-id>` — JSON: `running` / `complete` / `failed` / `abandoned` / `missing`
+- `status <turn-id>` — JSON: `running` / `complete` / `failed` / `abandoned` / `stalled` / `missing`
 - `list-turns [--limit N]`
 - `list` — recent threads from `~/.codex/sessions/`
 - `show <thread-id>` — thread metadata + tail
+- `doctor` — health report: auth, codex-binary-vs-SDK version skew, and any `running`/`stalled`/`abandoned` turns. Run this first when hangs are suspected.
 
 `new` / `continue` always return turn-id in <1 s. `tail` / `wait` are
 explicitly blocking; if they exceed 2 min, invoke them with
@@ -124,8 +147,12 @@ insufficient.
 - `meta.json` — `{ turn_id, thread_id, started_at, cwd, model, pid, resumed_from }`
 - `events.jsonl` — every `ThreadEvent` (one JSON per line)
 - `out.txt` — streamed human-readable text
+- `worker.log` — worker diagnostics: a `[boot]` line written before anything
+  can fail (so a post-mortem distinguishes "never started" from "started then
+  died"), plus `[fail]`/`[watchdog]` reasons. This is how a detached worker
+  preserves *why* it died (its real stderr is discarded by the client fork).
 - `done` (marker) — present once `turn.completed` fires
-- `error` (marker) — present on `turn.failed` or uncaught worker errors
+- `error` (marker) — present on `turn.failed`, the idle watchdog, or uncaught worker errors
 
 `setup.ts` GCs turn-dirs older than 7 days on every invocation.
 
