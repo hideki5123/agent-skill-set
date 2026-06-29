@@ -174,6 +174,7 @@ These are intentionally out of scope for v1.0.0. Pull them in only on demand.
 - [ ] Persistent app-server (warm process) — amortize ~500ms–2 s startup per turn.
 - [ ] Per-session model upgrade detection à la openai-cli's `resolveModel.ts`. Currently defers to `~/.codex/config.toml`.
 - [ ] Raw JSON-RPC sub-mode using `codex app-server generate-ts` bindings.
+- [ ] Bump the `@openai/codex-sdk` pin (currently `^0.130.0`) to track the installed codex binary (≥ 0.142.x as of this writing). The idle watchdog now *contains* protocol-skew hangs, but aligning the SDK to the binary's app-server protocol is the root fix. Deferred pending a turn-streaming + structured-output + resume regression pass against the newer SDK. Update `SDK_CODEX_MINOR` in `helpers.ts` when done.
 
 ## Behavior Scenarios
 
