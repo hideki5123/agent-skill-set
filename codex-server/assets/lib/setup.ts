@@ -89,7 +89,7 @@ const liveMinor = parseCodexMinor(ver.out.trim());
 if (liveMinor && liveMinor !== SDK_CODEX_MINOR) {
   console.log(
     `[warn] version skew: codex binary ${liveMinor}.x vs SDK-expected ` +
-      `${SDK_CODEX_MINOR}.x (worker pins @openai/codex-sdk@^0.130.0). ` +
+      `${SDK_CODEX_MINOR}.x (worker pins @openai/codex-sdk@^0.142.4). ` +
       `If you hit stream hangs, bump the SDK pin in worker.ts to track the ` +
       `binary, or pin codex to ${SDK_CODEX_MINOR}.x.`,
   );

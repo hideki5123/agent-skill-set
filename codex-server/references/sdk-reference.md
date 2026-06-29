@@ -5,13 +5,14 @@ during normal operation.
 
 Source: https://github.com/openai/codex/tree/main/sdk/typescript
 
-This skill pins `npm:@openai/codex-sdk@^0.130.0`. The SDK spawns the local
-`codex` binary and communicates JSONL events over its stdio.
+This skill pins `npm:@openai/codex-sdk@^0.142.4` (tracks the codex binary's
+`0.142.x` app-server protocol). The SDK spawns the local `codex` binary and
+communicates JSONL events over its stdio.
 
 ## Client construction
 
 ```ts
-import { Codex } from "npm:@openai/codex-sdk@^0.130.0";
+import { Codex } from "npm:@openai/codex-sdk@^0.142.4";
 
 const codex = new Codex({
   codexPathOverride: "/abs/path/to/codex", // pinned at setup
@@ -44,19 +45,23 @@ const thread = codex.startThread({
   skipGitRepoCheck: false,
 });
 // or:
-const thread = codex.resumeThread("<thread-id>");
+const thread = codex.resumeThread("<thread-id>", {
+  workingDirectory: "/abs/path",
+  skipGitRepoCheck: false,
+});
 ```
 
 Notes on `resumeThread`:
-- Does NOT take a second options argument in v0.130 — no `workingDirectory`,
-  no `skipGitRepoCheck`. The resumed turn always uses the original thread's
-  recorded cwd, and the codex CLI enforces its trusted-directory check there.
-- If you need to resume into a non-git directory, add it to codex's
-  trusted-projects config in `~/.codex/config.toml` ahead of time.
+- Takes an optional `ThreadOptions` arg (`workingDirectory`, `skipGitRepoCheck`)
+  as of codex-sdk ≥0.131. The worker passes the turn's cwd + skip-git-check, so
+  a resumed turn can run in a non-git directory directly. (On the old 0.130 pin
+  this arg did not exist and was silently ignored — see the v1.2.0 SDK bump.)
+- Alternatively, add the directory to codex's trusted-projects config in
+  `~/.codex/config.toml` ahead of time.
 
-`thread.id` is NOT populated synchronously after either constructor in
-v0.130 — capture it from the `thread.started` event in the runStreamed
-event stream.
+`thread.id` is populated only after the first turn starts — capture it from the
+`thread.started` event in the runStreamed event stream (the worker also reads
+`thread.id` opportunistically right after `runStreamed`).
 
 ## Turns
 

@@ -258,10 +258,10 @@ export async function appendDiag(turnId: string, text: string): Promise<void> {
 }
 
 // The codex CLI minor (major.minor) the pinned SDK was built against. The
-// worker imports `@openai/codex-sdk@^0.130.0`; the SDK and the `codex` CLI ship
+// worker imports `@openai/codex-sdk@^0.142.4`; the SDK and the `codex` CLI ship
 // from the same monorepo in lockstep, so the binary's app-server protocol is
 // expected to track this minor. A large gap is a likely cause of stream hangs.
-export const SDK_CODEX_MINOR = "0.130";
+export const SDK_CODEX_MINOR = "0.142";
 
 // Parse a `codex --version` string ("codex-cli 0.142.3") down to its
 // major.minor ("0.142"). Returns null when no version-looking token is found.
