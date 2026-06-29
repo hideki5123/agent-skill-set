@@ -1,6 +1,6 @@
 {
   "name": "codex-server",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Run OpenAI Codex via the Codex App Server (JSON-RPC-over-stdio) for streaming multi-turn chat sessions with persistent threads, structured output, image input, and rich event streams. Default entry po",
   "author": {
     "name": "Hideki"

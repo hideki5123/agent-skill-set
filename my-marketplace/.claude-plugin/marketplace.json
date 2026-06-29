@@ -240,11 +240,6 @@
       "description": "Turn a feature idea into an execution-ready document set through an adversarial PRD \"council\": grill the user for requirements, draft a PRD, then debate it with OpenAI Codex round-by-round until BOTH "
     },
     {
-      "name": "codex-server",
-      "source": "./plugins/codex-server",
-      "description": "Run OpenAI Codex via the Codex App Server (JSON-RPC-over-stdio) for streaming multi-turn chat sessions with persistent threads, structured output, image input, and rich event streams. Default entry po"
-    },
-    {
       "name": "grill-to-impl",
       "source": "./plugins/grill-to-impl",
       "description": "Turn a finished grill-me (or any design-finalizing) session into a running implementation kickoff. Synthesizes the session's shared understanding into a self-contained implementation brief, hardens it"
@@ -258,6 +253,11 @@
       "name": "chrome-use",
       "source": "./plugins/chrome-use",
       "description": "Drive an already-running, LOGGED-IN Chromium browser on macOS via AppleScript — navigate, click, fill forms, scroll, and extract page content from the user's REAL session, with the browser left open a"
+    },
+    {
+      "name": "codex-server",
+      "source": "./plugins/codex-server",
+      "description": "Run OpenAI Codex via the Codex App Server (JSON-RPC-over-stdio) for streaming multi-turn chat sessions with persistent threads, structured output, image input, and rich event streams. Default entry po"
     }
   ]
 }

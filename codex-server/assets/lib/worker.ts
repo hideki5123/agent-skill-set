@@ -20,6 +20,7 @@
 import { join } from "jsr:@std/path@1";
 import { parseArgs } from "jsr:@std/cli@1/parse-args";
 import {
+  appendDiag,
   appendEvent,
   appendOut,
   buildEnv,
@@ -29,6 +30,15 @@ import {
   turnDir,
   writeTurnMeta,
 } from "./helpers.ts";
+
+// Idle watchdog: if the SDK event stream produces no event for this many
+// seconds, the turn is presumed hung (network drop, app-server protocol stall,
+// wedged child) and is aborted with an `error` marker so it stops reading as
+// "running" forever. Each emitted event resets the clock, so legitimate long
+// reasoning — which still surfaces item.* events — is never killed. Override
+// via CODEX_SERVER_IDLE_SECS (the worker uses unscoped --allow-env).
+const IDLE_SECS = Number(Deno.env.get("CODEX_SERVER_IDLE_SECS") ?? "180") ||
+  180;
 
 interface ThreadItem {
   type: string;
@@ -80,21 +90,23 @@ if (!turnId || !cwd) {
   Deno.exit(64);
 }
 
-// Update meta with our pid so chat.ts status can liveness-check us.
-const existingMeta = await readTurnMeta(turnId);
-if (!existingMeta) {
-  console.error(`worker.ts: turn-dir for ${turnId} not initialized by client`);
-  Deno.exit(64);
-}
-existingMeta.pid = Deno.pid;
-await writeTurnMeta(existingMeta);
+// Boot heartbeat: written before anything else can fail, so a post-mortem can
+// tell "worker never started" (no worker.log) from "worker started then died"
+// (worker.log present but no done/error marker).
+await appendDiag(
+  turnId,
+  `[boot] pid=${Deno.pid} idle_watchdog=${IDLE_SECS}s started=${new Date().toISOString()}\n`,
+);
 
 // Catch-all guarantee: even on uncaught throw, mark the turn errored so it
-// doesn't appear "still running" forever.
+// doesn't appear "still running" forever. Defined before the pid-recording
+// below so a failure *there* (the ef8d1a7c pid:0 signature — worker died
+// before recording its real pid) is also captured rather than left silent.
 let markerWritten = false;
 async function failWith(reason: string): Promise<void> {
   if (markerWritten) return;
   markerWritten = true;
+  await appendDiag(turnId!, `[fail] ${reason}\n`);
   await appendOut(turnId!, `\n[turn.failed] ${reason}\n`);
   await touchMarker(turnId!, "error");
 }
@@ -102,6 +114,18 @@ async function failWith(reason: string): Promise<void> {
 globalThis.addEventListener("unhandledrejection", (e) => {
   void failWith(`unhandledrejection: ${e.reason}`);
 });
+globalThis.addEventListener("error", (e) => {
+  void failWith(`uncaught error: ${e.message}`);
+});
+
+// Update meta with our pid so chat.ts status can liveness-check us.
+const existingMeta = await readTurnMeta(turnId);
+if (!existingMeta) {
+  await failWith(`turn-dir for ${turnId} not initialized by client`);
+  Deno.exit(64);
+}
+existingMeta.pid = Deno.pid;
+await writeTurnMeta(existingMeta);
 
 try {
   const promptPath = args["prompt-file"];
@@ -171,7 +195,40 @@ try {
     await writeTurnMeta(existingMeta);
   }
 
-  for await (const ev of events) {
+  // Drive the async iterator manually so each pull can race an idle timer.
+  // A plain `for await` offers no way to time out a stalled stream — the
+  // structural reason a hung turn used to read as "running" forever.
+  const iter = events[Symbol.asyncIterator]();
+  const IDLE_MS = IDLE_SECS * 1000;
+  const IDLE = Symbol("idle-watchdog");
+
+  while (true) {
+    let timer: number | undefined;
+    const idleGuard = new Promise<typeof IDLE>((resolve) => {
+      timer = setTimeout(() => resolve(IDLE), IDLE_MS);
+    });
+    let res: IteratorResult<ThreadEvent> | typeof IDLE;
+    try {
+      res = await Promise.race([iter.next(), idleGuard]);
+    } finally {
+      if (timer !== undefined) clearTimeout(timer);
+    }
+
+    if (res === IDLE) {
+      await failWith(`idle watchdog: no stream event for ${IDLE_SECS}s`);
+      // Best-effort graceful close of the SDK stream (signals codex to abort),
+      // then hard-exit. Exiting closes the worker's stdio pipes to the spawned
+      // `codex app-server`, so the child tears down too instead of orphaning a
+      // wedged turn. Without this exit the dangling iter.next() would keep the
+      // worker — and the "running" state — alive indefinitely.
+      try {
+        await iter.return?.(undefined);
+      } catch { /* ignore */ }
+      Deno.exit(1);
+    }
+
+    if (res.done) break;
+    const ev = res.value;
     await appendEvent(turnId, ev);
 
     if (ev.type === "thread.started" && ev.thread_id) {

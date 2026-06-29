@@ -29,14 +29,52 @@ import {
   codexSessionsDir,
   loadLatestThreadId,
   loginGuide,
+  parseCodexMinor,
   pathExists,
   readConfig,
   readTurnMeta,
+  SDK_CODEX_MINOR,
   turnDir,
   turnsDir,
   turnState,
+  workspaceDir,
   writeTurnMeta,
 } from "./helpers.ts";
+
+// Best-effort version-skew warning. The SDK (@openai/codex-sdk@^0.130.0) and
+// the `codex` binary share an app-server protocol that tracks the codex minor;
+// a binary that has drifted far from the SDK's expected minor is a likely
+// cause of stream hangs. Checked at most once per 24h (stamp file) so `new`
+// stays lean, and never blocks or throws — a skew is a warning, not an error.
+async function maybeWarnVersionSkew(): Promise<void> {
+  try {
+    const stamp = join(workspaceDir(), ".version-check");
+    try {
+      const last = Date.parse((await Deno.readTextFile(stamp)).trim());
+      if (Number.isFinite(last) && Date.now() - last < 24 * 3600 * 1000) return;
+    } catch { /* no stamp yet — fall through and check */ }
+
+    const cfg = await readConfig();
+    const out = await new Deno.Command(cfg.codexPath, {
+      args: ["--version"],
+      stdout: "piped",
+      stderr: "null",
+    }).output();
+    const liveStr = new TextDecoder().decode(out.stdout).trim();
+    await Deno.writeTextFile(stamp, new Date().toISOString());
+
+    const liveMinor = parseCodexMinor(liveStr);
+    if (liveMinor && liveMinor !== SDK_CODEX_MINOR) {
+      console.error(
+        `[codex-server] version skew: codex binary is ${liveStr} but the ` +
+          `pinned SDK (@openai/codex-sdk@^0.130.0) targets the ${SDK_CODEX_MINOR}.x ` +
+          `app-server protocol. Large gaps can cause stream hangs. Run ` +
+          `\`chat.ts doctor\` for detail; consider bumping the SDK pin in ` +
+          `worker.ts to match the binary, or pinning codex to ${SDK_CODEX_MINOR}.x.`,
+      );
+    }
+  } catch { /* best-effort; never block new/continue */ }
+}
 
 function usage(): never {
   console.error(`usage: chat.ts <subcommand> [args]
@@ -48,7 +86,8 @@ subcommands:
   status <turn-id>
   list-turns [--limit N]
   list
-  show <thread-id>`);
+  show <thread-id>
+  doctor`);
   Deno.exit(64);
 }
 
@@ -139,6 +178,7 @@ async function cmdNew(rest: string[], resume?: { threadId: string }): Promise<vo
     Deno.exit(64);
   }
   await preflightAuthOrExit();
+  await maybeWarnVersionSkew();
 
   const turnId = crypto.randomUUID();
   const dir = turnDir(turnId);
@@ -241,7 +281,7 @@ async function cmdTail(rest: string[]): Promise<void> {
   }
   const outPath = join(turnDir(turnId), "out.txt");
   let pos = 0;
-  const dec = new TextDecoder();
+  let stalledNoticed = false;
   while (true) {
     try {
       const f = await Deno.open(outPath, { read: true });
@@ -264,6 +304,16 @@ async function cmdTail(rest: string[]): Promise<void> {
     if (st === "complete" || st === "failed" || st === "abandoned") {
       Deno.exit(st === "complete" ? 0 : 1);
     }
+    // `stalled` is non-terminal: the worker's idle watchdog should flip it to
+    // `failed` shortly. Surface it once so a follower isn't left guessing, but
+    // keep tailing.
+    if (st === "stalled" && !stalledNoticed) {
+      stalledNoticed = true;
+      console.error(
+        `[codex-server] turn ${turnId} appears stalled (no output progress); ` +
+          `worker watchdog should fail it shortly.`,
+      );
+    }
     if (!parsed.follow) {
       Deno.exit(0);
     }
@@ -280,8 +330,17 @@ async function cmdWait(rest: string[]): Promise<void> {
   }
   const timeoutMs = parsed.timeout ? Number(parsed.timeout) * 1000 : 0;
   const start = Date.now();
+  let stalledNoticed = false;
   while (true) {
     const st = await turnState(turnId);
+    if (st === "stalled" && !stalledNoticed) {
+      // Non-terminal: keep waiting (the idle watchdog should fail it soon, and
+      // `--timeout` still bounds this loop), but tell the caller why it's quiet.
+      stalledNoticed = true;
+      console.error(
+        `turn ${turnId}: stalled (no output progress); waiting for watchdog…`,
+      );
+    }
     if (st === "complete") {
       try {
         const out = await Deno.readTextFile(join(turnDir(turnId), "out.txt"));
@@ -453,9 +512,66 @@ async function cmdShow(rest: string[]): Promise<void> {
   console.log(JSON.stringify({ thread_id: threadId, path: match, head, tail }, null, 2));
 }
 
+async function cmdDoctor(): Promise<void> {
+  const report: Record<string, unknown> = {};
+
+  // Auth.
+  report.auth = (await authReady())
+    ? "ok (ChatGPT subscription)"
+    : "MISSING — run `codex login`";
+
+  // Version skew: live codex binary vs SDK-expected minor.
+  try {
+    const cfg = await readConfig();
+    const out = await new Deno.Command(cfg.codexPath, {
+      args: ["--version"],
+      stdout: "piped",
+      stderr: "null",
+    }).output();
+    const liveStr = new TextDecoder().decode(out.stdout).trim();
+    const liveMinor = parseCodexMinor(liveStr);
+    report.codex = {
+      binary: cfg.codexPath,
+      live_version: liveStr,
+      pinned_at_setup: cfg.codexVersion,
+      sdk_expects_minor: `${SDK_CODEX_MINOR}.x`,
+      skew: liveMinor && liveMinor !== SDK_CODEX_MINOR
+        ? `YES — binary ${liveMinor}.x vs SDK ${SDK_CODEX_MINOR}.x (likely hang cause)`
+        : "none",
+    };
+  } catch (e) {
+    report.codex = { error: String(e) };
+  }
+
+  // Stuck turns: running / stalled / abandoned.
+  const root = turnsDir();
+  const stuck: Array<Record<string, unknown>> = [];
+  if (await pathExists(root)) {
+    for await (const e of Deno.readDir(root)) {
+      if (!e.isDirectory) continue;
+      const st = await turnState(e.name);
+      if (st === "running" || st === "stalled" || st === "abandoned") {
+        const meta = await readTurnMeta(e.name);
+        stuck.push({
+          turn_id: e.name,
+          state: st,
+          started_at: meta?.started_at ?? null,
+          cwd: meta?.cwd ?? null,
+        });
+      }
+    }
+  }
+  report.stuck_turns = stuck;
+
+  console.log(JSON.stringify(report, null, 2));
+}
+
 const sub = Deno.args[0];
 const rest = Deno.args.slice(1);
 switch (sub) {
+  case "doctor":
+    await cmdDoctor();
+    break;
   case "new":
     await cmdNew(rest);
     break;
