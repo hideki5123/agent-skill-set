@@ -13,7 +13,7 @@
 | `status` reports `state: "abandoned"`                | Worker process crashed before marker write       | Inspect `worker.log` in the turn-dir for `[boot]`/`[fail]` lines (no `[boot]` ⇒ worker never started). Then `new` a fresh turn — no recovery. Turn-dir stays until 7-day GC. |
 | Turn hangs: `status` stuck on `running`, `out.txt` not growing for minutes | SDK event stream stalled (network drop, app-server protocol mismatch, wedged child) | The idle watchdog auto-fails it after `CODEX_SERVER_IDLE_SECS` (default 180s) → state flips to `failed`; `worker.log` shows `[watchdog]`. If it never flips, the worker binary predates the watchdog — re-run `setup.ts`. Run `chat.ts doctor`. |
 | `status` reports `state: "stalled"`                  | Worker alive but no output progress >5 min and its own watchdog didn't fire | Backstop signal; usually self-heals to `failed` shortly. If persistent, the worker binary is stale — re-run `setup.ts`. |
-| Hangs are frequent / intermittent across turns       | Version skew: `codex` binary minor drifted from the SDK's pinned minor (`SDK_CODEX_MINOR`, currently `0.142.x`) app-server protocol | `chat.ts doctor` (or `setup.ts`) reports the skew. Fix at root: bump the `@openai/codex-sdk` pin in `worker.ts` (and `SDK_CODEX_MINOR`) to track the binary, or pin codex to that minor. |
+| Hangs are frequent / intermittent across turns       | Version drift: the codex binary was upgraded since `setup.ts` ran, so the resolved `sdkSpec` no longer matches the binary's app-server protocol | `chat.ts doctor` shows `codex.drift`. Fix: **re-run `setup.ts`** — it re-resolves `sdkSpec` to the current binary minor. (The SDK pin is machine-adaptive, so there's no version to hand-edit.) |
 | `wait`/`tail`/`status` says `abandoned` but the turn is really still running | Caller's `--allow-run` omits `kill`, so the `kill -0` liveness probe throws `NotCapable` → the worker reads as not-alive once past the startup grace | Add `kill`: `--allow-run=<codex-path>,<deno-path>,kill`. See SKILL.md "Required deno permissions". |
 | `status` reports `state: "missing"`                  | Turn-id has no turn-dir (typo or GC'd)           | Verify the turn-id; check `list-turns` for recent ones.                                                                |
 | `out.txt` contains `[turn.failed] sandbox denied...` | codex's sandbox blocked the action               | Inspect the command; consider `--config sandbox_mode=workspace-write` already on; check the SDK's sandbox rules.       |
@@ -63,5 +63,6 @@ If you can't fix it from this table and the bug is reproducible:
 
 1. Capture `events.jsonl` for the failing turn (it has everything the SDK saw).
 2. Note your codex binary version (`cat ~/.codex-server/config.json`) and
-   `@openai/codex-sdk` version (currently pinned to `^0.142.4` in `worker.ts`).
+   resolved `@openai/codex-sdk` spec (`sdkSpec` in `~/.codex-server/config.json`,
+   machine-adaptive — derived from the codex binary minor at setup).
 3. File the issue with these artifacts; do **not** include `auth.json`.

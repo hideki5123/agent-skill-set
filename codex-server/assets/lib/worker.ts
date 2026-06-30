@@ -24,6 +24,7 @@ import {
   appendEvent,
   appendOut,
   buildEnv,
+  FALLBACK_SDK_SPEC,
   readConfig,
   readTurnMeta,
   touchMarker,
@@ -153,13 +154,17 @@ try {
     outputSchema = JSON.parse(raw);
   }
 
-  // Resolve the codex binary path pinned at setup.
+  // Resolve the codex binary path + SDK spec pinned at setup.
   const cfg = await readConfig();
 
-  // Dynamic import of the SDK. Using a dynamic import keeps the import error
-  // (if any) catchable so we can still write the error marker.
+  // Dynamic import of the SDK from the machine-adaptive spec resolved at setup
+  // (falls back for pre-v1.3.0 configs). A computed specifier still resolves at
+  // runtime — verified — and keeps the import error catchable so we can still
+  // write the error marker.
+  const sdkSpec = cfg.sdkSpec ?? FALLBACK_SDK_SPEC;
+  await appendDiag(turnId, `[sdk] importing ${sdkSpec}\n`);
   // deno-lint-ignore no-explicit-any
-  const sdk: any = await import("npm:@openai/codex-sdk@^0.142.4");
+  const sdk: any = await import(sdkSpec);
   const Codex = sdk.Codex;
 
   const sdkConfig: Record<string, unknown> = {

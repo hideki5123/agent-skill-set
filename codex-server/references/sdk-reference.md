@@ -5,9 +5,13 @@ during normal operation.
 
 Source: https://github.com/openai/codex/tree/main/sdk/typescript
 
-This skill pins `npm:@openai/codex-sdk@^0.142.4` (tracks the codex binary's
-`0.142.x` app-server protocol). The SDK spawns the local `codex` binary and
-communicates JSONL events over its stdio.
+The SDK pin is **machine-adaptive** (v1.3.0+): `setup.ts` reads the local
+`codex --version`, derives `sdkSpec = npm:@openai/codex-sdk@^<minor>.0`, and
+stores it in `~/.codex-server/config.json`; the worker imports that spec
+dynamically. The `import { Codex } from "npm:@openai/codex-sdk@^0.142.4"` form
+below is illustrative — the actual version tracks whatever codex is installed.
+The SDK spawns the local `codex` binary and communicates JSONL events over its
+stdio.
 
 ## Client construction
 

@@ -26,7 +26,7 @@ description: >
   show me what gpt thinks / structured output from gpt / json schema gpt /
   resume codex thread / continue codex conversation / continue codex session /
   /codex-server
-version: 1.2.0
+version: 1.3.0
 ---
 
 # Codex Server Skill
@@ -94,12 +94,15 @@ worker's own watchdog failed to fire — e.g. an old worker binary or wedged
 I/O). `wait`/`tail` treat `stalled` as non-terminal and print a one-time notice;
 `status`/`doctor` report it directly.
 
-If hangs persist, the likeliest root cause is **version skew**: the worker pins
-`@openai/codex-sdk@^0.142.4`, which expects the codex binary's `0.142.x`
-app-server protocol. `new`/`continue` warn (at most once per 24h) and `setup.ts`
-warns when the live `codex` binary minor has drifted from `SDK_CODEX_MINOR`
-(`helpers.ts`). Fix at the root by bumping the SDK pin in `worker.ts` (and
-`SDK_CODEX_MINOR`) to track the binary, or pinning codex to that minor.
+The SDK pin is **machine-adaptive**: `setup.ts` reads the local `codex` binary's
+minor and writes a matching `sdkSpec` (`npm:@openai/codex-sdk@^<minor>.0`) into
+`~/.codex-server/config.json`; the worker imports that spec dynamically. So a
+repo synced across machines on different codex versions (e.g. one box on
+`0.142`, another on `0.130`) each tracks its own — no single hardcoded pin to go
+stale. The only drift mode left is **upgrading the codex binary without
+re-running setup**: `new`/`continue` warn (≤once/24h) and `doctor` reports it
+when the live binary minor no longer matches `config.codexMinor`. The fix is
+always the same — re-run `setup.ts` to re-resolve the SDK to the current binary.
 
 ## CLI surface
 
@@ -175,7 +178,7 @@ These are intentionally out of scope for v1.0.0. Pull them in only on demand.
 - [ ] Persistent app-server (warm process) — amortize ~500ms–2 s startup per turn.
 - [ ] Per-session model upgrade detection à la openai-cli's `resolveModel.ts`. Currently defers to `~/.codex/config.toml`.
 - [ ] Raw JSON-RPC sub-mode using `codex app-server generate-ts` bindings.
-- [x] ~~Bump the `@openai/codex-sdk` pin to track the installed codex binary.~~ Done in v1.2.0: pin moved `^0.130.0` → `^0.142.4`, `SDK_CODEX_MINOR` → `0.142`, `resumeThread` regained its `ThreadOptions` arg (non-git resume now works), and fatal `error` stream events are surfaced. Keep the pin and `SDK_CODEX_MINOR` in lockstep with the codex binary minor on future bumps.
+- [x] ~~Track the installed codex binary instead of a hardcoded SDK pin.~~ Done over v1.2.0–v1.3.0: v1.2.0 moved the pin `^0.130.0` → `^0.142.x`, restored `resumeThread`'s `ThreadOptions` arg (non-git resume works), and surfaced fatal `error` stream events. v1.3.0 made resolution **machine-adaptive** — `setup.ts` derives `sdkSpec` from the local codex minor and the worker imports it dynamically, so a repo synced across boxes on different codex versions each self-tracks. Upgrading codex now just needs a `setup.ts` re-run (`doctor`/`new` warn when it's overdue).
 
 ## Behavior Scenarios
 

@@ -40,6 +40,13 @@ export interface SkillConfig {
   codexPath: string;
   codexVersion: string;
   setupDate: string;
+  // Machine-adaptive SDK pin. setup.ts resolves these from the *local* codex
+  // binary so each machine tracks its own codex minor — a single hardcoded pin
+  // can't serve a repo synced across boxes on different codex versions. The
+  // worker imports `sdkSpec` dynamically; the skew check compares the live
+  // binary minor against `codexMinor` (what setup resolved against).
+  sdkSpec?: string; // e.g. "npm:@openai/codex-sdk@^0.142.0"
+  codexMinor?: string; // e.g. "0.142"
 }
 
 export async function readConfig(): Promise<SkillConfig> {
@@ -257,11 +264,19 @@ export async function appendDiag(turnId: string, text: string): Promise<void> {
   } catch { /* diagnostics are best-effort */ }
 }
 
-// The codex CLI minor (major.minor) the pinned SDK was built against. The
-// worker imports `@openai/codex-sdk@^0.142.4`; the SDK and the `codex` CLI ship
-// from the same monorepo in lockstep, so the binary's app-server protocol is
-// expected to track this minor. A large gap is a likely cause of stream hangs.
-export const SDK_CODEX_MINOR = "0.142";
+// Fallback SDK spec used only when config.json predates machine-adaptive
+// resolution (pre-v1.3.0) and has no `sdkSpec`. Normal operation reads the
+// spec from config, which setup.ts resolves from the local codex binary.
+export const FALLBACK_SDK_SPEC = "npm:@openai/codex-sdk@^0.142.0";
+
+// Build the SDK import spec for a given codex minor. The SDK and `codex` CLI
+// ship from the same monorepo in lockstep, so `^<minor>.0` resolves (at import
+// time, no network call at setup) to the newest SDK patch of that minor — the
+// app-server protocol the local binary speaks. This is how "track the latest"
+// holds per-machine without hardcoding a version in source.
+export function sdkSpecForMinor(minor: string): string {
+  return `npm:@openai/codex-sdk@^${minor}.0`;
+}
 
 // Parse a `codex --version` string ("codex-cli 0.142.3") down to its
 // major.minor ("0.142"). Returns null when no version-looking token is found.
