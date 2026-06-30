@@ -15,7 +15,7 @@ import {
   gcOldTurns,
   loginGuide,
   parseCodexMinor,
-  SDK_CODEX_MINOR,
+  sdkSpecForMinor,
   turnsDir,
   workspaceDir,
   writeConfig,
@@ -81,18 +81,18 @@ console.log(
   `[ok] codex: ${ver.out.trim() || "(version unknown)"} @ ${codexPath}`,
 );
 
-// Surface version skew between the codex binary and the SDK the worker pins.
-// They share an app-server protocol that tracks the codex minor; a large gap
-// is a likely cause of stream hangs (the watchdog will abort such turns, but
-// the underlying mismatch is worth fixing at the root).
-const liveMinor = parseCodexMinor(ver.out.trim());
-if (liveMinor && liveMinor !== SDK_CODEX_MINOR) {
-  console.log(
-    `[warn] version skew: codex binary ${liveMinor}.x vs SDK-expected ` +
-      `${SDK_CODEX_MINOR}.x (worker pins @openai/codex-sdk@^0.142.4). ` +
-      `If you hit stream hangs, bump the SDK pin in worker.ts to track the ` +
-      `binary, or pin codex to ${SDK_CODEX_MINOR}.x.`,
-  );
+// Machine-adaptive SDK resolution: derive the SDK spec from THIS machine's
+// codex binary minor, so a repo synced across boxes on different codex versions
+// each tracks its own. `^<minor>.0` resolves at import time to the newest SDK
+// patch of that minor — no network call here (setup has no --allow-net).
+const codexMinor = parseCodexMinor(ver.out.trim());
+const sdkSpec = codexMinor
+  ? sdkSpecForMinor(codexMinor)
+  : "npm:@openai/codex-sdk@^0.142.0";
+if (codexMinor) {
+  console.log(`[ok] sdk: resolved ${sdkSpec} to match codex ${codexMinor}.x`);
+} else {
+  console.log(`[warn] could not parse codex version; SDK spec -> ${sdkSpec}`);
 }
 
 // 3. Ensure workspace dirs.
@@ -146,6 +146,8 @@ await writeConfig({
   codexPath,
   codexVersion: ver.out.trim(),
   setupDate: new Date().toISOString(),
+  sdkSpec,
+  codexMinor: codexMinor ?? undefined,
 });
 console.log(`[ok] wrote ${configPath()}`);
 

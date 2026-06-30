@@ -33,7 +33,6 @@ import {
   pathExists,
   readConfig,
   readTurnMeta,
-  SDK_CODEX_MINOR,
   turnDir,
   turnsDir,
   turnState,
@@ -41,11 +40,12 @@ import {
   writeTurnMeta,
 } from "./helpers.ts";
 
-// Best-effort version-skew warning. The SDK (@openai/codex-sdk@^0.142.4) and
-// the `codex` binary share an app-server protocol that tracks the codex minor;
-// a binary that has drifted far from the SDK's expected minor is a likely
-// cause of stream hangs. Checked at most once per 24h (stamp file) so `new`
-// stays lean, and never blocks or throws — a skew is a warning, not an error.
+// Best-effort version-skew warning. setup.ts resolves the SDK spec to match the
+// codex binary at install time, so the only way to drift is to upgrade the
+// codex binary *without* re-running setup. Compare the live binary minor to the
+// one setup recorded (`config.codexMinor`); a mismatch means the SDK spec is
+// stale and could cause stream hangs. Checked at most once per 24h (stamp file)
+// so `new` stays lean, and never blocks or throws — a skew is a warning.
 async function maybeWarnVersionSkew(): Promise<void> {
   try {
     const stamp = join(workspaceDir(), ".version-check");
@@ -64,13 +64,13 @@ async function maybeWarnVersionSkew(): Promise<void> {
     await Deno.writeTextFile(stamp, new Date().toISOString());
 
     const liveMinor = parseCodexMinor(liveStr);
-    if (liveMinor && liveMinor !== SDK_CODEX_MINOR) {
+    // Only warn when setup recorded a minor (post-v1.3.0 config) and it differs.
+    if (cfg.codexMinor && liveMinor && liveMinor !== cfg.codexMinor) {
       console.error(
-        `[codex-server] version skew: codex binary is ${liveStr} but the ` +
-          `pinned SDK (@openai/codex-sdk@^0.142.4) targets the ${SDK_CODEX_MINOR}.x ` +
-          `app-server protocol. Large gaps can cause stream hangs. Run ` +
-          `\`chat.ts doctor\` for detail; consider bumping the SDK pin in ` +
-          `worker.ts to match the binary, or pinning codex to ${SDK_CODEX_MINOR}.x.`,
+        `[codex-server] version drift: codex binary is now ${liveStr} but the ` +
+          `SDK spec (${cfg.sdkSpec ?? "?"}) was resolved for ${cfg.codexMinor}.x ` +
+          `at setup. Mismatched app-server protocols can cause stream hangs. ` +
+          `Re-run setup.ts to re-resolve the SDK to the current binary.`,
       );
     }
   } catch { /* best-effort; never block new/continue */ }
@@ -520,7 +520,7 @@ async function cmdDoctor(): Promise<void> {
     ? "ok (ChatGPT subscription)"
     : "MISSING — run `codex login`";
 
-  // Version skew: live codex binary vs SDK-expected minor.
+  // Version drift: live codex binary vs the minor setup resolved the SDK for.
   try {
     const cfg = await readConfig();
     const out = await new Deno.Command(cfg.codexPath, {
@@ -530,13 +530,15 @@ async function cmdDoctor(): Promise<void> {
     }).output();
     const liveStr = new TextDecoder().decode(out.stdout).trim();
     const liveMinor = parseCodexMinor(liveStr);
+    const drift = cfg.codexMinor && liveMinor && liveMinor !== cfg.codexMinor;
     report.codex = {
       binary: cfg.codexPath,
       live_version: liveStr,
-      pinned_at_setup: cfg.codexVersion,
-      sdk_expects_minor: `${SDK_CODEX_MINOR}.x`,
-      skew: liveMinor && liveMinor !== SDK_CODEX_MINOR
-        ? `YES — binary ${liveMinor}.x vs SDK ${SDK_CODEX_MINOR}.x (likely hang cause)`
+      resolved_at_setup: cfg.codexVersion,
+      sdk_spec: cfg.sdkSpec ?? "(pre-v1.3.0 config — re-run setup)",
+      sdk_resolved_for_minor: cfg.codexMinor ?? "(unknown)",
+      drift: drift
+        ? `YES — binary now ${liveMinor}.x but SDK resolved for ${cfg.codexMinor}.x; re-run setup.ts`
         : "none",
     };
   } catch (e) {
