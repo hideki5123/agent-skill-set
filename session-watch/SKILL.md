@@ -1,6 +1,6 @@
 ---
 name: session-watch
-version: 1.1.1
+version: 1.2.0
 description: >
   Watch another running Claude Code session in real time and narrate its activity in Japanese
   with detailed term-by-term explanations. By default targets a session active in the current
@@ -54,15 +54,19 @@ If found → use it. If not found → tell the user the ID was not seen anywhere
 
 #### If no session ID was given (default)
 
-1. Encode the target cwd: replace every `/` with `-`. Example:
-   `/Users/alice/code/foo` → `-Users-alice-code-foo`.
+1. Encode the target cwd: replace every `/`, `.`, and `_` with `-`. Example:
+   `/Users/alice/code/foo` → `-Users-alice-code-foo`; a worktree path like
+   `/Users/alice/repo/.claude/worktrees/my_branch` →
+   `-Users-alice-repo--claude-worktrees-my-branch` (note the doubled `-` where
+   `/` is immediately followed by `.`). A single `/`-only substitution misses
+   the `.claude/worktrees/...` segment every worktree session lives under.
 
 2. The transcript directory is `~/.claude/projects/<encoded>/`.
 
 3. List candidate sessions, ranked by recency:
 
    ```bash
-   ENC=$(echo "$PWD" | sed 's|/|-|g')
+   ENC=$(echo "$PWD" | sed 's|[/._]|-|g')
    DIR=~/.claude/projects/$ENC
    # list files modified in the last 10 minutes, newest first
    find "$DIR" -maxdepth 1 -name '*.jsonl' -mmin -10 -print0 \

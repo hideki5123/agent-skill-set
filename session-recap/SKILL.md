@@ -1,6 +1,6 @@
 ---
 name: session-recap
-version: 1.1.1
+version: 1.2.0
 description: >
   Read a Claude Code session's transcript and produce two markdown artifacts plus a
   meta.json: a scannable Summary (TL;DR, key terms, files, decisions, open threads) and
@@ -40,14 +40,24 @@ retention policy. Each `recap-to-X` uploader writes its own entry to the shared
 manifest after a successful upload; this skill reads the manifest to decide what is safe
 to delete.
 
-1. Read `~/.claude/session-recaps/.recap-config.json` (defaults below if missing):
+1. Read `~/.claude/session-recaps/.recap-config.json` (defaults below if the file
+   is missing, or if a given key is absent from it):
    ```json
    {
-     "chain_after_generate": ["recap-to-notion"],
+     "version": 1,
+     "chain": [
+       {"skill": "recap-to-notion:recap-to-notion", "enabled": true, "notes": ""}
+     ],
      "retention_days": 20,
      "retention_minutes_override": null
    }
    ```
+   `chain` is a list of `{skill, enabled, notes}` objects, not a flat list of
+   names — `enabled: false` lets the user pause a downstream skill without
+   removing its config entry. `retention_days` / `retention_minutes_override`
+   are read the same way (missing key → default applies); as of this writing
+   the live config in this repo's development environment only sets `version`
+   and `chain` — retention runs on its default until a config explicitly sets it.
 2. Read `~/.claude/session-recaps/.manifest.jsonl` (skip if missing).
 3. Walk `~/.claude/session-recaps/<YYYY-MM-DD>_*` directories.
 4. For each dir:
@@ -101,13 +111,18 @@ If found → use it. If not → tell the user the ID was not seen anywhere under
 
 #### If no session ID was given (default)
 
-1. Encode the target cwd: replace every `/` with `-`. Example:
-   `/Users/alice/code/foo` → `-Users-alice-code-foo`.
+1. Encode the target cwd: replace every `/`, `.`, and `_` with `-`. Example:
+   `/Users/alice/code/foo` → `-Users-alice-code-foo`; a worktree path like
+   `/Users/alice/repo/.claude/worktrees/my_branch` →
+   `-Users-alice-repo--claude-worktrees-my-branch` (note the doubled `-` where
+   `/` is immediately followed by `.`). A single `/`-only substitution misses
+   the `.claude/worktrees/...` segment every worktree session lives under —
+   this repo's own convention — and any branch name with an underscore.
 2. The transcript directory is `~/.claude/projects/<encoded>/`.
 3. List the 10 most recent sessions with their slug and last-event timestamp:
 
    ```bash
-   ENC=$(echo "$PWD" | sed 's|/|-|g')
+   ENC=$(echo "$PWD" | sed 's|[/._]|-|g')
    DIR=~/.claude/projects/$ENC
    ls -t "$DIR"/*.jsonl 2>/dev/null | head -10 | while read f; do
      id=$(basename "$f" .jsonl)
@@ -353,7 +368,7 @@ read it instead of re-parsing markdown.
   "duration_seconds": 1234,
   "total_events": 290,
   "events": {"user": 12, "assistant_text": 45, "tool": 200, "sidechain": 33},
-  "generator_version": "1.1.0"
+  "generator_version": "1.2.0"
 }
 ```
 
@@ -400,24 +415,26 @@ Then tell the user (in UI language):
 
 After local files are written, dispatch any user-configured follow-up skills.
 
-1. Read `~/.claude/session-recaps/.recap-config.json` (default
-   `chain_after_generate = ["recap-to-notion"]` if file is missing).
-2. Determine if the chain should be skipped:
+1. Read `~/.claude/session-recaps/.recap-config.json` (default chain — a single
+   `{"skill": "recap-to-notion:recap-to-notion", "enabled": true}` entry — if the
+   file or the `chain` key is missing).
+2. Determine if the chain should be skipped entirely:
    - `--no-chain` argument was passed → skip.
    - The user's recent invocation contains any of these opt-out phrases → skip:
      `アップロードしないで`, `Notionいらない`, `ローカルだけ`,
      `no upload`, `skip notion`, `local only`, `no chain`.
-   - `chain_after_generate` is an empty list `[]` → skip (no-op).
-3. Otherwise, for each skill name in the list, in order:
-   - Verify it is installed (skill list lookup). If not, emit a one-line skip note in
-     UI language and continue with the next.
-   - Invoke `Skill(skill: "<name>", args: "<absolute path to recap dir>")`.
+   - `chain` is an empty list `[]` → skip (no-op).
+3. Otherwise, for each entry in `chain`, in order:
+   - `enabled: false` → skip this entry silently, continue to the next.
+   - Verify the entry's `skill` is installed (skill list lookup). If not, emit a
+     one-line skip note in UI language and continue with the next.
+   - Invoke `Skill(skill: "<entry.skill>", args: "<absolute path to recap dir>")`.
    - Surface the returned one-line status in UI language.
-4. The chain runs sequentially. A failure in one chain skill does not stop the others
-   (they are independent).
+4. The chain runs sequentially. A failure in one chain entry does not stop the
+   others (they are independent).
 
 This skill never references `recap-to-notion` (or any other uploader) by name in the
-code path — only the names listed in the user's `.recap-config.json`. Adding a new
+code path — only the entries listed in the user's `.recap-config.json`. Adding a new
 uploader is a config change, not a source change.
 
 ### Retrospective
@@ -511,9 +528,14 @@ Scenario: Chain dispatch — skipped via --no-chain argument
   Then the chain is fully skipped.
 
 Scenario: Chain dispatch — empty chain in .recap-config.json runs no follow-up
-  Given chain_after_generate is []
+  Given chain is []
   When Step 6 runs
   Then no chain skills are invoked.
+
+Scenario: Chain dispatch — a disabled entry is skipped without stopping the chain
+  Given chain has an entry with enabled: false followed by an enabled: true entry
+  When Step 6 runs
+  Then the disabled entry is skipped silently and the next entry still runs.
 
 Scenario: Chain dispatch — chained skill not installed → log and continue
   Given the chain references a skill that is not installed
@@ -597,5 +619,5 @@ Scenario: Feedback Check surfaces a pattern
   (regardless of target) AND mtime exceeds the retention threshold. This is intentional
   — we trust that any successful upload preserves the data.
 - **OCP**: adding a new uploader (e.g. `recap-to-confluence`) requires no edits to this
-  skill's source. The user adds the new skill name to `chain_after_generate` in their
+  skill's source. The user adds a new `{skill, enabled}` entry to `chain` in their
   `.recap-config.json`.

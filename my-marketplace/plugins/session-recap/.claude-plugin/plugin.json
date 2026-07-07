@@ -1,6 +1,6 @@
 {
   "name": "session-recap",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Read a Claude Code session's transcript and produce two markdown artifacts plus a meta.json: a scannable Summary (TL;DR, key terms, files, decisions, open threads) and a complementary Detailed Note (f",
   "author": {
     "name": "Hideki"

@@ -180,16 +180,6 @@
       "description": "Self-review loop for YOUR OWN PR — request AI reviews (Copilot + Gemini), apply their fixes, push, re-request, and repeat until clean. NOT for reviewing someone else's PR. Use when the user asks to se"
     },
     {
-      "name": "session-recap",
-      "source": "./plugins/session-recap",
-      "description": "Read a Claude Code session's transcript and produce two markdown artifacts plus a meta.json: a scannable Summary (TL;DR, key terms, files, decisions, open threads) and a complementary Detailed Note (f"
-    },
-    {
-      "name": "session-watch",
-      "source": "./plugins/session-watch",
-      "description": "Watch another running Claude Code session in real time and narrate its activity in Japanese with detailed term-by-term explanations. By default targets a session active in the current working director"
-    },
-    {
       "name": "skill-improve",
       "source": "./plugins/skill-improve",
       "description": "Retrofit the OIAE self-improvement loop to existing skills and analyze feedback to propose evidence-based amendments. Adds Retrospective, Feedback Check, and version tracking to skills that lack them."
@@ -233,6 +223,16 @@
       "name": "zoom-out",
       "source": "./plugins/zoom-out",
       "description": "Tell the agent to zoom out and give broader context or a higher-level perspective. Use when you're unfamiliar with a section of code or need to understand how it fits into the bigger picture."
+    },
+    {
+      "name": "session-recap",
+      "source": "./plugins/session-recap",
+      "description": "Read a Claude Code session's transcript and produce two markdown artifacts plus a meta.json: a scannable Summary (TL;DR, key terms, files, decisions, open threads) and a complementary Detailed Note (f"
+    },
+    {
+      "name": "session-watch",
+      "source": "./plugins/session-watch",
+      "description": "Watch another running Claude Code session in real time and narrate its activity in Japanese with detailed term-by-term explanations. By default targets a session active in the current working director"
     }
   ]
 }

@@ -1,6 +1,6 @@
 {
   "name": "session-watch",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "Watch another running Claude Code session in real time and narrate its activity in Japanese with detailed term-by-term explanations. By default targets a session active in the current working director",
   "author": {
     "name": "Hideki"
