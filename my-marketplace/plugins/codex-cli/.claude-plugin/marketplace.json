@@ -14,7 +14,7 @@
         "path": "."
       },
       "description": "Run OpenAI Codex CLI from the terminal for batch / one-shot `codex exec` invocations with output captured to an `-o` file. Use for fire-and-forget runs, scripted CI, code review batches (`codex review",
-      "version": "1.2.0"
+      "version": "1.2.1"
     }
   ]
 }

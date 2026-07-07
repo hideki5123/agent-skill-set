@@ -10,18 +10,24 @@ description: >
   the user via AskUserQuestion (even in auto-mode). Secrets stay outside the
   agent: existence-only key checks, scoped `--allow-env=OPENAI_API_KEY` and
   `--allow-net=api.openai.com` flags, no `.env` files.
+  Scoped to the Platform API specifically — for open-ended chat/conversation
+  ("ask gpt", "chat with gpt") prefer the codex-server skill instead, which
+  uses the user's ChatGPT subscription rather than API-key billing. Use this
+  skill only when the request is explicitly about the Platform API surface
+  (embeddings, image generation, audio, moderation, batches, files, or a
+  chat/Responses call made programmatically as part of a script or pipeline).
   Trigger patterns (match any variation):
-  openai / open ai / OpenAI / open-ai api /
-  gpt / gpt-5 / gpt-5.5 / o1 / o3 / o4 /
+  openai api / openai platform api / open-ai api /
   embeddings / dall-e / gpt-image / image generation / generate image /
   whisper / transcribe audio / speech-to-text /
   tts / text-to-speech / read aloud /
   moderation / content moderation /
-  openai cli / openai-cli / call openai / use openai api /
-  ask gpt / chat with gpt / openai chat /
-  responses api / openai batch / openai files.
+  openai cli / openai-cli / call openai api / use openai api /
+  openai chat completions api / openai responses api /
+  responses api / openai batch / openai files / openai embeddings api.
   Does NOT access ChatGPT chat history (the API does not expose it; use the
-  Settings → Data Controls export instead).
+  Settings → Data Controls export instead). Does NOT handle open-ended
+  chat/conversation requests — see codex-server for that.
 ---
 
 # openai-cli

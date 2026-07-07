@@ -1,6 +1,6 @@
 ---
 name: prd-council
-version: 1.0.0
+version: 1.0.1
 description: >
   Turn a feature idea into an execution-ready document set through an
   adversarial PRD "council": grill the user for requirements, draft a PRD,

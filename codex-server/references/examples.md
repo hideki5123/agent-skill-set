@@ -159,7 +159,7 @@ deno run --allow-... ~/.codex-server/lib/chat.ts new \
 ## 12. Specify model
 
 ```bash
-deno run --allow-... ~/.codex-server/lib/chat.ts new --model gpt-5.4 "..."
+deno run --allow-... ~/.codex-server/lib/chat.ts new --model <model-name> "..."
 ```
 
 (Defaults to whatever `~/.codex/config.toml` configures.)

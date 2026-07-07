@@ -28,14 +28,15 @@ consult its SKILL.md.
 ## Invocation pattern
 
 Per codex-server's contract, each `chat.ts` call runs through deno with scoped
-flags. **`--allow-run` must permit BOTH the codex binary AND deno itself**:
+flags. **`--allow-run` must permit the codex binary, deno itself, AND `kill`**:
 `new`/`continue` fork a *detached deno worker* (the decoupled-async design), and
 that worker in turn spawns codex. The codex path is pinned in
-`~/.codex-server/config.json`; the deno path is `command -v deno`. (codex-server's
-own SKILL.md under-documents this as codex-path-only — the authoritative form is in
-the header of `chat.ts`: `--allow-run=<codex-path>,<deno-path>`. Verified by smoke
-test: codex-path-only fails the first `new` with `NotCapable: Requires run access
-to .../deno`.)
+`~/.codex-server/config.json`; the deno path is `command -v deno`; `kill` is
+needed because `wait`/`tail`/`status` liveness-check the worker via `kill -0`
+(and this loop uses `wait` below). (codex-server's own SKILL.md documents the
+full three-item form: `--allow-run=<codex-path>,<deno-path>,kill`. Verified by
+smoke test: omitting `deno` fails the first `new` with `NotCapable: Requires
+run access to .../deno`; omitting `kill` fails the first `wait`/`status` call.)
 
 ```bash
 CODEX="$(deno eval 'console.log(JSON.parse(Deno.readTextFileSync(Deno.env.get("HOME")+"/.codex-server/config.json")).codexPath)')"
@@ -44,19 +45,19 @@ DENO="$(command -v deno)"
 # Round 1 — open the thread, request a structured verdict.
 deno run --allow-read --allow-write \
   --allow-env=PATH,HOME,USERPROFILE \
-  --allow-run="$CODEX,$DENO" \
+  --allow-run="$CODEX,$DENO,kill" \
   --allow-net=api.openai.com \
   ~/.codex-server/lib/chat.ts new "<review request + PRD body>" \
   --schema <verdict-schema.json> --cwd <project> --skip-git-check
 # → returns {turn_id, out_path} in <1s. A detached worker runs the turn.
 
 # Later rounds — same thread, send changelog + revised PRD.
-… --allow-run="$CODEX,$DENO" … ~/.codex-server/lib/chat.ts continue --last "<changelog + revised PRD>" --schema <verdict-schema.json>
+… --allow-run="$CODEX,$DENO,kill" … ~/.codex-server/lib/chat.ts continue --last "<changelog + revised PRD>" --schema <verdict-schema.json>
 ```
 
-> Shell note: pass `--allow-run="$CODEX,$DENO"` as one quoted token. Do not collapse
-> the whole deno flag list into a single unquoted variable — zsh does not word-split
-> it, and deno will reject it as one argument.
+> Shell note: pass `--allow-run="$CODEX,$DENO,kill"` as one quoted token. Do not
+> collapse the whole deno flag list into a single unquoted variable — zsh does
+> not word-split it, and deno will reject it as one argument.
 
 **Source of truth = the `done` / `error` marker files + `out.txt`.** Detect
 completion by Monitoring the turn dir for the `done` marker (success) or `error`

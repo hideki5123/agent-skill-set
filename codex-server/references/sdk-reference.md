@@ -27,7 +27,7 @@ const codex = new Codex({
   config: {
     approval_policy: "on-failure",
     sandbox_workspace_write: { network_access: true },
-    model: "gpt-5.4",                       // optional
+    model: "<model-name>",                  // optional — omit to use config.toml's default
   },
 });
 ```

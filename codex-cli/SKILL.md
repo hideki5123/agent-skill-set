@@ -21,7 +21,7 @@ description: >
   codex {to a file, -o, output file, captured output} /
   CI + {codex, gpt} / scripted + {codex, gpt} /
   fork codex session / resume codex session by id
-version: 1.2.0
+version: 1.2.1
 ---
 
 # Codex CLI Skill
@@ -36,7 +36,7 @@ multi-turn sessions, code review, session resume/fork, and output capture.
 - Always use `--full-auto` for non-interactive execution (sets `-a on-request --sandbox workspace-write`).
 - Always capture output via `-o <file>` and read the file back — raw stdout may contain ANSI escape codes or progress indicators.
 - For read-only analysis, use `-s read-only` instead of `--full-auto`.
-- Default model is `gpt-5.4` (from `~/.codex/config.toml`). Override with `-m <model>`.
+- Default model is whatever `~/.codex/config.toml`'s `model` key currently says — read it at runtime with `grep '^model' ~/.codex/config.toml` if you need to know it; never hardcode a specific version in instructions or scripts, it drifts. Override per-call with `-m <model>`.
 - **Default to background execution.** Codex calls routinely take 2–10 minutes — well past the Bash tool's 2-minute default timeout. Launch with `run_in_background: true` and Monitor the `-o` file, OR pass `timeout: 600000` for foreground. Do NOT rely on default timeouts. See [Adaptive Execution](#adaptive-execution).
 
 ## Preflight Check
@@ -136,7 +136,7 @@ When latency matters more than depth, reduce the work codex does:
 | Lever | Flag | Effect |
 |-------|------|--------|
 | Reasoning effort | `-c model_reasoning_effort="low"` | Fastest. Use `medium` (default) or `high` only when needed. |
-| Smaller model | `-m gpt-5.4-mini` (or current mini variant) | Faster, cheaper, less capable. |
+| Smaller model | `-m <mini-model-name>` (check `codex --help` or the model family docs for the current mini variant — don't hardcode one) | Faster, cheaper, less capable. |
 | Disable web search | (omit `--search`) | Search adds round-trips. |
 | Tighter prompt | — | Less to read = less to think about. |
 | Read-only sandbox | `-s read-only` | No tool-use round-trips. Pure analysis. |
@@ -300,7 +300,7 @@ The standalone `codex review` command (without `exec`) also works but runs inter
 - **`run_in_background` by default**: Codex routinely takes 2–10 minutes, exceeding the Bash tool's 2-minute default timeout. Launch every non-trivial codex call with `run_in_background: true` and use the Monitor tool to wait on the `-o` file. Foreground calls require explicit `timeout: 600000`. See [Adaptive Execution](#adaptive-execution).
 - **Tune reasoning effort for latency**: For quick queries, pass `-c model_reasoning_effort="low"`. The default (`medium`) is balanced; reserve `high` for genuinely hard problems where you're willing to wait.
 - **`-s read-only` for safe analysis**: When codex only needs to read and analyze (not write), use read-only sandbox mode.
-- **`-m` for model override**: Switch models per-query without changing config: `-m o3`, `-m gpt-5.4`, etc.
+- **`-m` for model override**: Switch models per-query without changing config, e.g. `-m o3` or `-m <model-name>` — never hardcode a specific dated/versioned model name in scripts, since `~/.codex/config.toml`'s default drifts over time.
 - **`-i` for image input**: Attach screenshots or diagrams: `-i screenshot.png`.
 - **`--search` for web search**: Enable web search capability: `codex exec "what's new in React 19" --search --full-auto -o /tmp/codex-out.txt`.
 - **Pipe from stdin**: Use `-` as prompt to read from stdin: `echo "explain this" | codex exec - --full-auto -o /tmp/codex-out.txt`.

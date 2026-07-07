@@ -192,7 +192,7 @@ Location: `~/.codex/config.toml`
 
 Key settings:
 ```toml
-model = "gpt-5.4"
+model = "<model-name>"             # e.g. "gpt-5.5" — read the live file, don't assume a version
 model_reasoning_effort = "high"    # low | medium | high
 
 [mcp_servers.<name>]

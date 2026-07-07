@@ -15,6 +15,10 @@ description: >
   live state, structured (JSON schema) output, attaching images, or
   programmatic event handling. Use codex-cli only for one-shot batch
   invocations that pre-capture to an -o file.
+  For OpenAI Platform API calls specifically (embeddings, image generation,
+  audio, moderation, batches, files) — not open-ended chat — use openai-cli
+  instead; that path bills OPENAI_API_KEY, this one uses the ChatGPT
+  subscription.
   Trigger patterns (match any variation):
   codex / codex-server / codex app server / codex app-server /
   openai / open ai / OpenAI / chatgpt / chat gpt / ChatGPT / GPT /
@@ -26,7 +30,7 @@ description: >
   show me what gpt thinks / structured output from gpt / json schema gpt /
   resume codex thread / continue codex conversation / continue codex session /
   /codex-server
-version: 1.3.0
+version: 1.3.1
 ---
 
 # Codex Server Skill
@@ -57,9 +61,14 @@ For the full login walkthrough (account types, troubleshooting) read
 Run once after install. No env vars needed.
 
 ```bash
+CODEX_SERVER_VERSION=$(ls ~/.claude/plugins/cache/hideki-plugins/codex-server/ | sort -V | tail -1)
 deno run --allow-read --allow-write --allow-env --allow-run=mise,codex,which \
-  ~/.claude/plugins/cache/hideki-plugins/codex-server/1.0.0/skills/codex-server/assets/lib/setup.ts
+  ~/.claude/plugins/cache/hideki-plugins/codex-server/$CODEX_SERVER_VERSION/skills/codex-server/assets/lib/setup.ts
 ```
+
+(Resolves the highest installed cache version at runtime via a version sort —
+never hardcode a specific version here, the plugin has already moved past
+1.0.0 and will move again.)
 
 setup.ts copies `chat.ts` / `worker.ts` / `helpers.ts` into `~/.codex-server/lib/`,
 pins the codex binary path into `~/.codex-server/config.json`, and prepares the
@@ -205,7 +214,7 @@ After completing a session, reflect:
    - Prepend a new entry:
      ```markdown
      ## <ISO-8601 timestamp>
-     - **Skill Version**: 1.0.0
+     - **Skill Version**: <version from this file's frontmatter>
      - **Task**: <brief description>
      - **Outcome**: success | partial-success | failure | error
      - **Rating**: <N>/5 (or "—" if not provided)

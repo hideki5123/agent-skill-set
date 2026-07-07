@@ -20,16 +20,6 @@
       "description": "Drive an already-running, LOGGED-IN Chromium browser on macOS via AppleScript — navigate, click, fill forms, scroll, and extract page content from the user's REAL session, with the browser left open a"
     },
     {
-      "name": "codex-cli",
-      "source": "./plugins/codex-cli",
-      "description": "Run OpenAI Codex CLI from the terminal for batch / one-shot `codex exec` invocations with output captured to an `-o` file. Use for fire-and-forget runs, scripted CI, code review batches (`codex review"
-    },
-    {
-      "name": "codex-server",
-      "source": "./plugins/codex-server",
-      "description": "Run OpenAI Codex via the Codex App Server (JSON-RPC-over-stdio) for streaming multi-turn chat sessions with persistent threads, structured output, image input, and rich event streams. Default entry po"
-    },
-    {
       "name": "confluence",
       "source": "./plugins/confluence",
       "description": "Use confluence-cli to read, search, create, update, move, and delete Confluence pages and attachments from the terminal. Prefer this skill over `mcp__claude_ai_Atlassian__*` MCP tools when you need: p"
@@ -125,11 +115,6 @@
       "description": "Operate Notion from the terminal via the official Notion REST API on TypeScript + deno — search workspace, get/create/update/archive pages, query databases with filters and sorts, list/append/delete b"
     },
     {
-      "name": "openai-cli",
-      "source": "./plugins/openai-cli",
-      "description": "Call the OpenAI Platform API from the terminal via TypeScript on deno — chat completions, Responses API, reasoning (o-series), embeddings, image generation, audio (Whisper transcription, TTS), files, "
-    },
-    {
       "name": "orch-qa",
       "source": "./plugins/orch-qa",
       "description": "Senior QA/QC engineer that evaluates existing codebases for test quality. Runs existing tests, diagnoses failures, identifies missing test coverage, and writes missing tests. Framework-agnostic — work"
@@ -148,11 +133,6 @@
       "name": "pr-review",
       "source": "./plugins/pr-review",
       "description": "Review a teammate's pull request. The reviewer role (multi-lens analysis, severity calibration, suggestion writing) lives in the `pr-review:pr-review` subagent; this skill is the orchestrator — it res"
-    },
-    {
-      "name": "prd-council",
-      "source": "./plugins/prd-council",
-      "description": "Turn a feature idea into an execution-ready document set through an adversarial PRD \"council\": grill the user for requirements, draft a PRD, then debate it with OpenAI Codex round-by-round until BOTH "
     },
     {
       "name": "prototype",
@@ -233,6 +213,26 @@
       "name": "test-scenario",
       "source": "./plugins/test-scenario",
       "description": "Generate test outlines (living documentation) and test code from natural language feature descriptions. Supports .NET (xUnit/NUnit/MSTest), Python (pytest), TypeScript (Vitest/Jest). Strict mode: no i"
+    },
+    {
+      "name": "openai-cli",
+      "source": "./plugins/openai-cli",
+      "description": "Call the OpenAI Platform API from the terminal via TypeScript on deno — chat completions, Responses API, reasoning (o-series), embeddings, image generation, audio (Whisper transcription, TTS), files, "
+    },
+    {
+      "name": "codex-server",
+      "source": "./plugins/codex-server",
+      "description": "Run OpenAI Codex via the Codex App Server (JSON-RPC-over-stdio) for streaming multi-turn chat sessions with persistent threads, structured output, image input, and rich event streams. Default entry po"
+    },
+    {
+      "name": "codex-cli",
+      "source": "./plugins/codex-cli",
+      "description": "Run OpenAI Codex CLI from the terminal for batch / one-shot `codex exec` invocations with output captured to an `-o` file. Use for fire-and-forget runs, scripted CI, code review batches (`codex review"
+    },
+    {
+      "name": "prd-council",
+      "source": "./plugins/prd-council",
+      "description": "Turn a feature idea into an execution-ready document set through an adversarial PRD \"council\": grill the user for requirements, draft a PRD, then debate it with OpenAI Codex round-by-round until BOTH "
     }
   ]
 }
