@@ -5,8 +5,11 @@ description: >
   main/master, identifies changed files, classifies them by type (frontend, API,
   backend, config), and generates test scenarios covering those changes. Produces
   a Markdown report with embedded screenshots for UI changes and CSV files
-  compatible with the e2e-test skill for automated execution. Captures live
-  browser screenshots via Playwright MCP for frontend changes. Use when the user
+  compatible with the e2e-test skill for automated execution. Captures
+  screenshots for frontend changes via the playwright-cli skill (no MCP
+  browser server required). Diff-driven — not to be confused with the
+  test-scenario skill, which works from a natural-language feature
+  description instead. Use when the user
   asks to generate test scenarios, create test cases from changes, analyze branch
   for testing, generate test plan from diff, create e2e scenarios from code
   changes, or build test coverage for a branch. Trigger phrases include
@@ -18,11 +21,15 @@ context: fork
 agent: general-purpose
 ---
 
-# Test Scenario Generator
+# Branch-Diff Test Scenario Generator
 
 Generate test scenarios from git branch changes. Analyze diffs, classify changes,
 capture screenshots for UI changes, and produce both Markdown reports and CSV files
 compatible with the e2e-test skill.
+
+Not to be confused with the `test-scenario` skill, which turns a natural-language
+feature description into spec-driven unit test outlines — this skill is diff-driven
+(what changed on this branch) and produces E2E documentation, not unit test code.
 
 ## Arguments
 
@@ -152,17 +159,24 @@ Each scenario must include:
 
 Skip this phase if `--skip-screenshots` is set or no frontend changes were detected.
 
+Screenshots are captured via the `playwright-cli` skill's wrapper around
+`npx playwright screenshot` — a stateless, one-shot CLI capture. No MCP browser
+tools are used (there is no registered Playwright MCP server in this
+environment; an earlier version of this phase depended on one and failed at
+runtime). This trades away in-browser interaction (no hover-to-highlight step)
+for something that actually runs: describe in the scenario's own text what to
+look at within the captured image, rather than visually marking it.
+
 #### 5a. Detect dev server
 
 Probe the dev server URL:
 - Use `--url` if provided
-- Otherwise probe common ports in order:
+- Otherwise probe common ports in order, checking reachability with
+  `curl -sf -o /dev/null <url>`:
   - `http://localhost:3000`
   - `http://localhost:5173`
   - `http://localhost:4200`
   - `http://localhost:8080`
-
-Use `mcp__playwright__browser_navigate` to attempt connection.
 
 If no server is reachable:
 > No dev server detected. Frontend screenshots will be skipped. Start your dev server and re-run, or use `--url=<your-url>`.
@@ -173,20 +187,26 @@ Continue with text-based scenarios (mark screenshots as "pending" in report).
 
 For each UI scenario from Phase 4:
 
-1. Navigate to the relevant page: `mcp__playwright__browser_navigate`
-2. Take accessibility snapshot: `mcp__playwright__browser_snapshot`
-3. Identify the changed UI component in the accessibility tree
-4. Take a full-page screenshot: `mcp__playwright__browser_take_screenshot`
-5. Save as `scenario-NNN-<component-name>.png` in the output directory
-
-If a specific element needs highlighting:
-- Use `browser_snapshot` to find the element's ref
-- Use `browser_hover` on the element to visually indicate it
-- Then take the screenshot
-
-#### 5c. Close browser
-
-After all screenshots are captured: `mcp__playwright__browser_close`
+1. Determine the page URL: `<dev-server-url><scenario's route/path>`.
+2. If the scenario names a specific element to verify (a form, a button, a
+   banner), use `--wait-for-selector "<css-or-text-selector>"` so the shot is
+   taken only after that element renders. Otherwise capture immediately after
+   load.
+3. Capture, full page:
+   ```bash
+   npx playwright screenshot --full-page \
+     --wait-for-selector "<selector>" \
+     "<dev-server-url><path>" \
+     "<output-dir>/scenario-NNN-<component-name>.png"
+   ```
+4. If the affected page requires authentication, use the `--save-storage` /
+   `--load-storage` flow documented in the `playwright-cli` skill (record the
+   logged-in session once, then pass `--load-storage <file>` on subsequent
+   screenshot calls) instead of skipping the scenario.
+5. If the capture command fails (dev server crashed mid-run, selector never
+   appeared, timeout), mark that scenario's screenshot as "capture failed" in
+   the report rather than stopping the whole phase — continue with the
+   remaining scenarios.
 
 ### Phase 6: Write Output
 
@@ -260,7 +280,8 @@ After writing all files, present in chat:
 |-------|-------------------|
 | **e2e-test** | CSV output is directly executable: `Run e2e test with scenario <path>.csv` |
 | **orch-qa** | Complementary: orch-qa audits existing tests, this skill creates new scenarios from changes |
-| **dev-workflow** | After implementing a feature via dev-workflow, use this skill to create E2E scenarios |
+| **playwright-cli** | Phase 5 screenshot capture is `npx playwright screenshot`, wrapped by this skill |
+| **tdd** | After implementing a feature via the TDD workflow, use this skill to create E2E scenarios from the resulting diff |
 
 ## Behavior Scenarios
 

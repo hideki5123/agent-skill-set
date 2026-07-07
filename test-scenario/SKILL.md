@@ -157,6 +157,6 @@ Scenario: Update existing test file
 
 | Skill | How to use together |
 |-------|---------------------|
-| `dev-workflow` | Use test-scenario to generate the outline (RED state), then dev-workflow to implement production code (GREEN) |
+| `tdd` | Use test-scenario to generate the outline (RED state), then the `tdd` skill's red-green-refactor loop to implement production code (GREEN) |
 | `orch-qa` | Use orch-qa to identify missing test coverage, then feed gap descriptions to test-scenario as input |
 | `scenario-gen` | Different triggers: scenario-gen works from git diffs (change-driven), test-scenario works from natural language (spec-driven) |
