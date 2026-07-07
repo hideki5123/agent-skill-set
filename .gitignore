@@ -56,5 +56,8 @@ coverage/
 # Generated marketplace skill payloads (build artifacts)
 my-marketplace/plugins/*/skills/
 
+# e2e-test run output (evidence packages, ephemeral per-run artifacts)
+e2e-test/e2e-evidence/
+
 # Deno
 deno.lock

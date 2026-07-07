@@ -14,21 +14,18 @@ A collection of agent skills and tools for Claude Code and Cursor.
 | [confluence](confluence/) | Read, search, create, update, move, and delete Confluence pages via `confluence-cli` |
 | [dev-workflow](dev-workflow/) | **⚠️ DEPRECATED** (disabled; superseded by upstream `grill-me`→`to-prd`→`tdd`→`improve-codebase-architecture`). End-to-end TDD development workflow with multi-agent team review |
 | [jira-cli](jira-cli/) | View, search, create, update, and delete Jira issues, comments, sprints via `@pchuri/jira-cli` |
-| [e2e-test](e2e-test/) | Run frontend E2E tests using Playwright MCP browser tools with screenshot evidence |
+| [e2e-test](e2e-test/) | Run frontend E2E tests via `npx playwright test`, generated from a scenario CSV, with video/screenshot evidence |
 | [multi-agent-council](multi-agent-council/) | Multi-LLM council for architecture decisions and code reviews (submodule) |
 | [my-skill-factory](my-skill-factory/) | Create, build, and install custom skills into the local marketplace |
 | [orch-qa](orch-qa/) | QA/QC engineer that evaluates codebases for test quality and writes missing tests |
-| [playwright-cli](playwright-cli/) | Run Playwright CLI commands for test execution, codegen, reporting, and debugging |
-| [playwright-codegen](playwright-codegen/) | Record browser interactions with Playwright codegen and transform into test suites |
+| [playwright-cli](playwright-cli/) | Run Playwright CLI commands for test execution, codegen, reporting, and debugging — including the guided codegen-to-test-suite workflow |
 | [pm-review](pm-review/) | Review local changes from a PMBOK-based product management perspective |
 | [pr-review](pr-review/) | Review a teammate's pull request from multiple expert perspectives |
 | [review-local](review-local/) | Review local git changes from 8 expert perspectives as a pre-commit quality gate |
 | [scenario-gen](scenario-gen/) | Generate test scenarios from git branch changes with screenshot evidence |
 | [self-pr-review](self-pr-review/) | Self-review loop: request AI reviews (Copilot + Gemini), apply fixes, repeat until clean |
-| [session-handover](session-handover/) | Auto-generate session handover via PreCompact hook (install once, works forever) |
 | [slack-cli](slack-cli/) | Operate Slack from the terminal via `slack-cli` — messages, unreads, search, uploads |
 | [subagent-gen](subagent-gen/) | Generate PROJECT-KNOWLEDGE.md profiles for subagent deep domain expertise |
-| [address-pr-comments](address-pr-comments/) | Autonomously fetch and apply AI reviewer comments on a GitHub PR |
 
 ### Supporting directories
 
@@ -44,8 +41,8 @@ Some skills require external CLI tools. Install them before use.
 | Tool | Install | Required by |
 |------|---------|-------------|
 | [Node.js / npm](https://nodejs.org/) | OS package manager | All npm-based tools below |
-| [GitHub CLI (gh)](https://cli.github.com/) | OS package manager | dev-workflow, pr-review, self-pr-review, address-pr-comments |
-| npm dependencies | `npm install` | confluence, jira-cli, slack-cli, playwright-cli, playwright-codegen, e2e-test, scenario-gen |
+| [GitHub CLI (gh)](https://cli.github.com/) | OS package manager | dev-workflow, pr-review, self-pr-review |
+| npm dependencies | `npm install` | confluence, jira-cli, slack-cli, playwright-cli, e2e-test, scenario-gen |
 
 ## Authoring Workflow
 

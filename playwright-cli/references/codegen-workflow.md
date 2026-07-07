@@ -1,58 +1,15 @@
----
-name: playwright-codegen
-description: >
-  Guided workflow for recording browser interactions with Playwright codegen and transforming
-  the raw output into production-quality test suites. Handles the full lifecycle: planning the
-  recording session, launching codegen, reviewing captured actions, enhancing with assertions
-  and page objects, organizing test files, scaffolding config, and running until green.
-  Use when the user wants to create new Playwright tests from browser recordings, turn codegen
-  output into structured specs, or bootstrap a test suite for a web application.
-  Trigger phrases include "record test", "codegen to test", "generate playwright test",
-  "create test from recording", "record and generate test", "playwright codegen workflow",
-  "turn recording into test", "bootstrap test suite", "record browser test",
-  "generate spec from codegen", "create e2e test from recording".
----
+# Guided Codegen-to-Test-Suite Workflow
 
-# Playwright Codegen Skill
+Turning a raw `npx playwright codegen` recording into a production-quality
+`.spec.ts` test suite with assertions, resilient selectors, and optional page
+objects. Raw codegen output has no assertions, flat action sequences, and
+fragile selectors — this workflow bridges the gap.
 
-Guided workflow for recording browser interactions with `npx playwright codegen` and
-transforming the raw output into production-quality `.spec.ts` test suites with assertions,
-resilient selectors, and optional page objects.
+Use this when the user wants to create new tests from a browser recording,
+not just run `codegen` standalone (see the Quick Reference's "Code generation"
+section for that).
 
-## Why This Skill Exists
-
-Raw codegen output has no assertions, flat action sequences, and fragile selectors.
-This skill bridges the gap between a quick recording and a maintainable test suite.
-
----
-
-## Step 1: Prerequisites
-
-Before starting, verify the environment is ready.
-
-```bash
-npx playwright --version
-```
-
-If this fails, guide the user:
-
-| Error | Fix |
-|-------|-----|
-| `npx: command not found` | Install Node.js / npm |
-| `Cannot find module '@playwright/test'` | `npm install -D @playwright/test` |
-| `Executable doesn't exist` | `npx playwright install` or `npx playwright install chromium` |
-
-Check for an existing config:
-
-```bash
-ls playwright.config.ts playwright.config.js 2>/dev/null
-```
-
-If no config exists, note it — Step 7 will offer to scaffold one.
-
----
-
-## Step 2: Plan the Recording
+## Step 1: Plan the Recording
 
 Before launching codegen, gather the following from the user:
 
@@ -77,14 +34,9 @@ npx playwright codegen --target=playwright-test --device="iPhone 13" -o tests/ge
 npx playwright codegen --target=playwright-test --viewport-size="1280,720" -o tests/generated.spec.ts <url>
 ```
 
----
-
-## Step 3: Launch Codegen & Record
+## Step 2: Launch Codegen & Record
 
 ### Standard recording
-
-Run the codegen command built in Step 2. The user interacts with the browser while
-Playwright records actions.
 
 ```bash
 npx playwright codegen --target=playwright-test -o <output-file> <url>
@@ -112,11 +64,9 @@ If the user is in a headless environment (SSH, CI, WSL without display):
 
 - Codegen requires a display. Suggest using a local machine or X11 forwarding.
 - As a fallback, the user can write the test manually using patterns from
-  `references/test-patterns.md` and selector guidance from `references/selector-strategy.md`.
+  `test-patterns.md` and selector guidance from `selector-strategy.md`.
 
----
-
-## Step 4: Capture & Review
+## Step 3: Capture & Review
 
 After the user closes the codegen browser, read the generated file:
 
@@ -146,14 +96,12 @@ Ask the user:
 - What **assertions** to add (what should the test verify?)
 - How to **split** the recording into logical test cases (if multiple flows were recorded)
 
----
-
-## Step 5: Enhance into Test Suite
+## Step 4: Enhance into Test Suite
 
 Transform the raw codegen output into a structured test file. Follow the patterns in
-`references/test-patterns.md`.
+`test-patterns.md`.
 
-### 5a. Structure with describe/test blocks
+### 4a. Structure with describe/test blocks
 
 Wrap actions in `test.describe` and `test()` blocks:
 
@@ -177,7 +125,7 @@ test.describe('Feature Name', () => {
 });
 ```
 
-### 5b. Add assertions
+### 4b. Add assertions
 
 Every test must verify something. Common assertion patterns:
 
@@ -201,12 +149,12 @@ await expect(page).toHaveTitle(/Dashboard/);
 await expect(page.getByLabel('Email')).toHaveValue('user@example.com');
 ```
 
-See `references/test-patterns.md` for the full assertion catalog.
+See `test-patterns.md` for the full assertion catalog.
 
-### 5c. Improve selectors
+### 4c. Improve selectors
 
 Replace fragile codegen selectors with resilient ones following the priority order
-in `references/selector-strategy.md`:
+in `selector-strategy.md`:
 
 | Priority | Locator | Example |
 |----------|---------|---------|
@@ -217,7 +165,7 @@ in `references/selector-strategy.md`:
 | 5 | `getByTestId` | `page.getByTestId('submit-btn')` |
 | 6 | CSS (last resort) | `page.locator('.btn-primary')` |
 
-### 5d. Add waits where needed
+### 4d. Add waits where needed
 
 If the app has async loading, add explicit waits:
 
@@ -226,13 +174,11 @@ await page.waitForLoadState('networkidle');
 await expect(page.getByRole('table')).toBeVisible();
 ```
 
-### 5e. Extract beforeEach for shared setup
+### 4e. Extract beforeEach for shared setup
 
 If multiple tests share navigation or setup, move it to `beforeEach`.
 
----
-
-## Step 6: Organize Files
+## Step 5: Organize Files
 
 ### Naming and placement
 
@@ -248,7 +194,7 @@ Use descriptive names matching the feature under test.
 ### Page objects (optional)
 
 For complex pages with many interactions, or when 3+ tests share the same page,
-extract a page object. See `references/page-object-pattern.md`.
+extract a page object. See `page-object-pattern.md`.
 
 ```
 tests/
@@ -257,13 +203,10 @@ tests/
   <feature>.spec.ts      # Test file using the page object
 ```
 
----
+## Step 6: Scaffold Config
 
-## Step 7: Scaffold Config
-
-If no `playwright.config.ts` exists (detected in Step 1), offer to create one.
-
-Use the template from `references/config-template.md` as a starting point. Customize:
+If no `playwright.config.ts` exists, offer to create one using the template from
+`config-template.md`. Customize:
 
 - `baseURL` — Set to the app's base URL
 - `testDir` — Set to the test directory (default `./tests`)
@@ -274,9 +217,7 @@ Use the template from `references/config-template.md` as a starting point. Custo
 npx playwright test --list
 ```
 
----
-
-## Step 8: Run & Verify
+## Step 7: Run & Verify
 
 Run the generated test to verify it passes:
 
@@ -295,23 +236,12 @@ npx playwright test <file> --project=chromium
 3. Fix the issue in the test file.
 4. Re-run until green.
 
-### Run headed for debugging
+Run headed for debugging: `npx playwright test <file> --project=chromium --headed`
 
-```bash
-npx playwright test <file> --project=chromium --headed
-```
+Use trace on failure: `npx playwright test <file> --project=chromium --trace=on`, then
+`npx playwright show-trace test-results/<test-folder>/trace.zip`.
 
-### Use trace on failure
-
-```bash
-npx playwright test <file> --project=chromium --trace=on
-# Then view:
-npx playwright show-trace test-results/<test-folder>/trace.zip
-```
-
----
-
-## Step 9: Next Steps
+## Step 8: Next Steps
 
 After the test passes, suggest:
 
@@ -321,12 +251,3 @@ After the test passes, suggest:
 - **Tracing**: Set `trace: 'on-first-retry'` in config for debugging flaky tests
 - **More tests**: Record additional flows using this same workflow
 - **Test tagging**: Use `test.describe('feature', { tag: '@smoke' }, ...)` for selective runs
-
----
-
-## Related Skills
-
-- **`playwright-cli`** — CLI reference for all `npx playwright` commands. Use for running
-  tests, managing browsers, viewing reports, and other CLI operations.
-- **`e2e-test`** — Interactive browser automation using Playwright MCP tools with screenshot
-  evidence. Use for step-by-step manual browser testing, not CLI test suites.

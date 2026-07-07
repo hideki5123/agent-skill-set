@@ -384,7 +384,7 @@ When a monorepo is detected:
 | `tdd-team-workflow` | Use TDD to **build** new features with tests. Use `orch-qa` to **audit** existing code. |
 | `e2e-test` | Use for interactive Playwright browser testing. `orch-qa` evaluates E2E test coverage but uses the project's own test runner. |
 | `review-pr` | Use for line-by-line PR review. `orch-qa` focuses on test quality across the codebase, not PR diff review. |
-| `playwright-cli` / `playwright-codegen` | Use to create/run Playwright tests. `orch-qa` may detect E2E gaps and recommend using these skills. |
+| `playwright-cli` | Use to create/run Playwright tests, including the guided codegen-to-test-suite workflow. `orch-qa` may detect E2E gaps and recommend using this skill. |
 
 ## Example Invocations
 

@@ -7,133 +7,63 @@ Usage:
   python scripts/sync_skills.py --targets claude
   python scripts/sync_skills.py --targets codex
   python scripts/sync_skills.py --validate
+  python scripts/sync_skills.py --targets codex --include-deprecated
+
+The `claude` target shares its copy/validate logic with sync_marketplace.py
+via skill_layout.py, so the two can no longer disagree about what belongs in
+a generated Claude plugin. The `codex` target is a deliberately different,
+simpler contract implemented directly here: a flat copy of the whole skill
+tree (including `agents/` and `feedback/`) into `$CODEX_HOME/skills/<name>/`.
+
+Skills marked `deprecated: true` in their SKILL.md frontmatter are excluded
+from the `codex` target by default (and purged if a stale copy exists there)
+so a disabled skill doesn't stay live for Codex indefinitely. Pass
+`--include-deprecated` to sync/validate them anyway.
 """
 
 from __future__ import annotations
 
 import argparse
-import hashlib
-import json
 import os
 import shutil
 import sys
-from dataclasses import dataclass
 from pathlib import Path
 
+from skill_layout import (
+    EXCLUDED_TREE_NAMES,
+    MARKETPLACE_REGISTRY,
+    PLUGINS_DIR,
+    SkillMeta,
+    collect_files,
+    copy_agents_tree,
+    copy_claude_skill_tree,
+    discover_source_skills,
+    ensure_plugin_metadata,
+    sync_registry,
+    validate_claude_plugin,
+)
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
-MARKETPLACE_ROOT = PROJECT_ROOT / "my-marketplace"
-MARKETPLACE_REGISTRY = MARKETPLACE_ROOT / ".claude-plugin" / "marketplace.json"
-PLUGINS_DIR = MARKETPLACE_ROOT / "plugins"
 DEFAULT_CODEX_HOME = Path.home() / ".codex"
 
-EXCLUDED_SOURCE_DIRS = {
-    ".git",
-    ".cursor",
-    "my-marketplace",
-}
-EXCLUDED_TREE_NAMES = {
-    "__pycache__",
-    ".DS_Store",
-}
+
+def resolve_codex_home(override: str | None) -> Path:
+    if override:
+        return Path(override).expanduser().resolve()
+
+    env_home = os.environ.get("CODEX_HOME")
+    if env_home:
+        return Path(env_home).expanduser().resolve()
+
+    return DEFAULT_CODEX_HOME.resolve()
 
 
-@dataclass
-class SkillMeta:
-    dir_name: str
-    name: str
-    description: str
-    source_dir: Path
+def codex_skills_dir(codex_home: Path) -> Path:
+    return codex_home / "skills"
 
 
-def read_text(path: Path) -> str:
-    return path.read_text(encoding="utf-8")
-
-
-def write_json(path: Path, data: dict) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-
-
-def parse_skill_frontmatter(skill_md: Path) -> tuple[str, str]:
-    text = read_text(skill_md)
-    if not text.startswith("---"):
-        raise ValueError(f"{skill_md} is missing YAML frontmatter")
-
-    parts = text.split("---", 2)
-    if len(parts) < 3:
-        raise ValueError(f"{skill_md} has malformed YAML frontmatter")
-
-    frontmatter = parts[1].splitlines()
-    name = ""
-    description = ""
-
-    idx = 0
-    while idx < len(frontmatter):
-        line = frontmatter[idx]
-        stripped = line.strip()
-
-        if stripped.startswith("name:"):
-            name = stripped.split(":", 1)[1].strip()
-            idx += 1
-            continue
-
-        if stripped.startswith("description:"):
-            raw = stripped.split(":", 1)[1].strip()
-            if raw in (">", "|"):
-                idx += 1
-                desc_lines: list[str] = []
-                while idx < len(frontmatter):
-                    block_line = frontmatter[idx]
-                    if not block_line.startswith("  "):
-                        break
-                    desc_lines.append(block_line.strip())
-                    idx += 1
-                description = " ".join(line for line in desc_lines if line).strip()
-                continue
-
-            description = raw.strip()
-            idx += 1
-            continue
-
-        idx += 1
-
-    if not name:
-        raise ValueError(f"{skill_md} frontmatter must include `name`")
-
-    return name, description
-
-
-def discover_source_skills(selected: set[str] | None) -> list[SkillMeta]:
-    skills: list[SkillMeta] = []
-    for child in PROJECT_ROOT.iterdir():
-        if not child.is_dir():
-            continue
-        if child.name in EXCLUDED_SOURCE_DIRS:
-            continue
-
-        skill_md = child / "SKILL.md"
-        if not skill_md.exists():
-            continue
-
-        name, description = parse_skill_frontmatter(skill_md)
-        if selected and name not in selected and child.name not in selected:
-            continue
-
-        skills.append(
-            SkillMeta(
-                dir_name=child.name,
-                name=name,
-                description=description,
-                source_dir=child,
-            )
-        )
-
-    skills.sort(key=lambda item: item.name)
-    return skills
-
-
-def copy_skill_tree(source_dir: Path, dest_dir: Path) -> None:
+def copy_codex_skill_tree(source_dir: Path, dest_dir: Path) -> None:
+    """Full flat copy including agents/ and feedback/ — Codex's own contract.
+    Deliberately does not apply the Claude-layout exclusions."""
     if dest_dir.exists():
         shutil.rmtree(dest_dir)
     dest_dir.mkdir(parents=True, exist_ok=True)
@@ -152,88 +82,10 @@ def copy_skill_tree(source_dir: Path, dest_dir: Path) -> None:
             shutil.copy2(item, dest_path)
 
 
-def ensure_plugin_metadata(plugin_dir: Path, meta: SkillMeta) -> None:
-    plugin_meta_dir = plugin_dir / ".claude-plugin"
-    plugin_meta_dir.mkdir(parents=True, exist_ok=True)
-
-    plugin_json_path = plugin_meta_dir / "plugin.json"
-    version = "1.0.0"
-    if plugin_json_path.exists():
-        try:
-            existing = json.loads(read_text(plugin_json_path))
-            version = str(existing.get("version", version))
-        except json.JSONDecodeError:
-            pass
-
-    plugin_json = {
-        "name": meta.name,
-        "version": version,
-        "description": (meta.description or f"{meta.name} skill")[:200],
-        "author": {"name": "Hideki"},
-        "keywords": [meta.name],
-        "license": "MIT",
-        "skills": "./skills",
-    }
-    write_json(plugin_json_path, plugin_json)
-
-    plugin_marketplace = {
-        "name": "hideki-plugins",
-        "owner": {"name": "Hideki"},
-        "metadata": {"description": "Custom Claude Code plugins by Hideki"},
-        "plugins": [
-            {
-                "name": meta.name,
-                "source": {"type": "local", "path": "."},
-                "description": plugin_json["description"],
-                "version": version,
-            }
-        ],
-    }
-    write_json(plugin_meta_dir / "marketplace.json", plugin_marketplace)
-
-
-def sync_registry(synced: list[SkillMeta]) -> None:
-    if MARKETPLACE_REGISTRY.exists():
-        registry = json.loads(read_text(MARKETPLACE_REGISTRY))
-    else:
-        registry = {"name": "hideki-plugins", "owner": {"name": "Hideki"}, "plugins": []}
-
-    existing_plugins = registry.get("plugins", [])
-    existing_by_name = {plugin.get("name"): plugin for plugin in existing_plugins}
-
-    for meta in synced:
-        existing_by_name[meta.name] = {
-            "name": meta.name,
-            "source": f"./plugins/{meta.name}",
-            "description": (meta.description or f"{meta.name} skill")[:200],
-        }
-
-    registry["plugins"] = sorted(existing_by_name.values(), key=lambda item: item["name"])
-    write_json(MARKETPLACE_REGISTRY, registry)
-
-
-def file_hash(path: Path) -> str:
-    h = hashlib.sha256()
-    h.update(path.read_bytes())
-    return h.hexdigest()
-
-
-def collect_files(base: Path) -> dict[str, str]:
-    files: dict[str, str] = {}
-    for file_path in base.rglob("*"):
-        if not file_path.is_file():
-            continue
-        if any(part in EXCLUDED_TREE_NAMES for part in file_path.parts):
-            continue
-        rel = str(file_path.relative_to(base)).replace("\\", "/")
-        files[rel] = file_hash(file_path)
-    return files
-
-
-def validate_tree(meta: SkillMeta, destination: Path, label: str) -> list[str]:
+def validate_codex_tree(meta: SkillMeta, destination: Path) -> list[str]:
     errors: list[str] = []
     if not destination.exists():
-        return [f"[{meta.name}] missing generated directory ({label}): {destination}"]
+        return [f"[{meta.name}] missing generated directory (codex skills dir): {destination}"]
 
     source_files = collect_files(meta.source_dir)
     generated_files = collect_files(destination)
@@ -245,28 +97,13 @@ def validate_tree(meta: SkillMeta, destination: Path, label: str) -> list[str]:
     )
 
     if missing:
-        errors.append(f"[{meta.name}] missing files in {label}: {', '.join(missing)}")
+        errors.append(f"[{meta.name}] missing files in codex skills dir: {', '.join(missing)}")
     if extra:
-        errors.append(f"[{meta.name}] extra files in {label}: {', '.join(extra)}")
+        errors.append(f"[{meta.name}] extra files in codex skills dir: {', '.join(extra)}")
     if changed:
-        errors.append(f"[{meta.name}] changed file content in {label}: {', '.join(changed)}")
+        errors.append(f"[{meta.name}] changed file content in codex skills dir: {', '.join(changed)}")
 
     return errors
-
-
-def resolve_codex_home(override: str | None) -> Path:
-    if override:
-        return Path(override).expanduser().resolve()
-
-    env_home = os.environ.get("CODEX_HOME")
-    if env_home:
-        return Path(env_home).expanduser().resolve()
-
-    return DEFAULT_CODEX_HOME.resolve()
-
-
-def codex_skills_dir(codex_home: Path) -> Path:
-    return codex_home / "skills"
 
 
 def run_claude_sync(skills: list[SkillMeta]) -> None:
@@ -274,10 +111,12 @@ def run_claude_sync(skills: list[SkillMeta]) -> None:
     for meta in skills:
         plugin_dir = PLUGINS_DIR / meta.name
         plugin_skill_dir = plugin_dir / "skills" / meta.name
-        copy_skill_tree(meta.source_dir, plugin_skill_dir)
-        ensure_plugin_metadata(plugin_dir, meta)
+        copy_claude_skill_tree(meta.source_dir, plugin_skill_dir)
+        has_agents = copy_agents_tree(meta.source_dir, plugin_dir)
+        ensure_plugin_metadata(plugin_dir, meta, has_agents)
         synced.append(meta)
-        print(f"[claude] Synced {meta.name}: {meta.source_dir} -> {plugin_skill_dir}")
+        suffix = " (+agents)" if has_agents else ""
+        print(f"[claude] Synced {meta.name}: {meta.source_dir} -> {plugin_skill_dir}{suffix}")
 
     if synced:
         sync_registry(synced)
@@ -286,7 +125,7 @@ def run_claude_sync(skills: list[SkillMeta]) -> None:
         print("[claude] No skills matched selection; nothing synced.")
 
 
-def run_codex_sync(skills: list[SkillMeta], codex_home: Path) -> None:
+def run_codex_sync(skills: list[SkillMeta], codex_home: Path, include_deprecated: bool) -> None:
     skills_dir = codex_skills_dir(codex_home)
     skills_dir.mkdir(parents=True, exist_ok=True)
 
@@ -296,21 +135,34 @@ def run_codex_sync(skills: list[SkillMeta], codex_home: Path) -> None:
 
     for meta in skills:
         destination = skills_dir / meta.name
-        copy_skill_tree(meta.source_dir, destination)
+        if meta.deprecated and not include_deprecated:
+            if destination.exists():
+                shutil.rmtree(destination)
+                print(f"[codex] Purged deprecated skill: {destination}")
+            else:
+                print(f"[codex] Skipped deprecated skill: {meta.name}")
+            continue
+        copy_codex_skill_tree(meta.source_dir, destination)
         print(f"[codex] Synced {meta.name}: {meta.source_dir} -> {destination}")
 
 
-def run_validate(skills: list[SkillMeta], targets: set[str], codex_home: Path) -> int:
+def run_validate(skills: list[SkillMeta], targets: set[str], codex_home: Path, include_deprecated: bool) -> int:
     all_errors: list[str] = []
 
     for meta in skills:
         if "claude" in targets:
-            plugin_skill_dir = PLUGINS_DIR / meta.name / "skills" / meta.name
-            all_errors.extend(validate_tree(meta, plugin_skill_dir, "claude marketplace plugin"))
+            all_errors.extend(validate_claude_plugin(meta))
 
         if "codex" in targets:
             codex_skill_dir = codex_skills_dir(codex_home) / meta.name
-            all_errors.extend(validate_tree(meta, codex_skill_dir, "codex skills dir"))
+            if meta.deprecated and not include_deprecated:
+                if codex_skill_dir.exists():
+                    all_errors.append(
+                        f"[{meta.name}] deprecated skill still present in codex skills dir: {codex_skill_dir} "
+                        "(run `sync_skills.py --targets codex` to purge, or pass --include-deprecated to keep it)"
+                    )
+                continue
+            all_errors.extend(validate_codex_tree(meta, codex_skill_dir))
 
     if all_errors:
         print("Validation failed:")
@@ -344,6 +196,11 @@ def main() -> int:
         default=None,
         help="Codex home directory (default: $CODEX_HOME or ~/.codex)",
     )
+    parser.add_argument(
+        "--include-deprecated",
+        action="store_true",
+        help="Also sync/validate deprecated skills for the codex target (default: excluded and purged)",
+    )
     args = parser.parse_args()
 
     selected = set(args.skills) if args.skills else None
@@ -356,12 +213,12 @@ def main() -> int:
     codex_home = resolve_codex_home(args.codex_home)
 
     if args.validate:
-        return run_validate(skills, targets, codex_home)
+        return run_validate(skills, targets, codex_home, args.include_deprecated)
 
     if "claude" in targets:
         run_claude_sync(skills)
     if "codex" in targets:
-        run_codex_sync(skills, codex_home)
+        run_codex_sync(skills, codex_home, args.include_deprecated)
 
     return 0
 

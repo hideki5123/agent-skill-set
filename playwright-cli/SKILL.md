@@ -7,12 +7,16 @@ description: >
   Use when the user asks to run playwright tests, generate test code, install browsers,
   view a test report or trace, take a page screenshot or PDF, open a URL in a specific browser,
   clear the playwright cache, merge shard reports, debug tests, or use playwright UI mode.
+  Also covers the guided workflow for turning a codegen recording into a structured test
+  suite with assertions, resilient selectors, and page objects.
   Trigger phrases include "playwright test", "run playwright", "npx playwright", "codegen",
   "install browsers", "show report", "show trace", "playwright screenshot", "playwright pdf",
   "open in chromium", "open in firefox", "open in webkit", "clear playwright cache",
   "merge reports", "shard tests", "playwright debug", "playwright ui mode", "record test",
   "run e2e tests with playwright cli", "playwright headed", "playwright retries",
-  "update snapshots", "playwright grep", "list playwright tests".
+  "update snapshots", "playwright grep", "list playwright tests", "codegen to test",
+  "generate playwright test", "create test from recording", "turn recording into test",
+  "bootstrap test suite", "record browser test", "generate spec from codegen".
 ---
 
 # Playwright CLI Skill
@@ -48,12 +52,11 @@ If this fails:
 ## Note on Related Skills
 
 This skill (`playwright-cli`) handles **CLI commands** — running tests, codegen, install,
-screenshots, traces, etc. via `npx playwright ...` in Bash.
-
-The `playwright-codegen` skill provides a **guided workflow** for recording browser
-interactions with codegen and transforming them into structured test suites with assertions
-and page objects. Use that skill when the user wants to create new tests from recordings,
-not just run codegen.
+screenshots, traces, etc. via `npx playwright ...` in Bash. It also covers the **guided
+codegen-to-test-suite workflow**: recording, reviewing, adding assertions, and organizing
+page objects. See `references/codegen-workflow.md` when the user wants to turn a recording
+into a structured, assertion-bearing test suite — not just run `codegen` standalone (the
+"Code generation" pattern above).
 
 The separate `e2e-test` skill uses **Playwright MCP browser tools** for interactive,
 step-by-step browser automation with screenshot evidence. Use that skill when the user
@@ -258,3 +261,9 @@ Key config settings that affect CLI behavior:
 ## References
 
 For the full flag-by-flag reference of every subcommand, read `references/cli-reference.md`.
+
+For the guided workflow that turns a codegen recording into a production-quality test suite
+(planning, review, assertions, selectors, page objects, config scaffolding), read
+`references/codegen-workflow.md`. It in turn points to `references/test-patterns.md`,
+`references/selector-strategy.md`, `references/page-object-pattern.md`, and
+`references/config-template.md`.

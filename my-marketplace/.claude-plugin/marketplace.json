@@ -5,9 +5,9 @@
   },
   "plugins": [
     {
-      "name": "address-pr-comments",
-      "source": "./plugins/address-pr-comments",
-      "description": "Autonomously fetch and apply AI reviewer comments on a GitHub PR — creating a draft PR and requesting reviewers if needed. Default mode processes Copilot/Gemini bot comments without human intervention"
+      "name": "agent-swarm",
+      "source": "./plugins/agent-swarm",
+      "description": "Orchestrate multiple coding-agent sessions (Claude Code, Codex, Gemini) over the mcp_agent_mail MCP server, observe their progress on a recurring auto-loop, and prevent inconsistencies (file/edit conf"
     },
     {
       "name": "agents-init",
@@ -15,19 +15,19 @@
       "description": "Generate AGENTS.md (cross-tool agent context — Codex CLI, Aider, Cursor, etc.) and wire CLAUDE.md as a symlink so Claude Code reads the same file. Delegates content generation to Claude's built-in /in"
     },
     {
-      "name": "auto-mode",
-      "source": "./plugins/auto-mode",
-      "description": "Switch the user's Claude Code session back to classifier-guided auto mode by clearing the bypass-toggle flag. Use after approving a plan from the iPhone Claude app (or anywhere bypass-toggle is on) wh"
-    },
-    {
-      "name": "bypass-toggle",
-      "source": "./plugins/bypass-toggle",
-      "description": "Toggle effective bypassPermissions for the user's Claude Code sessions via a PreToolUse hook + flag file. Use when the user wants to skip further permission prompts after approving a plan — especially"
+      "name": "chrome-use",
+      "source": "./plugins/chrome-use",
+      "description": "Drive an already-running, LOGGED-IN Chromium browser on macOS via AppleScript — navigate, click, fill forms, scroll, and extract page content from the user's REAL session, with the browser left open a"
     },
     {
       "name": "codex-cli",
       "source": "./plugins/codex-cli",
       "description": "Run OpenAI Codex CLI from the terminal for batch / one-shot `codex exec` invocations with output captured to an `-o` file. Use for fire-and-forget runs, scripted CI, code review batches (`codex review"
+    },
+    {
+      "name": "codex-server",
+      "source": "./plugins/codex-server",
+      "description": "Run OpenAI Codex via the Codex App Server (JSON-RPC-over-stdio) for streaming multi-turn chat sessions with persistent threads, structured output, image input, and rich event streams. Default entry po"
     },
     {
       "name": "confluence",
@@ -68,6 +68,11 @@
       "name": "grill-me",
       "source": "./plugins/grill-me",
       "description": "Interview the user relentlessly about a plan or design until reaching shared understanding, resolving each branch of the decision tree. Use when user wants to stress-test a plan, get grilled on their "
+    },
+    {
+      "name": "grill-to-impl",
+      "source": "./plugins/grill-to-impl",
+      "description": "Turn a finished grill-me (or any design-finalizing) session into a running implementation kickoff. Synthesizes the session's shared understanding into a self-contained implementation brief, hardens it"
     },
     {
       "name": "grill-with-docs",
@@ -135,11 +140,6 @@
       "description": "Run Playwright CLI commands via Bash for test execution, code generation, browser management, reporting, and debugging. Covers the full `npx playwright` surface: test, codegen, install, show-report, s"
     },
     {
-      "name": "playwright-codegen",
-      "source": "./plugins/playwright-codegen",
-      "description": "Guided workflow for recording browser interactions with Playwright codegen and transforming the raw output into production-quality test suites. Handles the full lifecycle: planning the recording sessi"
-    },
-    {
       "name": "pm-review",
       "source": "./plugins/pm-review",
       "description": "Review local git changes from a PMBOK-based product management perspective. Analyzes changes against 7 PMBOK knowledge areas: Scope, Risk, Stakeholder, Quality, Integration, Schedule, and Resource man"
@@ -148,6 +148,11 @@
       "name": "pr-review",
       "source": "./plugins/pr-review",
       "description": "Review a teammate's pull request. The reviewer role (multi-lens analysis, severity calibration, suggestion writing) lives in the `pr-review:pr-review` subagent; this skill is the orchestrator — it res"
+    },
+    {
+      "name": "prd-council",
+      "source": "./plugins/prd-council",
+      "description": "Turn a feature idea into an execution-ready document set through an adversarial PRD \"council\": grill the user for requirements, draft a PRD, then debate it with OpenAI Codex round-by-round until BOTH "
     },
     {
       "name": "prototype",
@@ -173,11 +178,6 @@
       "name": "self-pr-review",
       "source": "./plugins/self-pr-review",
       "description": "Self-review loop for YOUR OWN PR — request AI reviews (Copilot + Gemini), apply their fixes, push, re-request, and repeat until clean. NOT for reviewing someone else's PR. Use when the user asks to se"
-    },
-    {
-      "name": "session-handover",
-      "source": "./plugins/session-handover",
-      "description": "Install a PreCompact hook that auto-generates .agent/local/HANDOVER.md before context compaction, plus a SessionStart hook that restores context from a previous handover. Run once to install, then it "
     },
     {
       "name": "session-recap",
@@ -233,31 +233,6 @@
       "name": "zoom-out",
       "source": "./plugins/zoom-out",
       "description": "Tell the agent to zoom out and give broader context or a higher-level perspective. Use when you're unfamiliar with a section of code or need to understand how it fits into the bigger picture."
-    },
-    {
-      "name": "prd-council",
-      "source": "./plugins/prd-council",
-      "description": "Turn a feature idea into an execution-ready document set through an adversarial PRD \"council\": grill the user for requirements, draft a PRD, then debate it with OpenAI Codex round-by-round until BOTH "
-    },
-    {
-      "name": "grill-to-impl",
-      "source": "./plugins/grill-to-impl",
-      "description": "Turn a finished grill-me (or any design-finalizing) session into a running implementation kickoff. Synthesizes the session's shared understanding into a self-contained implementation brief, hardens it"
-    },
-    {
-      "name": "agent-swarm",
-      "source": "./plugins/agent-swarm",
-      "description": "Orchestrate multiple coding-agent sessions (Claude Code, Codex, Gemini) over the mcp_agent_mail MCP server, observe their progress on a recurring auto-loop, and prevent inconsistencies (file/edit conf"
-    },
-    {
-      "name": "chrome-use",
-      "source": "./plugins/chrome-use",
-      "description": "Drive an already-running, LOGGED-IN Chromium browser on macOS via AppleScript — navigate, click, fill forms, scroll, and extract page content from the user's REAL session, with the browser left open a"
-    },
-    {
-      "name": "codex-server",
-      "source": "./plugins/codex-server",
-      "description": "Run OpenAI Codex via the Codex App Server (JSON-RPC-over-stdio) for streaming multi-turn chat sessions with persistent threads, structured output, image input, and rich event streams. Default entry po"
     }
   ]
 }
