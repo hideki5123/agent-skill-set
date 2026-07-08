@@ -45,6 +45,11 @@
       "description": "Disciplined diagnosis loop for hard bugs and performance regressions. Reproduce → minimise → hypothesise → instrument → fix → regression-test. Use when user says \"diagnose this\" / \"debug this\", report"
     },
     {
+      "name": "dotnet-senior",
+      "source": "./plugins/dotnet-senior",
+      "description": "Senior-level .NET development guidance for architecture, code review, scaffolding, EF Core, ASP.NET Core, Blazor, and MAUI targeting .NET 8 and .NET 10. Provides opinionated best practices, modern C# "
+    },
+    {
       "name": "e2e-test",
       "source": "./plugins/e2e-test",
       "description": "Run frontend E2E tests with video evidence. Generates a Playwright test from the scenario CSV and runs it via CLI with video recording. Supports Chrome profile reuse (--chrome-profile) for testing wit"
@@ -85,6 +90,11 @@
       "description": "Find deepening opportunities in a codebase, informed by the domain language in CONTEXT.md and the decisions in docs/adr/. Use when the user wants to improve architecture, find refactoring opportunitie"
     },
     {
+      "name": "japanese-tech-writing",
+      "source": "./plugins/japanese-tech-writing",
+      "description": "日本語の技術文書（書籍の章、記事、解説文）を新規に書く、既存の下書きを推敲する、公開前に規範違反を洗い出す、の3モードで支援します。k16shikano氏のGist「日本語技術文書の文章規範」(Unlicense) をベースにした段落構成、論証の厳密さ、読み手の負荷管理、演出の抑制などの文章規範 (references/rules.md) と、BLOCKER/IMPORTANT/TASTEのsev"
+    },
+    {
       "name": "jira-cli",
       "source": "./plugins/jira-cli",
       "description": "Use @pchuri/jira-cli to view, search, create, update, and delete Jira issues, comments, sprints, and projects from the terminal. Prefer this skill over `mcp__claude_ai_Atlassian__*` MCP tools when you"
@@ -110,6 +120,11 @@
       "description": "Create, build, and install custom Claude Code skills into Hideki's local marketplace. End-to-end workflow from requirements gathering to a fully installed and usable skill. Use when the user asks to c"
     },
     {
+      "name": "naturalize-ja",
+      "source": "./plugins/naturalize-ja",
+      "description": "任意の日本語テキスト (ファイル / 貼り付けテキスト / ディレクトリ) を読み、AI 生成と気づかれる「不自然な日本語表現」を検出・置換します。プレ AI 時代の技術ブログ調へ整えるための禁止フレーズ辞書 (15 カテゴリ。実フィードバックと公開研究を統合) と、grep + 質的レビューの二段監査を内蔵 (subagent をさらに spawn せず、自分のコンテキスト内で完結)。en-to"
+    },
+    {
       "name": "notion-cli",
       "source": "./plugins/notion-cli",
       "description": "Operate Notion from the terminal via the official Notion REST API on TypeScript + deno — search workspace, get/create/update/archive pages, query databases with filters and sorts, list/append/delete b"
@@ -120,9 +135,29 @@
       "description": "Call the OpenAI Platform API from the terminal via TypeScript on deno — chat completions, Responses API, reasoning (o-series), embeddings, image generation, audio (Whisper transcription, TTS), files, "
     },
     {
+      "name": "orch-qa",
+      "source": "./plugins/orch-qa",
+      "description": "Senior QA/QC engineer that evaluates existing codebases for test quality. Runs existing tests, diagnoses failures, identifies missing test coverage, and writes missing tests. Framework-agnostic — work"
+    },
+    {
+      "name": "parallel-investigate",
+      "source": "./plugins/parallel-investigate",
+      "description": "Fans out multiple agents in parallel via the Workflow tool to investigate a codebase question — bug root cause tracing, cross-file or cross-repository behavior tracing, \"why does X happen for some cas"
+    },
+    {
       "name": "playwright-cli",
       "source": "./plugins/playwright-cli",
       "description": "Run Playwright CLI commands via Bash for test execution, code generation, browser management, reporting, and debugging. Covers the full `npx playwright` surface: test, codegen, install, show-report, s"
+    },
+    {
+      "name": "pm-review",
+      "source": "./plugins/pm-review",
+      "description": "Review local git changes from a PMBOK-based product management perspective. Analyzes changes against 7 PMBOK knowledge areas: Scope, Risk, Stakeholder, Quality, Integration, Schedule, and Resource man"
+    },
+    {
+      "name": "pr-review",
+      "source": "./plugins/pr-review",
+      "description": "Review a teammate's pull request. The reviewer role (multi-lens analysis, severity calibration, suggestion writing) lives in the `pr-review:pr-review` subagent; this skill is the orchestrator — it res"
     },
     {
       "name": "prd-council",
@@ -170,6 +205,11 @@
       "description": "Watch another running Claude Code session in real time and narrate its activity in Japanese with detailed term-by-term explanations. By default targets a session active in the current working director"
     },
     {
+      "name": "skill-improve",
+      "source": "./plugins/skill-improve",
+      "description": "Retrofit the OIAE self-improvement loop to existing skills and analyze feedback to propose evidence-based amendments. Adds Retrospective, Feedback Check, and version tracking to skills that lack them."
+    },
+    {
       "name": "slack-cli",
       "source": "./plugins/slack-cli",
       "description": "Operate Slack from the terminal via `slack-cli` (@urugus/slack-cli). Send messages, check unreads, search history, upload files, manage reactions/pins, schedule messages, and manage channels — all thr"
@@ -178,6 +218,11 @@
       "name": "slack-to-ticket",
       "source": "./plugins/slack-to-ticket",
       "description": "Create Jira tickets from Slack conversations, optionally with Confluence documentation pages. Reads Slack threads/channels/search results via slack-cli, analyzes the conversation to extract problems, "
+    },
+    {
+      "name": "subagent-gen",
+      "source": "./plugins/subagent-gen",
+      "description": "Generate a persistent PROJECT-KNOWLEDGE.md profile for any codebase that gives subagents instant deep domain expertise. Analyzes project structure, architecture, code conventions, tech stack, data flo"
     },
     {
       "name": "tdd",
@@ -203,51 +248,6 @@
       "name": "zoom-out",
       "source": "./plugins/zoom-out",
       "description": "Tell the agent to zoom out and give broader context or a higher-level perspective. Use when you're unfamiliar with a section of code or need to understand how it fits into the bigger picture."
-    },
-    {
-      "name": "dotnet-senior",
-      "source": "./plugins/dotnet-senior",
-      "description": "Senior-level .NET development guidance for architecture, code review, scaffolding, EF Core, ASP.NET Core, Blazor, and MAUI targeting .NET 8 and .NET 10. Provides opinionated best practices, modern C# "
-    },
-    {
-      "name": "naturalize-ja",
-      "source": "./plugins/naturalize-ja",
-      "description": "任意の日本語テキスト (ファイル / 貼り付けテキスト / ディレクトリ) を読み、AI 生成と気づかれる「不自然な日本語表現」を検出・置換します。プレ AI 時代の技術ブログ調へ整えるための禁止フレーズ辞書 (15 カテゴリ。実フィードバックと公開研究を統合) と、grep + 質的レビューの二段監査を内蔵 (subagent をさらに spawn せず、自分のコンテキスト内で完結)。en-to"
-    },
-    {
-      "name": "orch-qa",
-      "source": "./plugins/orch-qa",
-      "description": "Senior QA/QC engineer that evaluates existing codebases for test quality. Runs existing tests, diagnoses failures, identifies missing test coverage, and writes missing tests. Framework-agnostic — work"
-    },
-    {
-      "name": "pm-review",
-      "source": "./plugins/pm-review",
-      "description": "Review local git changes from a PMBOK-based product management perspective. Analyzes changes against 7 PMBOK knowledge areas: Scope, Risk, Stakeholder, Quality, Integration, Schedule, and Resource man"
-    },
-    {
-      "name": "pr-review",
-      "source": "./plugins/pr-review",
-      "description": "Review a teammate's pull request. The reviewer role (multi-lens analysis, severity calibration, suggestion writing) lives in the `pr-review:pr-review` subagent; this skill is the orchestrator — it res"
-    },
-    {
-      "name": "skill-improve",
-      "source": "./plugins/skill-improve",
-      "description": "Retrofit the OIAE self-improvement loop to existing skills and analyze feedback to propose evidence-based amendments. Adds Retrospective, Feedback Check, and version tracking to skills that lack them."
-    },
-    {
-      "name": "subagent-gen",
-      "source": "./plugins/subagent-gen",
-      "description": "Generate a persistent PROJECT-KNOWLEDGE.md profile for any codebase that gives subagents instant deep domain expertise. Analyzes project structure, architecture, code conventions, tech stack, data flo"
-    },
-    {
-      "name": "parallel-investigate",
-      "source": "./plugins/parallel-investigate",
-      "description": "Fans out multiple agents in parallel via the Workflow tool to investigate a codebase question — bug root cause tracing, cross-file or cross-repository behavior tracing, \"why does X happen for some cas"
-    },
-    {
-      "name": "japanese-tech-writing",
-      "source": "./plugins/japanese-tech-writing",
-      "description": "日本語の技術文書（書籍の章、記事、解説文）を新規に書く、既存の下書きを推敲する、公開前に規範違反を洗い出す、の3モードで支援します。k16shikano氏のGist「日本語技術文書の文章規範」(Unlicense) をベースにした段落構成、論証の厳密さ、読み手の負荷管理、演出の抑制などの文章規範 (references/rules.md) と、BLOCKER/IMPORTANT/TASTEのsev"
     }
   ]
 }
