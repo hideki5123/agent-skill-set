@@ -120,11 +120,6 @@
       "description": "Call the OpenAI Platform API from the terminal via TypeScript on deno — chat completions, Responses API, reasoning (o-series), embeddings, image generation, audio (Whisper transcription, TTS), files, "
     },
     {
-      "name": "parallel-investigate",
-      "source": "./plugins/parallel-investigate",
-      "description": "Fans out multiple agents in parallel via the Workflow tool to investigate a codebase question — bug root cause tracing, cross-file or cross-repository behavior tracing, \"why does X happen for some cas"
-    },
-    {
       "name": "playwright-cli",
       "source": "./plugins/playwright-cli",
       "description": "Run Playwright CLI commands via Bash for test execution, code generation, browser management, reporting, and debugging. Covers the full `npx playwright` surface: test, codegen, install, show-report, s"
@@ -243,6 +238,11 @@
       "name": "subagent-gen",
       "source": "./plugins/subagent-gen",
       "description": "Generate a persistent PROJECT-KNOWLEDGE.md profile for any codebase that gives subagents instant deep domain expertise. Analyzes project structure, architecture, code conventions, tech stack, data flo"
+    },
+    {
+      "name": "parallel-investigate",
+      "source": "./plugins/parallel-investigate",
+      "description": "Fans out multiple agents in parallel via the Workflow tool to investigate a codebase question — bug root cause tracing, cross-file or cross-repository behavior tracing, \"why does X happen for some cas"
     }
   ]
 }
