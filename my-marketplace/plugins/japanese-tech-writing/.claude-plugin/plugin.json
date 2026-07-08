@@ -1,0 +1,13 @@
+{
+  "name": "japanese-tech-writing",
+  "version": "1.0.0",
+  "description": "日本語の技術文書（書籍の章、記事、解説文）を新規に書く、既存の下書きを推敲する、公開前に規範違反を洗い出す、の3モードで支援します。k16shikano氏のGist「日本語技術文書の文章規範」(Unlicense) をベースにした段落構成、論証の厳密さ、読み手の負荷管理、演出の抑制などの文章規範 (references/rules.md) と、BLOCKER/IMPORTANT/TASTEのsev",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "japanese-tech-writing"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}
