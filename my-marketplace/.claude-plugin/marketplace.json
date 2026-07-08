@@ -20,6 +20,16 @@
       "description": "Drive an already-running, LOGGED-IN Chromium browser on macOS via AppleScript — navigate, click, fill forms, scroll, and extract page content from the user's REAL session, with the browser left open a"
     },
     {
+      "name": "codex-cli",
+      "source": "./plugins/codex-cli",
+      "description": "Run OpenAI Codex CLI from the terminal for batch / one-shot `codex exec` invocations with output captured to an `-o` file. Use for fire-and-forget runs, scripted CI, code review batches (`codex review"
+    },
+    {
+      "name": "codex-server",
+      "source": "./plugins/codex-server",
+      "description": "Run OpenAI Codex via the Codex App Server (JSON-RPC-over-stdio) for streaming multi-turn chat sessions with persistent threads, structured output, image input, and rich event streams. Default entry po"
+    },
+    {
       "name": "confluence",
       "source": "./plugins/confluence",
       "description": "Use confluence-cli to read, search, create, update, move, and delete Confluence pages and attachments from the terminal. Prefer this skill over `mcp__claude_ai_Atlassian__*` MCP tools when you need: p"
@@ -115,9 +125,19 @@
       "description": "Operate Notion from the terminal via the official Notion REST API on TypeScript + deno — search workspace, get/create/update/archive pages, query databases with filters and sorts, list/append/delete b"
     },
     {
+      "name": "openai-cli",
+      "source": "./plugins/openai-cli",
+      "description": "Call the OpenAI Platform API from the terminal via TypeScript on deno — chat completions, Responses API, reasoning (o-series), embeddings, image generation, audio (Whisper transcription, TTS), files, "
+    },
+    {
       "name": "orch-qa",
       "source": "./plugins/orch-qa",
       "description": "Senior QA/QC engineer that evaluates existing codebases for test quality. Runs existing tests, diagnoses failures, identifies missing test coverage, and writes missing tests. Framework-agnostic — work"
+    },
+    {
+      "name": "parallel-investigate",
+      "source": "./plugins/parallel-investigate",
+      "description": "Fans out multiple agents in parallel via the Workflow tool to investigate a codebase question — bug root cause tracing, cross-file or cross-repository behavior tracing, \"why does X happen for some cas"
     },
     {
       "name": "playwright-cli",
@@ -135,6 +155,11 @@
       "description": "Review a teammate's pull request. The reviewer role (multi-lens analysis, severity calibration, suggestion writing) lives in the `pr-review:pr-review` subagent; this skill is the orchestrator — it res"
     },
     {
+      "name": "prd-council",
+      "source": "./plugins/prd-council",
+      "description": "Turn a feature idea into an execution-ready document set through an adversarial PRD \"council\": grill the user for requirements, draft a PRD, then debate it with OpenAI Codex round-by-round until BOTH "
+    },
+    {
       "name": "prototype",
       "source": "./plugins/prototype",
       "description": "Build a throwaway prototype to flesh out a design before committing to it. Routes between two branches — a runnable terminal app for state/business-logic questions, or several radically different UI v"
@@ -150,9 +175,29 @@
       "description": "Review local git changes from 8 expert perspectives by spawning the matching reviewer subagents in parallel. Produces a consolidated report with Critical/Important/Nice-to-have severity. Lightweight p"
     },
     {
+      "name": "scenario-gen",
+      "source": "./plugins/scenario-gen",
+      "description": "Generate test scenarios from git branch changes. Compares current branch to main/master, identifies changed files, classifies them by type (frontend, API, backend, config), and generates test scenario"
+    },
+    {
       "name": "self-pr-review",
       "source": "./plugins/self-pr-review",
       "description": "Self-review loop for YOUR OWN PR — request AI reviews (Copilot + Gemini), apply their fixes, push, re-request, and repeat until clean. NOT for reviewing someone else's PR. Use when the user asks to se"
+    },
+    {
+      "name": "session-handover",
+      "source": "./plugins/session-handover",
+      "description": "Install a PreCompact hook that auto-generates .agent/local/HANDOVER.md before context compaction, plus a SessionStart hook that restores context from a previous handover. Run once to install, then it "
+    },
+    {
+      "name": "session-recap",
+      "source": "./plugins/session-recap",
+      "description": "Read a Claude Code session's transcript and produce two markdown artifacts plus a meta.json: a scannable Summary (TL;DR, key terms, files, decisions, open threads) and a complementary Detailed Note (f"
+    },
+    {
+      "name": "session-watch",
+      "source": "./plugins/session-watch",
+      "description": "Watch another running Claude Code session in real time and narrate its activity in Japanese with detailed term-by-term explanations. By default targets a session active in the current working director"
     },
     {
       "name": "skill-improve",
@@ -180,6 +225,11 @@
       "description": "Test-driven development with red-green-refactor loop. Use when user wants to build features or fix bugs using TDD, mentions \"red-green-refactor\", wants integration tests, or asks for test-first develo"
     },
     {
+      "name": "test-scenario",
+      "source": "./plugins/test-scenario",
+      "description": "Generate test outlines (living documentation) and test code from natural language feature descriptions. Supports .NET (xUnit/NUnit/MSTest), Python (pytest), TypeScript (Vitest/Jest). Strict mode: no i"
+    },
+    {
       "name": "to-prd",
       "source": "./plugins/to-prd",
       "description": "Turn the current conversation context into a PRD and publish it to the project issue tracker. Use when user wants to create a PRD from the current context."
@@ -193,51 +243,6 @@
       "name": "zoom-out",
       "source": "./plugins/zoom-out",
       "description": "Tell the agent to zoom out and give broader context or a higher-level perspective. Use when you're unfamiliar with a section of code or need to understand how it fits into the bigger picture."
-    },
-    {
-      "name": "session-recap",
-      "source": "./plugins/session-recap",
-      "description": "Read a Claude Code session's transcript and produce two markdown artifacts plus a meta.json: a scannable Summary (TL;DR, key terms, files, decisions, open threads) and a complementary Detailed Note (f"
-    },
-    {
-      "name": "session-watch",
-      "source": "./plugins/session-watch",
-      "description": "Watch another running Claude Code session in real time and narrate its activity in Japanese with detailed term-by-term explanations. By default targets a session active in the current working director"
-    },
-    {
-      "name": "scenario-gen",
-      "source": "./plugins/scenario-gen",
-      "description": "Generate test scenarios from git branch changes. Compares current branch to main/master, identifies changed files, classifies them by type (frontend, API, backend, config), and generates test scenario"
-    },
-    {
-      "name": "test-scenario",
-      "source": "./plugins/test-scenario",
-      "description": "Generate test outlines (living documentation) and test code from natural language feature descriptions. Supports .NET (xUnit/NUnit/MSTest), Python (pytest), TypeScript (Vitest/Jest). Strict mode: no i"
-    },
-    {
-      "name": "openai-cli",
-      "source": "./plugins/openai-cli",
-      "description": "Call the OpenAI Platform API from the terminal via TypeScript on deno — chat completions, Responses API, reasoning (o-series), embeddings, image generation, audio (Whisper transcription, TTS), files, "
-    },
-    {
-      "name": "codex-server",
-      "source": "./plugins/codex-server",
-      "description": "Run OpenAI Codex via the Codex App Server (JSON-RPC-over-stdio) for streaming multi-turn chat sessions with persistent threads, structured output, image input, and rich event streams. Default entry po"
-    },
-    {
-      "name": "codex-cli",
-      "source": "./plugins/codex-cli",
-      "description": "Run OpenAI Codex CLI from the terminal for batch / one-shot `codex exec` invocations with output captured to an `-o` file. Use for fire-and-forget runs, scripted CI, code review batches (`codex review"
-    },
-    {
-      "name": "prd-council",
-      "source": "./plugins/prd-council",
-      "description": "Turn a feature idea into an execution-ready document set through an adversarial PRD \"council\": grill the user for requirements, draft a PRD, then debate it with OpenAI Codex round-by-round until BOTH "
-    },
-    {
-      "name": "session-handover",
-      "source": "./plugins/session-handover",
-      "description": "Install a PreCompact hook that auto-generates .agent/local/HANDOVER.md before context compaction, plus a SessionStart hook that restores context from a previous handover. Run once to install, then it "
     }
   ]
 }

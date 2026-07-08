@@ -1,0 +1,20 @@
+{
+  "name": "hideki-plugins",
+  "owner": {
+    "name": "Hideki"
+  },
+  "metadata": {
+    "description": "Custom Claude Code plugins by Hideki"
+  },
+  "plugins": [
+    {
+      "name": "parallel-investigate",
+      "source": {
+        "type": "local",
+        "path": "."
+      },
+      "description": "Fans out multiple agents in parallel via the Workflow tool to investigate a codebase question — bug root cause tracing, cross-file or cross-repository behavior tracing, \"why does X happen for some cas",
+      "version": "1.0.0"
+    }
+  ]
+}

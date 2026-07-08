@@ -1,0 +1,13 @@
+{
+  "name": "parallel-investigate",
+  "version": "1.0.0",
+  "description": "Fans out multiple agents in parallel via the Workflow tool to investigate a codebase question — bug root cause tracing, cross-file or cross-repository behavior tracing, \"why does X happen for some cas",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "parallel-investigate"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}
