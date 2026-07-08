@@ -258,6 +258,11 @@
       "name": "codex-server",
       "source": "./plugins/codex-server",
       "description": "Run OpenAI Codex via the Codex App Server (JSON-RPC-over-stdio) for streaming multi-turn chat sessions with persistent threads, structured output, image input, and rich event streams. Default entry po"
+    },
+    {
+      "name": "parallel-investigate",
+      "source": "./plugins/parallel-investigate",
+      "description": "Fans out multiple agents in parallel via the Workflow tool to investigate a codebase question — bug root cause tracing, cross-file or cross-repository behavior tracing, \"why does X happen for some cas"
     }
   ]
 }
