@@ -12,7 +12,7 @@ description: >
   "test coverage", "missing tests", "gap analysis", "quality report",
   "fix failing tests", "diagnose test failures", "quality check",
   "evaluate test quality", "test health".
-version: 1.1.0
+version: 1.1.1
 ---
 
 # QA Engineer (orchestrator)
@@ -39,6 +39,26 @@ gap analysis + report. Use `@agent-orch-qa:orch-qa` directly when another
 agent has the project context and only needs the judgment call (failure
 triage on a specific failure, gap classification under a single lens,
 test-writing for a specific gap).
+
+## Locating your reference files
+
+Every `references/*.md` link below is relative to this skill's own install
+location, not to the project you're running against — your working
+directory throughout this workflow is the *target* project (whatever
+`--scope` covers), so a bare relative path will not resolve. Resolve it once,
+in one Bash call, before the first reference read:
+
+```bash
+SKILL_HOME=$(ls -d ~/.claude/plugins/cache/hideki-plugins/orch-qa/*/skills/orch-qa 2>/dev/null | sort -V | tail -1)
+echo "$SKILL_HOME"
+```
+
+Re-derive `$SKILL_HOME` in the same Bash call as any later reference read, or
+a fresh one — shell state (including this variable) does not persist between
+separate Bash tool calls. If it comes back empty, the skill isn't installed
+the normal way; proceed on the inline summaries in this file and note in
+`REPORT.md` that a given reference wasn't reachable rather than guessing at
+its content.
 
 ## Arguments
 
@@ -90,7 +110,7 @@ Understand the project before touching anything.
 
 ### Phase 2: Stack Detection
 
-Auto-detect the test stack using signals from [references/framework-detection.md](references/framework-detection.md).
+Auto-detect the test stack using signals from `"$SKILL_HOME"/references/framework-detection.md`.
 
 1. Scan for config files and dependency declarations
 2. Determine: language, test framework, runner command
@@ -162,13 +182,13 @@ Run the existing test suite and capture results into the evidence package.
    ```
 2. Run the test command detected in Phase 2 (or `--test-cmd`)
 3. **Always capture stdout+stderr** to `execution/test-output.txt` (use `2>&1 | tee`)
-4. **Always generate `execution/test-summary.json`** by parsing the test output — see [references/evidence-tools.md](references/evidence-tools.md) for the format spec
+4. **Always generate `execution/test-summary.json`** by parsing the test output — see `"$SKILL_HOME"/references/evidence-tools.md` for the format spec
 5. Apply `--timeout` — if execution exceeds the limit, kill the process tree and report partial results
 6. Parse from output:
    - Total tests, passed, failed, skipped, duration
    - Full failure output for each failing test
 7. If tests fail to start (missing deps, config error), diagnose the setup issue and report it. Do not proceed to Phase 5 failure triage — instead report the setup issue and ask user how to proceed.
-8. **Recording capture** (when `--evidence != off`). Strategy depends on app type detected in Phase 2. See [references/evidence-tools.md](references/evidence-tools.md) Tier 2 section for tool details.
+8. **Recording capture** (when `--evidence != off`). Strategy depends on app type detected in Phase 2. See `"$SKILL_HOME"/references/evidence-tools.md` Tier 2 section for tool details.
 
    **Terminal tests:**
    - Generate a VHS tape file wrapping the test command
@@ -222,7 +242,7 @@ Classify every failure from Phase 4. For each failing test:
 The core value of this skill. Identify untested or under-tested code.
 Uses an agent team for parallel analysis when multiple lens groups are active.
 
-Read [references/qa-team-roles.md](references/qa-team-roles.md) for teammate definitions, output formats, and the synthesis protocol.
+Read `"$SKILL_HOME"/references/qa-team-roles.md` for teammate definitions, output formats, and the synthesis protocol.
 
 #### Phase 6a: Prepare (Lead)
 
@@ -241,20 +261,20 @@ Build the source-to-test mapping that all teammates will use:
 
 #### Phase 6b: Parallel Lens Analysis (Team)
 
-**If only 1 group has active lenses** (e.g., `--lens=security`), skip team creation and run the analysis inline — apply the QA lenses per [references/qa-perspectives.md](references/qa-perspectives.md) sequentially to avoid orchestration overhead.
+**If only 1 group has active lenses** (e.g., `--lens=security`), skip team creation and run the analysis inline — apply the QA lenses per `"$SKILL_HOME"/references/qa-perspectives.md` sequentially to avoid orchestration overhead.
 
 **If 2 or more groups are active**, create an agent team to analyze test gaps from different quality perspectives:
 
-1. Create the team and spawn each needed teammate with their context package (see [references/qa-team-roles.md](references/qa-team-roles.md) for the full spawn prompt spec):
+1. Create the team and spawn each needed teammate with their context package (see `"$SKILL_HOME"/references/qa-team-roles.md` for the full spawn prompt spec):
    - Source-to-test mapping from Phase 6a
    - Project metadata (language, framework, test runner, source/test dirs)
-   - Their assigned lenses and lens definitions from [references/qa-perspectives.md](references/qa-perspectives.md)
+   - Their assigned lenses and lens definitions from `"$SKILL_HOME"/references/qa-perspectives.md`
    - Gap NNN range, evidence directory path, filter settings (`--severity`, `--exclude`, `--app-type`, `--base-url`)
 
 2. Each teammate independently:
    - Greps source files for their lens-specific patterns
    - Checks if matching code has corresponding test coverage
-   - Generates proof files `gaps/gap-NNN-<lens>-<severity>.md` containing: full source snippet, explanation, pattern matched, suggested test description (see [references/evidence-tools.md](references/evidence-tools.md) Tier 1 for the proof template)
+   - Generates proof files `gaps/gap-NNN-<lens>-<severity>.md` containing: full source snippet, explanation, pattern matched, suggested test description (see `"$SKILL_HOME"/references/evidence-tools.md` Tier 1 for the proof template)
    - For browser apps (`--app-type=browser`): the User & System teammate captures screenshots as `gaps/gap-NNN-screenshot.png`
    - Returns a structured findings table to the lead
 
@@ -311,7 +331,7 @@ For each gap finding queued for remediation:
 
 #### 7b: Generate Quality Report
 
-Generate a markdown report following [references/report-template.md](references/report-template.md).
+Generate a markdown report following `"$SKILL_HOME"/references/report-template.md`.
 
 1. Save the report as `REPORT.md` inside the evidence package directory (`<evidence-dir>/<timestamp>/REPORT.md`)
 2. The evidence directory was created in Phase 4 (or create it now if `--run=false`)
@@ -337,7 +357,7 @@ Generate a markdown report following [references/report-template.md](references/
 1. Present recording summary: list all captured artifacts with type, size, duration
 2. Ask user: "Which recording artifacts should be converted to GIF for PR?"
 3. For user-approved items:
-   - `.webm` / `.mp4` -> GIF via ffmpeg palette method (see [references/evidence-tools.md](references/evidence-tools.md))
+   - `.webm` / `.mp4` -> GIF via ffmpeg palette method (see `"$SKILL_HOME"/references/evidence-tools.md`)
    - VHS `.gif` output — copy as-is (already GIF)
    - `.png` screenshots — keep as-is
 4. Save GIFs to `recordings/gif/`
@@ -350,11 +370,20 @@ After completing the workflow, reflect on the entire execution session:
 1. Consider: Were there mid-session corrections? Rejected outputs? Plan changes? Errors?
 2. Ask the user: "Quick feedback on this run? (1-5 rating, note any issues, or press enter to skip)"
 3. If the user provides feedback OR if corrections/issues occurred during this session:
-   a. Create `feedback/` directory if it does not exist
-   b. Read `feedback/log.md` (create with `# Feedback Log` header if it does not exist)
-   c. Prepend a new entry after the header using the log format from `my-skill-factory/references/skill-improvement-guide.md`
-   d. Fill in: current timestamp, skill version from frontmatter, task description, outcome assessment,
-      corrections that occurred during the session, issues encountered, user's note
+   a. Create `feedback/` directory if it does not exist (header: `# Feedback Log` + blank line +
+      `<!-- Append new entries at the top. Do not edit previous entries. -->`)
+   b. Prepend a new entry after the header:
+      ```markdown
+      ## <ISO-8601 timestamp>
+      - **Skill Version**: <version from this file's frontmatter>
+      - **Task**: <brief description>
+      - **Outcome**: success | partial-success | failure | error
+      - **Rating**: <N>/5 (or "—" if not provided)
+      - **Corrections**: <mid-session corrections, or "none">
+      - **Issues**: <specific problems, or "none">
+      - **User Note**: <user's verbatim feedback, or "—">
+      ---
+      ```
 4. If the user skips AND no corrections or issues occurred, end without recording.
 
 ## Monorepo Behavior

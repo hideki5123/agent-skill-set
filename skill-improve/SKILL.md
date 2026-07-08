@@ -1,6 +1,6 @@
 ---
 name: skill-improve
-version: 1.2.0
+version: 1.2.1
 description: >
   Retrofit the OIAE self-improvement loop to existing skills and analyze feedback
   to propose evidence-based amendments. Adds Retrospective, Feedback Check, and
@@ -33,6 +33,26 @@ check, and commits/pushes.
 Use this skill when running the full retrofit + amendment cycle. Use
 `@agent-skill-improve:skill-improve` directly when another agent just
 needs the auditor judgment without the install/commit flow.
+
+## Locating your own reference files
+
+Distinct from "Paths" below (which is about the dev repo root you retrofit
+skills *inside*): this skill's own `"$SKILL_HOME"/references/retrofit-checklist.md`, and
+`my-skill-factory`'s `references/skill-improvement-guide.md` (a separate
+plugin), live at each plugin's *install* location, not at any relative path
+from your working directory. Resolve both in one Bash call before reading
+either:
+
+```bash
+SKILL_HOME=$(ls -d ~/.claude/plugins/cache/hideki-plugins/skill-improve/*/skills/skill-improve 2>/dev/null | sort -V | tail -1)
+MSF_HOME=$(ls -d ~/.claude/plugins/cache/hideki-plugins/my-skill-factory/*/skills/my-skill-factory 2>/dev/null | sort -V | tail -1)
+echo "$SKILL_HOME"; echo "$MSF_HOME"
+```
+
+Re-derive both in the same Bash call as any later read — shell state doesn't
+persist between separate Bash tool calls. If either comes back empty, note
+in your output that the corresponding template wasn't reachable rather than
+guessing at its content.
 
 ## Paths
 
@@ -117,7 +137,7 @@ If `feedback/log.md` does not exist, skip silently.
 
 Skip this phase if `--analyze-only` is set or all OIAE components are already present.
 
-Read `references/retrofit-checklist.md` for the step-by-step process and placement rules.
+Read `"$SKILL_HOME"/references/retrofit-checklist.md` for the step-by-step process and placement rules.
 
 1. Assess opt-in level (None / Observe / Full):
    - **Full**: Skill has a multi-phase workflow, expected >5 uses, complex output
@@ -127,7 +147,7 @@ Read `references/retrofit-checklist.md` for the step-by-step process and placeme
 2. Present assessment to user:
    > "I recommend [level] for this skill because [reason]. Proceed?"
 
-3. Add missing components using templates from `my-skill-factory/references/skill-improvement-guide.md`:
+3. Add missing components using templates from `"$MSF_HOME"/references/skill-improvement-guide.md`:
    - Add `version: 1.0.0` to frontmatter if missing
    - Add `### Feedback Check` section (Full level only)
    - Add `### Retrospective` section (Observe or Full level)
@@ -166,7 +186,7 @@ Read `references/retrofit-checklist.md` for the step-by-step process and placeme
 
 Skip this phase if `--retrofit-only` is set or no `feedback/log.md` exists.
 
-Read `my-skill-factory/references/skill-improvement-guide.md` for pattern detection heuristics and amendment format.
+Read `"$MSF_HOME"/references/skill-improvement-guide.md` for pattern detection heuristics and amendment format.
 
 1. **Evaluate previous amendments** — If `feedback/amendments.md` exists with entries in `applied — monitoring` status:
    - Read log entries dated after the amendment
@@ -200,7 +220,7 @@ Read `my-skill-factory/references/skill-improvement-guide.md` for pattern detect
    - Run the path-discipline grep from "Path discipline" above on the modified skill;
      replace any non-example hits with placeholders or runtime resolution.
 
-8. **Record amendment** — Append to `feedback/amendments.md` using format from `my-skill-factory/references/skill-improvement-guide.md`
+8. **Record amendment** — Append to `feedback/amendments.md` using format from `"$MSF_HOME"/references/skill-improvement-guide.md`
 
 9. **Install**:
    ```bash
@@ -260,7 +280,7 @@ After Phase 4 (Report) completes, reflect on this run of skill-improve itself:
       `<!-- Append new entries at the top. Do not edit previous entries. -->`
       if it does not exist).
    c. Prepend a new entry directly after the header, using the format from
-      `my-skill-factory/references/skill-improvement-guide.md`:
+      `"$MSF_HOME"/references/skill-improvement-guide.md`:
 
       ```markdown
       ## <ISO-8601 timestamp>
@@ -280,21 +300,24 @@ After Phase 4 (Report) completes, reflect on this run of skill-improve itself:
 
 ## Behavior Scenarios
 
-BDD spec lives in `references/scenarios.feature`. Read only when auditing or
-amending this skill (e.g., via `/skill-improve --skill skill-improve`); **not
-needed for normal execution**.
+BDD spec lives in `"$SKILL_HOME"/references/scenarios.feature` (resolve
+`$SKILL_HOME` per "Locating your own reference files" above). Read only when
+auditing or amending this skill (e.g., via `/skill-improve --skill
+skill-improve`); **not needed for normal execution**.
 
 ## References
 
-Read these on-demand only — they are not auto-loaded.
+Read these on-demand only — they are not auto-loaded. Resolve `$SKILL_HOME`
+/ `$MSF_HOME` per "Locating your own reference files" above first.
 
-- `references/scenarios.feature` — Gherkin BDD spec for this skill.
-  **WHEN TO READ**: only when auditing or amending the skill itself (e.g.,
-  via `/skill-improve --skill skill-improve`). Never during normal execution.
-- `references/retrofit-checklist.md` — Step-by-step checklist for adding OIAE
+- `"$SKILL_HOME"/references/scenarios.feature` — Gherkin BDD spec for this
+  skill. **WHEN TO READ**: only when auditing or amending the skill itself
+  (e.g., via `/skill-improve --skill skill-improve`). Never during normal
+  execution.
+- `"$SKILL_HOME"/references/retrofit-checklist.md` — Step-by-step checklist for adding OIAE
   components with placement rules. **WHEN TO READ**: only in Phase 2
   (retrofit) when OIAE components are missing from the target skill.
-- `my-skill-factory/references/skill-improvement-guide.md` — OIAE protocol,
+- `"$MSF_HOME"/references/skill-improvement-guide.md` — OIAE protocol,
   log format, amendment format, templates, pattern detection heuristics.
   **WHEN TO READ**: in Phase 2 when looking up template wording, and in
   Phase 3 when applying pattern-detection heuristics or formatting an

@@ -28,13 +28,33 @@ saving to the global knowledge store, and creating the local symlink.
 - **Output path** — usually `~/.claude/knowledge/{name}.md`.
 - **Update mode flag** — if set, read the existing profile and preserve
   `<!-- USER: ... -->` sections.
-- **Skill resource dir** — where to read `references/profile-template.md`
-  and `references/prompt-integration-guide.md`.
+- **Skill resource dir** — the absolute path to this plugin's own install
+  location, so you can read `references/profile-template.md` and
+  `references/prompt-integration-guide.md` (your own working directory is
+  the profiled project, not this location — a bare relative path won't
+  resolve). If the orchestrator didn't pass one, resolve it yourself: see
+  "Locating your reference files" below.
+
+## Locating your reference files
+
+Your working directory is the caller's project, not this plugin's install
+location — a bare relative path like `references/profile-template.md` will
+not resolve. Locate your skill directory first, in one Bash call:
+
+```bash
+SKILL_HOME=$(ls -d ~/.claude/plugins/cache/hideki-plugins/subagent-gen/*/skills/subagent-gen 2>/dev/null | sort -V | tail -1)
+echo "$SKILL_HOME"
+```
+
+Re-derive `$SKILL_HOME` in the same Bash call as any later read (shell state
+doesn't persist between separate Bash calls). If it comes back empty, note
+in `key_findings` that the templates weren't reachable rather than guessing
+at their structure.
 
 ## What "good" looks like
 
-Read `references/profile-template.md` first. Match the exact section
-structure. Then apply these quality rules to every bullet:
+Read `"$SKILL_HOME"/references/profile-template.md` first. Match the exact
+section structure. Then apply these quality rules to every bullet:
 
 - Every bullet must carry **at least one of**:
   - a file path (e.g., `src/lib/api-client.ts`)
@@ -52,7 +72,9 @@ structure. Then apply these quality rules to every bullet:
 
 ## Synthesis workflow
 
-1. Read `references/profile-template.md` and `references/prompt-integration-guide.md`.
+1. Read `"$SKILL_HOME"/references/profile-template.md` and
+   `"$SKILL_HOME"/references/prompt-integration-guide.md` (resolve
+   `$SKILL_HOME` per "Locating your reference files" above).
 2. If `--update`: read the existing profile. Identify all
    `<!-- USER: ... -->` blocks; carry them forward verbatim. Note which
    sections will be regenerated.
@@ -108,9 +130,12 @@ The orchestrator surfaces this to the user.
 
 ## References
 
-- `references/profile-template.md` — Exact PROJECT-KNOWLEDGE.md template
-  with section specs and placeholder examples.
-- `references/prompt-integration-guide.md` — How the profile is meant to
-  be loaded into subagent prompts. Useful for choosing what to keep.
-- `references/exploration-dimensions.md` — Reference for what each
-  dimension is expected to cover. Useful for sanity-checking findings.
+Resolve `$SKILL_HOME` per "Locating your reference files" above, then:
+
+- `"$SKILL_HOME"/references/profile-template.md` — Exact PROJECT-KNOWLEDGE.md
+  template with section specs and placeholder examples.
+- `"$SKILL_HOME"/references/prompt-integration-guide.md` — How the profile
+  is meant to be loaded into subagent prompts. Useful for choosing what to
+  keep.
+- `"$SKILL_HOME"/references/exploration-dimensions.md` — Reference for what
+  each dimension is expected to cover. Useful for sanity-checking findings.

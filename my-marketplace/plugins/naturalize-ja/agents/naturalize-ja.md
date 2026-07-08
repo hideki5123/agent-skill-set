@@ -37,9 +37,25 @@ For ambiguous input, default to `propose` and scan the whole file.
 
 ### Step 2 — grep pass
 
-Run the consolidated grep alternation from `references/ai-japanese-patterns.md`
-(tail of that file) against the target. List every hit with line number. This
-is the "mechanically certain" path.
+Your working directory is the caller's project, not this skill's own install
+location — a bare relative path like `references/ai-japanese-patterns.md`
+will not resolve. Locate your skill directory first, in one Bash call:
+
+```bash
+SKILL_HOME=$(ls -d ~/.claude/plugins/cache/hideki-plugins/naturalize-ja/*/skills/naturalize-ja 2>/dev/null | sort -V | tail -1)
+echo "$SKILL_HOME"
+```
+
+(Re-run this in the same Bash call as any subsequent read, or a fresh one —
+shell state doesn't persist between separate Bash tool calls. If it comes
+back empty, the skill isn't installed the normal way; fall back to your own
+judgment for Step 2/3 and note in your report that the reference dictionary
+wasn't reachable.)
+
+Run the consolidated grep alternation from
+`"$SKILL_HOME"/references/ai-japanese-patterns.md` (tail of that file)
+against the target. List every hit with line number. This is the
+"mechanically certain" path.
 
 ### Step 3 — Qualitative review (inline, in your own context)
 
@@ -47,7 +63,9 @@ After the grep pass, re-read the text and find issues grep misses. Do this
 yourself — do not call Agent / Task tools to spawn another subagent (forked
 or otherwise; subagents cannot spawn further subagents).
 
-Use the rubric in `references/review-agent-prompt.md` as your guide. Focus on:
+Use the rubric in `"$SKILL_HOME"/references/review-agent-prompt.md` (resolve
+`$SKILL_HOME` as in Step 2 if you haven't already this turn) as your guide.
+Focus on:
 
 - Sentence-rhythm monotony (e.g., 「です。です。です。」 streaks)
 - Hedging / responsibility evasion (例: 〜と考えられます、一概には言えませんが)
@@ -122,13 +140,15 @@ to you. In that case:
 Do not assume the caller will follow up with the user; treat your reply as
 final.
 
-## References (read on demand from the plugin's `skills/naturalize-ja/`
-location)
+## References
 
-- `references/ai-japanese-patterns.md` — the 15-category prohibited-phrase
-  dictionary and the consolidated grep alternation. Load this **first**.
-- `references/review-agent-prompt.md` — qualitative-review rubric. Treat as
-  your own checklist; you are the reviewer.
+Resolve `$SKILL_HOME` per "Locate your skill directory first" in Step 2, then:
+
+- `"$SKILL_HOME"/references/ai-japanese-patterns.md` — the 15-category
+  prohibited-phrase dictionary and the consolidated grep alternation. Load
+  this **first**.
+- `"$SKILL_HOME"/references/review-agent-prompt.md` — qualitative-review
+  rubric. Treat as your own checklist; you are the reviewer.
 
 ## Operating constraints
 

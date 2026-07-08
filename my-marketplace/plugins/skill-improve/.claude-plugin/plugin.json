@@ -1,6 +1,6 @@
 {
   "name": "skill-improve",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Retrofit the OIAE self-improvement loop to existing skills and analyze feedback to propose evidence-based amendments. Adds Retrospective, Feedback Check, and version tracking to skills that lack them.",
   "author": {
     "name": "Hideki"

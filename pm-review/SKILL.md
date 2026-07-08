@@ -1,6 +1,6 @@
 ---
 name: pm-review
-version: 1.1.0
+version: 1.1.1
 description: >
   Review local git changes from a PMBOK-based product management perspective.
   Analyzes changes against 7 PMBOK knowledge areas: Scope, Risk, Stakeholder,
@@ -88,12 +88,20 @@ After completing the workflow, reflect on the entire execution session:
 2. Ask the user: "Quick feedback on this run? (1-5 rating, note any issues,
    or press enter to skip)"
 3. If the user provides feedback OR if corrections/issues occurred:
-   a. Create `feedback/` if it does not exist.
-   b. Read or create `feedback/log.md` (header: `# Feedback Log`).
-   c. Prepend a new entry using the format in
-      `my-skill-factory/references/skill-improvement-guide.md`. Fill
-      timestamp, skill version (1.1.0), task description, outcome,
-      corrections, issues, user note.
+   a. Create `feedback/` if it does not exist (header: `# Feedback Log` + blank
+      line + `<!-- Append new entries at the top. Do not edit previous entries. -->`).
+   b. Prepend a new entry:
+      ```markdown
+      ## <ISO-8601 timestamp>
+      - **Skill Version**: <version from this file's frontmatter>
+      - **Task**: <brief description>
+      - **Outcome**: success | partial-success | failure | error
+      - **Rating**: <N>/5 (or "—" if not provided)
+      - **Corrections**: <mid-session corrections, or "none">
+      - **Issues**: <specific problems, or "none">
+      - **User Note**: <user's verbatim feedback, or "—">
+      ---
+      ```
 4. If the user skips AND no corrections / issues occurred, end without
    recording.
 

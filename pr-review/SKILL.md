@@ -1,6 +1,6 @@
 ---
 name: pr-review
-version: 1.1.0
+version: 1.1.1
 description: >
   Review a teammate's pull request. The reviewer role (multi-lens analysis,
   severity calibration, suggestion writing) lives in the `pr-review:pr-review`
@@ -20,6 +20,20 @@ PR lookup, diff fetching, staging UI, user interaction, and GitHub submission.
 
 This skill reviews **someone else's PR** — for self-review of your own PR,
 use `self-pr-review` instead.
+
+## Locating your reference files
+
+The `references/*.md` link at Step 6 is relative to this skill's own install
+location, not to the repo you're reviewing — a bare relative path will not
+resolve. Resolve it once, in one Bash call, before you need it:
+
+```bash
+SKILL_HOME=$(ls -d ~/.claude/plugins/cache/hideki-plugins/pr-review/*/skills/pr-review 2>/dev/null | sort -V | tail -1)
+echo "$SKILL_HOME"
+```
+
+Re-derive `$SKILL_HOME` in the same Bash call as the reference read, or a
+fresh one — shell state doesn't persist between separate Bash calls.
 
 ## Arguments
 
@@ -148,7 +162,8 @@ Wait for the user's decision. Loop until `submit` or `cancel`.
 ## Step 6: Submit Review
 
 Build the API payload and submit as one batch review. See
-`references/gh-review-api.md`.
+`"$SKILL_HOME"/references/gh-review-api.md` (resolve `$SKILL_HOME` per
+"Locating your reference files" above).
 
 ```bash
 HEAD_SHA=$(gh pr view <number> --json headRefOid --jq '.headRefOid')
@@ -192,7 +207,9 @@ After submission:
 
 ## References
 
-- `references/gh-review-api.md` — Full REST API reference for batch
-  reviews, error handling, suggestion blocks.
-- `references/review-perspectives.md` — Detailed lens definitions used by
-  the subagent.
+Resolve `$SKILL_HOME` per "Locating your reference files" above, then:
+
+- `"$SKILL_HOME"/references/gh-review-api.md` — Full REST API reference for
+  batch reviews, error handling, suggestion blocks.
+- `"$SKILL_HOME"/references/review-perspectives.md` — Detailed lens
+  definitions used by the subagent.

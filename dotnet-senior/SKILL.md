@@ -16,7 +16,7 @@ description: >
   {review, scaffold, create, design, architect, optimize, migrate} + {C#, .NET, dotnet, csharp} /
   "dotnet new" / "dotnet build" / "dotnet test" / "dotnet publish" /
   ".NET best practices" / "C# patterns" / "senior .NET" / ".NET architecture"
-version: 1.1.0
+version: 1.1.1
 ---
 
 # .NET Senior Development Skill
@@ -63,9 +63,11 @@ The subagent reads version knowledge bases on demand. The skill's
 - `references/review-checklist.md` — full code review checklist
 - `references/team-roles.md` — perspectives for architecture team review
 
-These files are shared between the skill and the subagent (the subagent
-reads them via `Read` from the plugin's `skills/dotnet-senior/references/`
-location).
+These files are shared between the skill and the subagent. The subagent's
+working directory is the caller's project, not this plugin's install
+location, so a bare relative `Read` does not resolve — the subagent locates
+its own directory first via a cache-path glob (see "Locating your reference
+files" in `agents/dotnet-senior.md`) before reading any reference file.
 
 ## Retrospective
 
@@ -77,9 +79,19 @@ After completing a `/dotnet-senior` flow, reflect on the entire execution:
    or press enter to skip)"
 3. If the user provides feedback OR if corrections/issues occurred:
    a. Create `feedback/` if it does not exist.
-   b. Read or create `feedback/log.md` (header: `# Feedback Log`).
-   c. Prepend a new entry using the format in
-      `references/skill-improvement-guide.md`. Fill timestamp, skill version
-      (1.1.0), task description, outcome, corrections, issues, user note.
+   b. Read or create `feedback/log.md` (header: `# Feedback Log` + blank line +
+      `<!-- Append new entries at the top. Do not edit previous entries. -->`).
+   c. Prepend a new entry:
+      ```markdown
+      ## <ISO-8601 timestamp>
+      - **Skill Version**: <version from this file's frontmatter>
+      - **Task**: <brief description>
+      - **Outcome**: success | partial-success | failure | error
+      - **Rating**: <N>/5 (or "—" if not provided)
+      - **Corrections**: <mid-session corrections, or "none">
+      - **Issues**: <specific problems, or "none">
+      - **User Note**: <user's verbatim feedback, or "—">
+      ---
+      ```
 4. If the user skips AND no corrections or issues occurred, end without
    recording.

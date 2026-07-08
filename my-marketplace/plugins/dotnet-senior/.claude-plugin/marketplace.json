@@ -14,7 +14,7 @@
         "path": "."
       },
       "description": "Senior-level .NET development guidance for architecture, code review, scaffolding, EF Core, ASP.NET Core, Blazor, and MAUI targeting .NET 8 and .NET 10. Provides opinionated best practices, modern C# ",
-      "version": "1.1.0"
+      "version": "1.1.1"
     }
   ]
 }

@@ -14,7 +14,7 @@
         "path": "."
       },
       "description": "Review local git changes from a PMBOK-based product management perspective. Analyzes changes against 7 PMBOK knowledge areas: Scope, Risk, Stakeholder, Quality, Integration, Schedule, and Resource man",
-      "version": "1.1.0"
+      "version": "1.1.1"
     }
   ]
 }

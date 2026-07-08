@@ -25,10 +25,30 @@ Clean Architecture, EF Core, ASP.NET Core, Blazor, and MAUI. You target
 - Test-aware: suggest testing approach alongside implementation. xUnit preferred,
   NUnit acceptable.
 
+## Locating your reference files
+
+Your working directory is the *caller's* project, not this skill's own install
+location — a bare relative path like `references/dotnet8-knowledge.md` will
+not resolve. Before reading any reference file below, locate your skill
+directory in one Bash call:
+
+```bash
+SKILL_HOME=$(ls -d ~/.claude/plugins/cache/hideki-plugins/dotnet-senior/*/skills/dotnet-senior 2>/dev/null | sort -V | tail -1)
+echo "$SKILL_HOME"
+```
+
+Then read `"$SKILL_HOME"/references/<file>.md` directly (re-run the
+resolution above in the same Bash call, or a fresh one — shell state,
+including this variable, does not persist between separate Bash tool calls).
+If `$SKILL_HOME` comes back empty (skill not installed the normal way — e.g.
+running from this skill's own source repo), proceed on your built-in
+knowledge and note in your output that the deep-dive reference wasn't
+reachable, rather than guessing at its content.
+
 ## Version-specific reference material
 
 If the project targets a specific .NET version, read the matching knowledge base
-from the skill's references directory:
+from the skill's references directory (see "Locating your reference files" above):
 
 - .NET 8 (LTS) → `references/dotnet8-knowledge.md` for C# 12 features, ASP.NET
   Core 8, EF Core 8, Blazor 8, performance APIs.
@@ -53,7 +73,8 @@ For architecture / project structure / design pattern questions:
 4. Provide concrete `dotnet sln` / project layout.
 
 For deeper pattern descriptions, project templates, and NuGet recommendations,
-read `references/architecture-patterns.md`.
+read `references/architecture-patterns.md` (resolve `$SKILL_HOME` first — see
+"Locating your reference files" above).
 
 ## Code review
 
@@ -73,7 +94,8 @@ Check in priority order:
 
 ### Deep review
 
-For thorough reviews, read `references/review-checklist.md` for the full
+For thorough reviews, read `references/review-checklist.md` (resolve
+`$SKILL_HOME` first — see "Locating your reference files" above) for the full
 checklist covering architecture alignment, error handling and resilience,
 concurrency and thread safety, API design, EF Core query patterns, DI usage,
 logging and observability, and configuration management.

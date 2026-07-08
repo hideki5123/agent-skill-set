@@ -1,7 +1,7 @@
 ---
 name: naturalize-ja
 description: 任意の日本語テキスト (ファイル / 貼り付けテキスト / ディレクトリ) を読み、AI 生成と気づかれる「不自然な日本語表現」を検出・置換します。プレ AI 時代の技術ブログ調へ整えるための禁止フレーズ辞書 (15 カテゴリ。実フィードバックと公開研究を統合) と、grep + 質的レビューの二段監査を内蔵 (subagent をさらに spawn せず、自分のコンテキスト内で完結)。en-to-ja-explainer など他スキルから委譲して使うことも想定。Triggers: 「AI っぽい日本語をレビューして」「この文章を自然な日本語にして」「ChatGPT 臭を抜きたい」「日本語の AI 臭をチェック」「ナチュラルな日本語に直して」「AI 生成バレしないように直して」「naturalize Japanese」「naturalize-ja」「/naturalize-ja」
-version: 1.1.0
+version: 1.1.1
 ---
 
 # naturalize-ja

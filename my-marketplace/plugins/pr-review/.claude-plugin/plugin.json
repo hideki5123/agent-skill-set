@@ -1,6 +1,6 @@
 {
   "name": "pr-review",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "Review a teammate's pull request. The reviewer role (multi-lens analysis, severity calibration, suggestion writing) lives in the `pr-review:pr-review` subagent; this skill is the orchestrator — it res",
   "author": {
     "name": "Hideki"

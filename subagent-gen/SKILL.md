@@ -1,6 +1,6 @@
 ---
 name: subagent-gen
-version: 1.1.0
+version: 1.1.1
 description: >
   Generate a persistent PROJECT-KNOWLEDGE.md profile for any codebase that gives
   subagents instant deep domain expertise. Analyzes project structure, architecture,
@@ -20,6 +20,23 @@ description: >
 
 Generate a persistent PROJECT-KNOWLEDGE.md that captures deep domain knowledge
 about a codebase, designed to fit in a subagent prompt context window.
+
+## Locating your own reference files
+
+Every `references/*.md` mention below is relative to this skill's own
+install location, not to the project being profiled (`--project`) — your
+working directory is the target project, so a bare relative path will not
+resolve. Resolve it once, in one Bash call, at the top of the workflow:
+
+```bash
+SKILL_HOME=$(ls -d ~/.claude/plugins/cache/hideki-plugins/subagent-gen/*/skills/subagent-gen 2>/dev/null | sort -V | tail -1)
+echo "$SKILL_HOME"
+```
+
+Re-derive `$SKILL_HOME` in the same Bash call as any later read — shell
+state doesn't persist between separate Bash tool calls. This is also the
+"skill resource dir" to pass to the synthesis subagent in Phase 3 (its own
+input contract expects it as an absolute path, not a relative one).
 
 ## Arguments
 
@@ -111,7 +128,7 @@ File count: {e.g., 342 source, 89 test, 45 config}
 
 ### Phase 3: Parallel Deep Exploration
 
-Read `references/exploration-dimensions.md` for the full pattern catalog for each dimension.
+Read `"$SKILL_HOME"/references/exploration-dimensions.md` for the full pattern catalog for each dimension.
 
 Spawn Explore-type subagents in parallel. Each agent receives:
 - The project path
@@ -153,7 +170,7 @@ PROJECT METADATA
 
 YOUR DIMENSION: {dimension name}
 =================================
-{paste the relevant section from references/exploration-dimensions.md}
+{paste the relevant section from "$SKILL_HOME"/references/exploration-dimensions.md}
 
 INSTRUCTIONS:
 - Explore the project at {project path}
@@ -195,8 +212,8 @@ Hand the metadata block + all collected agent findings to
 - `--focus` filter
 - `--output` path
 - `--update` flag (if set)
-- the skill resource dir so the subagent can read `references/profile-template.md`
-  and `references/prompt-integration-guide.md`
+- the skill resource dir so the subagent can read `"$SKILL_HOME"/references/profile-template.md`
+  and `"$SKILL_HOME"/references/prompt-integration-guide.md`
 
 The subagent does the synthesis, quality-checks every bullet (every line
 must carry a file path / identifier / pattern name / concrete value),
@@ -229,7 +246,7 @@ Use the subagent's return value to show the user:
 - 3-5 key findings highlights (most interesting / non-obvious)
 - If `gitignore_suggestion` came back, mention adding `.agent/local/` to
   `.gitignore`
-- How to use the profile (read `references/prompt-integration-guide.md`):
+- How to use the profile (read `"$SKILL_HOME"/references/prompt-integration-guide.md`):
   - **Same project**: `Read .agent/local/PROJECT-KNOWLEDGE.md for context, then: <task>`
   - **Cross-project**: `Read ~/.claude/knowledge/{name}.md for context, then: <task>`
   - **List all profiles**: `/subagent-gen --list`
@@ -255,11 +272,20 @@ After completing the workflow, reflect on the entire execution session:
 1. Consider: Were there mid-session corrections? Rejected outputs? Plan changes? Errors?
 2. Ask the user: "Quick feedback on this run? (1-5 rating, note any issues, or press enter to skip)"
 3. If the user provides feedback OR if corrections/issues occurred during this session:
-   a. Create `feedback/` directory if it does not exist
-   b. Read `feedback/log.md` (create with `# Feedback Log` header if it does not exist)
-   c. Prepend a new entry after the header using the log format from `my-skill-factory/references/skill-improvement-guide.md`
-   d. Fill in: current timestamp, skill version from frontmatter, task description, outcome assessment,
-      corrections that occurred during the session, issues encountered, user's note
+   a. Create `feedback/` directory if it does not exist (header: `# Feedback Log` + blank
+      line + `<!-- Append new entries at the top. Do not edit previous entries. -->`)
+   b. Prepend a new entry after the header:
+      ```markdown
+      ## <ISO-8601 timestamp>
+      - **Skill Version**: <version from this file's frontmatter>
+      - **Task**: <brief description>
+      - **Outcome**: success | partial-success | failure | error
+      - **Rating**: <N>/5 (or "—" if not provided)
+      - **Corrections**: <mid-session corrections, or "none">
+      - **Issues**: <specific problems, or "none">
+      - **User Note**: <user's verbatim feedback, or "—">
+      ---
+      ```
 4. If the user skips AND no corrections or issues occurred, end without recording.
 
 ## Behavior Scenarios
@@ -310,6 +336,6 @@ Scenario: List all available profiles
 
 ## References
 
-- `references/exploration-dimensions.md` — Pattern catalog for each exploration dimension (what to look for, grep signals, sampling strategy, output format)
-- `references/profile-template.md` — Exact PROJECT-KNOWLEDGE.md template with section specs and placeholder examples
-- `references/prompt-integration-guide.md` — How to load the generated profile into subagent prompts (inclusion patterns, selective loading, examples)
+- `"$SKILL_HOME"/references/exploration-dimensions.md` — Pattern catalog for each exploration dimension (what to look for, grep signals, sampling strategy, output format)
+- `"$SKILL_HOME"/references/profile-template.md` — Exact PROJECT-KNOWLEDGE.md template with section specs and placeholder examples
+- `"$SKILL_HOME"/references/prompt-integration-guide.md` — How to load the generated profile into subagent prompts (inclusion patterns, selective loading, examples)

@@ -70,7 +70,20 @@ orchestrator marks active.
   break
 
 Full definitions live in `references/qa-perspectives.md`. Read it on
-demand.
+demand — but first locate your skill directory, since your working
+directory is the caller's project, not this plugin's install location, and a
+bare relative path will not resolve:
+
+```bash
+SKILL_HOME=$(ls -d ~/.claude/plugins/cache/hideki-plugins/orch-qa/*/skills/orch-qa 2>/dev/null | sort -V | tail -1)
+echo "$SKILL_HOME"
+```
+
+Re-run this in the same Bash call as any subsequent reference read (shell
+state doesn't persist between separate Bash calls). Read
+`"$SKILL_HOME"/references/qa-perspectives.md`. If `$SKILL_HOME` comes back
+empty, fall back to the lens summaries above and note in your report that
+the full definitions weren't reachable.
 
 ## Severity calibration
 
@@ -138,7 +151,8 @@ Each `gap-NNN-*.md` must contain:
 - Explanation (why it's a gap)
 - Suggested test description (what a test should verify)
 
-See `references/evidence-tools.md` Tier 1 for the exact template.
+See `"$SKILL_HOME"/references/evidence-tools.md` (resolve `$SKILL_HOME` as
+above) Tier 1 for the exact template.
 
 ## Working style
 
@@ -155,12 +169,15 @@ See `references/evidence-tools.md` Tier 1 for the exact template.
 
 ## References
 
-- `references/qa-perspectives.md` — Full lens definitions and patterns.
-- `references/qa-team-roles.md` — Teammate definitions for the
+Resolve `$SKILL_HOME` as in "The QA lenses" above, then:
+
+- `"$SKILL_HOME"/references/qa-perspectives.md` — Full lens definitions and
+  patterns.
+- `"$SKILL_HOME"/references/qa-team-roles.md` — Teammate definitions for the
   multi-lens parallel pattern (the orchestrator runs this; you read it
   for context on how findings are merged).
-- `references/framework-detection.md` — Signals for detecting test
-  stacks.
-- `references/evidence-tools.md` — Evidence templates and recording tool
-  details (vhs, ffmpeg, Playwright video, screenshot patterns).
-- `references/report-template.md` — Exact `REPORT.md` structure.
+- `"$SKILL_HOME"/references/framework-detection.md` — Signals for detecting
+  test stacks.
+- `"$SKILL_HOME"/references/evidence-tools.md` — Evidence templates and
+  recording tool details (vhs, ffmpeg, Playwright video, screenshot patterns).
+- `"$SKILL_HOME"/references/report-template.md` — Exact `REPORT.md` structure.

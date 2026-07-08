@@ -40,7 +40,23 @@ Return your recommendation + one-sentence reason.
 ### 2. Retrofit content
 
 For skills that need new OIAE components, produce the exact text to
-insert. Use the templates in `my-skill-factory/references/skill-improvement-guide.md`.
+insert. Use the templates in `skill-improvement-guide.md`, which lives in
+the **separate `my-skill-factory` plugin**, not this one — your working
+directory is the caller's project either way, so locate both plugins'
+install directories first, in one Bash call:
+
+```bash
+SKILL_HOME=$(ls -d ~/.claude/plugins/cache/hideki-plugins/skill-improve/*/skills/skill-improve 2>/dev/null | sort -V | tail -1)
+MSF_HOME=$(ls -d ~/.claude/plugins/cache/hideki-plugins/my-skill-factory/*/skills/my-skill-factory 2>/dev/null | sort -V | tail -1)
+echo "$SKILL_HOME"; echo "$MSF_HOME"
+```
+
+Re-derive both in the same Bash call as any later read (shell state doesn't
+persist between separate Bash calls). Read
+`"$MSF_HOME"/references/skill-improvement-guide.md`. If `$MSF_HOME` comes
+back empty, tell the orchestrator the OIAE templates weren't reachable
+rather than inventing a format.
+
 Insert at the right place (Feedback Check near the top of the workflow,
 Retrospective near the end). Match the skill's existing tone and
 formatting conventions.
@@ -153,8 +169,12 @@ performs the smoke check, then commits and pushes.
 - If you find a path leak in your own proposed amendment text, fix it
   before returning.
 
-## References (in the skill's `references/`)
+## References
 
-- `references/retrofit-checklist.md` — Step-by-step retrofit process.
-- `my-skill-factory/references/skill-improvement-guide.md` — OIAE
-  templates, log format, amendment format, pattern detection heuristics.
+Resolve `$SKILL_HOME` and `$MSF_HOME` per "Retrofit content" above, then:
+
+- `"$SKILL_HOME"/references/retrofit-checklist.md` — Step-by-step retrofit
+  process.
+- `"$MSF_HOME"/references/skill-improvement-guide.md` — OIAE templates, log
+  format, amendment format, pattern detection heuristics (lives in the
+  separate `my-skill-factory` plugin).

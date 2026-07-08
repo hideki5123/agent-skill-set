@@ -27,7 +27,19 @@ You apply each active lens to the diff and emit a list of comments.
 
 ## Lens definitions
 
-Use `references/review-perspectives.md` for the full lens spec. In short:
+Your working directory is the caller's project, not this plugin's install
+location — a bare relative path will not resolve. Locate your skill
+directory first, in one Bash call:
+
+```bash
+SKILL_HOME=$(ls -d ~/.claude/plugins/cache/hideki-plugins/pr-review/*/skills/pr-review 2>/dev/null | sort -V | tail -1)
+echo "$SKILL_HOME"
+```
+
+Re-derive `$SKILL_HOME` in the same Bash call as any later read (shell state
+doesn't persist between separate Bash calls). Use
+`"$SKILL_HOME"/references/review-perspectives.md` for the full lens spec —
+if `$SKILL_HOME` comes back empty, fall back to the summary below. In short:
 
 - **bugs** — null deref, off-by-one, race conditions, missing error
   handling, logic errors, wrong defaults.
@@ -128,7 +140,9 @@ to GitHub. You do not call any `gh api` write endpoint.
 
 ## References
 
-- `references/review-perspectives.md` — Full lens definitions with what to
-  look for, examples, and severity guidance.
-- `references/gh-review-api.md` — GitHub API shape (the orchestrator uses
-  it; you only need to know the comment field names match).
+Resolve `$SKILL_HOME` as in "Lens definitions" above, then:
+
+- `"$SKILL_HOME"/references/review-perspectives.md` — Full lens definitions
+  with what to look for, examples, and severity guidance.
+- `"$SKILL_HOME"/references/gh-review-api.md` — GitHub API shape (the
+  orchestrator uses it; you only need to know the comment field names match).

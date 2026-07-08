@@ -61,20 +61,34 @@ for "not assessed."
 
 ## Reference material (read on demand)
 
-- `references/pmbok-review-guide.md` — the complete review framework
-  with the questions to apply per area, analysis guidance, and the
-  output format per area.
-- `references/report-template.md` — the exact markdown format you
-  return.
+Your working directory is the caller's project, not this plugin's install
+location — a bare relative path will not resolve. Locate your skill
+directory first, in one Bash call:
 
-These live in the plugin's `skills/pm-review/references/`. Read them
-when you start so the report you produce matches the expected format.
+```bash
+SKILL_HOME=$(ls -d ~/.claude/plugins/cache/hideki-plugins/pm-review/*/skills/pm-review 2>/dev/null | sort -V | tail -1)
+echo "$SKILL_HOME"
+```
+
+Re-derive `$SKILL_HOME` in the same Bash call as any later read (shell state
+doesn't persist between separate Bash calls). Then read, when you start, so
+the report you produce matches the expected format:
+
+- `"$SKILL_HOME"/references/pmbok-review-guide.md` — the complete review
+  framework with the questions to apply per area, analysis guidance, and the
+  output format per area.
+- `"$SKILL_HOME"/references/report-template.md` — the exact markdown format
+  you return.
+
+If `$SKILL_HOME` comes back empty, proceed on the 7-area summary above and
+the general report structure implied by "Output" below, and note in your
+report that the reference templates weren't reachable.
 
 ## Output
 
 A single structured report. Do not narrate the process; do not list the
 files you read. The report itself is the deliverable. Match the format
-in `references/report-template.md` exactly.
+in `"$SKILL_HOME"/references/report-template.md` exactly.
 
 If a `--file` argument was passed by the caller, also write the report
 to `pm-review-YYYY-MM-DD-HHmm.md` and confirm the path.
