@@ -233,6 +233,11 @@
       "name": "prd-council",
       "source": "./plugins/prd-council",
       "description": "Turn a feature idea into an execution-ready document set through an adversarial PRD \"council\": grill the user for requirements, draft a PRD, then debate it with OpenAI Codex round-by-round until BOTH "
+    },
+    {
+      "name": "session-handover",
+      "source": "./plugins/session-handover",
+      "description": "Install a PreCompact hook that auto-generates .agent/local/HANDOVER.md before context compaction, plus a SessionStart hook that restores context from a previous handover. Run once to install, then it "
     }
   ]
 }

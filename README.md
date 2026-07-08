@@ -24,6 +24,7 @@ A collection of agent skills and tools for Claude Code and Cursor.
 | [review-local](review-local/) | Review local git changes from 8 expert perspectives as a pre-commit quality gate |
 | [scenario-gen](scenario-gen/) | Generate test scenarios from git branch changes with screenshot evidence |
 | [self-pr-review](self-pr-review/) | Self-review loop: request AI reviews (Copilot + Gemini), apply fixes, repeat until clean |
+| [session-handover](session-handover/) | Auto-generate session handover via PreCompact hook (install once, works forever) |
 | [slack-cli](slack-cli/) | Operate Slack from the terminal via `slack-cli` — messages, unreads, search, uploads |
 | [subagent-gen](subagent-gen/) | Generate PROJECT-KNOWLEDGE.md profiles for subagent deep domain expertise |
 
