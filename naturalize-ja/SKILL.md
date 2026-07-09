@@ -1,7 +1,7 @@
 ---
 name: naturalize-ja
-description: 任意の日本語テキスト (ファイル / 貼り付けテキスト / ディレクトリ) を読み、AI 生成と気づかれる「不自然な日本語表現」を検出・置換します。プレ AI 時代の技術ブログ調へ整えるための禁止フレーズ辞書 (15 カテゴリ。実フィードバックと公開研究を統合) と、grep + 質的レビューの二段監査を内蔵 (subagent をさらに spawn せず、自分のコンテキスト内で完結)。en-to-ja-explainer など他スキルから委譲して使うことも想定。Triggers: 「AI っぽい日本語をレビューして」「この文章を自然な日本語にして」「ChatGPT 臭を抜きたい」「日本語の AI 臭をチェック」「ナチュラルな日本語に直して」「AI 生成バレしないように直して」「naturalize Japanese」「naturalize-ja」「/naturalize-ja」
-version: 1.1.1
+description: 任意の日本語テキスト (ファイル / 貼り付けテキスト / ディレクトリ) を読み、AI 生成と気づかれる「不自然な日本語表現」を検出・置換します。プレ AI 時代の技術ブログ調へ整えるための禁止フレーズ辞書 (16 カテゴリ A–P。曖昧・稚拙な用語の的確化も含む。実フィードバックと公開研究を統合) と、grep + 質的レビューの二段監査を内蔵 (subagent をさらに spawn せず、自分のコンテキスト内で完結)。英語語混在の技術ドキュメントには、カタカナ技術語→英語表記・英字↔日本語の境界スペース除去のハウススタイルも適用します。en-to-ja-explainer など他スキルから委譲して使うことも想定。Triggers: 「AI っぽい日本語をレビューして」「この文章を自然な日本語にして」「ChatGPT 臭を抜きたい」「日本語の AI 臭をチェック」「ナチュラルな日本語に直して」「AI 生成バレしないように直して」「naturalize Japanese」「naturalize-ja」「/naturalize-ja」
+version: 1.2.0
 ---
 
 # naturalize-ja
@@ -44,7 +44,11 @@ version: 1.1.1
 
 subagent が必要に応じて読む reference:
 
-- `references/ai-japanese-patterns.md` — 15 カテゴリの禁止フレーズと置換辞書
+- `references/ai-japanese-patterns.md` — カテゴリ A–P の禁止フレーズと置換辞書
+  (曖昧・稚拙語の的確化 = カテゴリ P を含む)
+- `references/tech-doc-house-style.md` — 英語語混在の技術ドキュメント向けハウス
+  スタイル (カタカナ技術語→英語表記、英字↔日本語の境界スペース除去)。bilingual な
+  技術文のときだけ適用
 - `references/review-agent-prompt.md` — 質的レビューのチェックリスト
 
 ## Retrospective

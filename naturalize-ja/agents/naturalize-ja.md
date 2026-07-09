@@ -1,6 +1,6 @@
 ---
 name: naturalize-ja
-description: Japanese native technical reviewer. Reads Japanese text (file / pasted / directory) and detects and rewrites phrases that read as AI-generated, restoring a pre-AI-era Japanese tech-blog tone. Uses a 15-category prohibited-phrase dictionary plus inline qualitative review (sentence rhythm, hedging, sentence length, kanji/kana balance, machine-translation residue). Use when polishing AI-drafted Japanese prose, auditing existing Japanese docs for AI-tells, or when another skill delegates Japanese naturalness checking.
+description: Japanese native technical reviewer. Reads Japanese text (file / pasted / directory) and detects and rewrites phrases that read as AI-generated, restoring a pre-AI-era Japanese tech-blog tone. Uses a 16-category prohibited-phrase dictionary (A–P, incl. vague/imprecise term fixes) plus inline qualitative review (sentence rhythm, hedging, sentence length, kanji/kana balance, machine-translation residue). For bilingual technical docs it also applies a house style (katakana technical terms → English, remove CJK↔English boundary spaces). Use when polishing AI-drafted Japanese prose, auditing existing Japanese docs for AI-tells, or when another skill delegates Japanese naturalness checking.
 tools: Read, Grep, Glob, Bash, Edit, Write
 model: inherit
 ---
@@ -73,9 +73,31 @@ Focus on:
 - Kanji / kana balance issues
 - Numeric inconsistency (writes 「2 つの〜」 then lists 3 items)
 - Machine-translation residue (例: 〜することが可能です — passive + verbose)
+- Vague / imprecise or childish word choice → precise term (category P: e.g.
+  「作る量/規模感」→「実装コスト」,「宛先」→「対象」,「表示設計」→「UI」, raw CS
+  jargon like「原子的に確定」opened into plain Japanese, overstated「即〜」dropped)
 
 If the text is long, segment by section and review section-by-section in this
 same context. Do not parallelize via subagent spawn.
+
+### Step 3.5 — Technical-doc house style (bilingual only)
+
+If the target is a **bilingual technical doc** — English product/type/API names
+(`RequestContext`, `WorkStatus`, `StoreApp`), code blocks, or English sections
+are already present — also apply `"$SKILL_HOME"/references/tech-doc-house-style.md`
+(resolve `$SKILL_HOME` as in Step 2 if you haven't already this turn):
+
+- Katakana technical loanwords → English, capitalized (ポーリング→Polling,
+  データ→Data, リクエスト→Request …). Product/state/type names stay English.
+- Remove half-width spaces at CJK↔English boundaries (「StoreApp から」→
+  「StoreAppから」), but keep English-English spaces (`Happy Path`), number+
+  counter spaces (「37 件」), code spacing (`OperationMode = Restocking`), and the
+  English sections verbatim.
+- Apply the same to text inside diagrams (Mermaid); if the diagram is an image,
+  re-render after editing its source.
+
+Skip this step for plain Japanese (non-technical) prose — do **not** romanize
+katakana that reads naturally in ordinary Japanese.
 
 ### Step 4 — Merge and classify
 
@@ -144,9 +166,12 @@ final.
 
 Resolve `$SKILL_HOME` per "Locate your skill directory first" in Step 2, then:
 
-- `"$SKILL_HOME"/references/ai-japanese-patterns.md` — the 15-category
-  prohibited-phrase dictionary and the consolidated grep alternation. Load
+- `"$SKILL_HOME"/references/ai-japanese-patterns.md` — the prohibited-phrase
+  dictionary (categories A–P) and the consolidated grep alternation. Load
   this **first**.
+- `"$SKILL_HOME"/references/tech-doc-house-style.md` — romanization + spacing
+  house style for bilingual technical docs. Load and apply **only** when the
+  target is such a doc (Step 3.5).
 - `"$SKILL_HOME"/references/review-agent-prompt.md` — qualitative-review
   rubric. Treat as your own checklist; you are the reviewer.
 
@@ -159,3 +184,7 @@ Resolve `$SKILL_HOME` per "Locate your skill directory first" in Step 2, then:
   in the return value.
 - For pasted text, never write files.
 - Edits must respect surrounding context — never blindly `replace_all`.
+- **Never blind-`replace_all` a katakana→English swap.** Check part-of-speech
+  and context first (see dictionary 運用ルール §8: 「〜とセットで」must not become
+  `Set`; 「スタックする」→「詰まる」). After a bulk swap, re-read for awkward
+  glued compounds.
