@@ -76,7 +76,7 @@ Run rsync from the repo root. The `--filter=:- .gitignore` flag makes rsync hono
 ```bash
 rsync -avz --delete \
   --filter=':- .gitignore' \
-  --exclude='.git/' \
+  --exclude='.git' \
   --exclude='.claude/worktrees/' \
   --exclude='node_modules/' \
   [-n if --dry-run] \
@@ -87,7 +87,8 @@ rsync -avz --delete \
 Notes:
 
 - `--delete` is intentional — the remote tree must mirror local exactly. If a remote host has uncommitted experimental skills you want to preserve, do not run this command against it.
-- `.git/` is excluded because we ship source state, not history. The remote can `git fetch` separately if it needs history.
+- `--exclude='.git'` has **no trailing slash** — this is deliberate, not a typo. A trailing slash (`.git/`) matches only *directories* named `.git`. In a normal checkout `.git` is a directory, but if this command is ever run **from inside a git worktree** (e.g. `.claude/worktrees/<name>/`), the worktree's `.git` is a plain *file* containing a `gitdir:` pointer back to the main checkout's `.git/worktrees/<name>` path on the local machine. A directory-only exclude does not match that file, so rsync ships it — and with `--delete`, it silently overwrites the remote's real `.git` directory with a broken pointer to a path that only exists on the machine that ran the sync, corrupting the remote repo. The unslashed form matches `.git` whether it's a file or a directory, at any depth (this also correctly protects submodule checkouts, e.g. `multi-agent-council/.git`, which are files for the same reason). We ship source state, not history — the remote can `git fetch` separately if it needs history.
+- Prefer running this command from the **main checkout**, not a worktree, when syncing to remote hosts. The exclude fix above makes a worktree-sourced run safe either way, but running from the main checkout avoids relying on that fix.
 - `.claude/worktrees/` is excluded because those are per-machine ephemeral worktrees.
 
 ### 5. For each remote host: re-materialize the marketplace
