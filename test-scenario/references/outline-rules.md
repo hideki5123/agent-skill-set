@@ -11,6 +11,16 @@ Rules for generating test outlines (Phase 2). The outline is a "living document"
 
 ## Test Case Naming
 
+### English (`--lang=en`, default)
+
+Use the pattern: **"should [expected behavior] when [condition]"**
+
+Examples:
+- "should aggregate only last 7 days of data when period is default"
+- "should return only top 20 results when ranking exceeds 20 items"
+- "should return 401 error when user is not authenticated"
+- "should return empty array when no data exists"
+
 ### Japanese (`--lang=ja`)
 
 Use the pattern: **"[context]の時、[expected behavior]であること"**
@@ -20,16 +30,6 @@ Examples:
 - "ランキングが20件を超える時、上位20件のみ返却されること"
 - "認証されていないユーザーの時、401エラーが返されること"
 - "データが0件の時、空の配列が返されること"
-
-### English (`--lang=en`)
-
-Use the pattern: **"should [expected behavior] when [condition]"**
-
-Examples:
-- "should aggregate only last 7 days of data when period is default"
-- "should return only top 20 results when ranking exceeds 20 items"
-- "should return 401 error when user is not authenticated"
-- "should return empty array when no data exists"
 
 ## Coverage Categories
 

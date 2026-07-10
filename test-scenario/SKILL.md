@@ -23,7 +23,7 @@ Generate exhaustive test outlines and executable test code from natural language
 | Argument | Default | Description |
 |----------|---------|-------------|
 | `--framework` | auto-detect | Test framework override (skips auto-detection) |
-| `--lang` | auto-detect | Language for test case names: `ja`, `en` |
+| `--lang` | `en` | Language for test case names: `ja`, `en` |
 | `--outline-only` | `false` | Stop after Phase 2 (produce outline only, skip implementation) |
 | `--test-file` | auto | Target test file path |
 | `--run-cmd` | auto-detect | Override test runner command |
@@ -56,10 +56,9 @@ Generate exhaustive test outlines and executable test code from natural language
    - Otherwise, infer from the feature description and project conventions
    - If file exists, read it to understand current test coverage
 
-4. Detect test name language:
+4. Determine test name language:
    - If `--lang` provided, use it
-   - Otherwise, check existing test files for Japanese characters
-   - Default to `en` if no signal found
+   - Otherwise, use `en`
 
 5. If anything is unclear, present a numbered question list covering:
    - Input/output contracts

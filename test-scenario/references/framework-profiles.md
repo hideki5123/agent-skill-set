@@ -123,10 +123,7 @@ If no config found, check `package.json` devDependencies for `vitest` or `jest`.
 | Assertions | `expect(actual).toBe(expected)`, `expect(() => fn()).toThrow()` |
 | Runner | `npx jest xxx.test.ts` |
 
-## Language Auto-Detection for Test Names
+## Language for Test Names
 
-To determine `--lang` when not specified:
-
-1. Check existing test files in the project for Japanese characters in test names
-2. Check if `.editorconfig` or project docs indicate a primary language
-3. Default to `en` if no signal found
+Test names are written in English (`--lang=en`) unless the user passes `--lang=ja`.
+Do not infer the language from existing test files or project docs.
