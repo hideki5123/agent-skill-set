@@ -105,11 +105,6 @@
       "description": "Create project-local Claude Code skills (.claude/commands/) in any project directory. Analyzes the project's tech stack, structure, and conventions, then generates tailored local skills (custom slash "
     },
     {
-      "name": "multi-agent-council",
-      "source": "./plugins/multi-agent-council",
-      "description": "Multi-LLM council for architecture decisions and code reviews. Use when needing diverse AI perspectives, design validation, cross-model critique, or thorough review of project state. Invokes Claude + "
-    },
-    {
       "name": "my-gdrive",
       "source": "./plugins/my-gdrive",
       "description": "Operate ONLY the user's private (personal) Google Drive via `rclone`, scoped to a single pinned remote (default `my-gdrive:`, override with the `MY_GDRIVE_REMOTE` env var). A safety wrapper around the"
@@ -118,6 +113,11 @@
       "name": "my-skill-factory",
       "source": "./plugins/my-skill-factory",
       "description": "Create, build, and install custom Claude Code skills into Hideki's local marketplace. End-to-end workflow from requirements gathering to a fully installed and usable skill. Use when the user asks to c"
+    },
+    {
+      "name": "naturalize-ja",
+      "source": "./plugins/naturalize-ja",
+      "description": "任意の日本語テキスト (ファイル / 貼り付けテキスト / ディレクトリ) を読み、AI 生成と気づかれる「不自然な日本語表現」を検出・置換します。プレ AI 時代の技術ブログ調へ整えるための禁止フレーズ辞書 (16 カテゴリ A–P。曖昧・稚拙な用語の的確化も含む。実フィードバックと公開研究を統合) と、grep + 質的レビューの二段監査を内蔵 (subagent をさらに spawn せず、"
     },
     {
       "name": "notion-cli",
@@ -245,9 +245,9 @@
       "description": "Tell the agent to zoom out and give broader context or a higher-level perspective. Use when you're unfamiliar with a section of code or need to understand how it fits into the bigger picture."
     },
     {
-      "name": "naturalize-ja",
-      "source": "./plugins/naturalize-ja",
-      "description": "任意の日本語テキスト (ファイル / 貼り付けテキスト / ディレクトリ) を読み、AI 生成と気づかれる「不自然な日本語表現」を検出・置換します。プレ AI 時代の技術ブログ調へ整えるための禁止フレーズ辞書 (16 カテゴリ A–P。曖昧・稚拙な用語の的確化も含む。実フィードバックと公開研究を統合) と、grep + 質的レビューの二段監査を内蔵 (subagent をさらに spawn せず、"
+      "name": "adversarial-panel",
+      "source": "./plugins/adversarial-panel",
+      "description": "Run a multi-model adversarial mutual review with facilitator synthesis: 2+ panelists (different model families where possible — use codex-server / codex-cli for the external-family seat) independently"
     }
   ]
 }

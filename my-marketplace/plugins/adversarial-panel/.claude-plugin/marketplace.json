@@ -8,12 +8,12 @@
   },
   "plugins": [
     {
-      "name": "multi-agent-council",
+      "name": "adversarial-panel",
       "source": {
         "type": "local",
         "path": "."
       },
-      "description": "Multi-LLM council for architecture decisions and code reviews. Use when needing diverse AI perspectives, design validation, cross-model critique, or thorough review of project state. Invokes Claude + ",
+      "description": "Run a multi-model adversarial mutual review with facilitator synthesis: 2+ panelists (different model families where possible — use codex-server / codex-cli for the external-family seat) independently",
       "version": "1.0.0"
     }
   ]

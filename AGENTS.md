@@ -75,11 +75,17 @@ form a composable workflow documented in
 [docs/upstream-skill-workflow.md](docs/upstream-skill-workflow.md). The homegrown
 `dev-workflow` skill is deprecated/disabled in favor of that workflow.
 
+`adversarial-panel/` comes from a different upstream
+([makinux/adversarial-panel](https://github.com/makinux/adversarial-panel)) whose
+`SKILL.md` sits at the repo root, so `vendor_skill.py` (which only scans
+`skills/<category>/<name>/`) cannot fetch it. It was placed by hand at commit
+`6b1061b`, and its frontmatter is **modified**, not verbatim — see its `LICENSE`
+for the diff summary. Re-vendoring means re-applying that frontmatter.
+
 ### Other moving parts
 
 - **Pre-push hook** (`scripts/hooks/pre-push`, enabled via `setup_hooks.sh`)
   auto-installs changed skills on `git push`; non-blocking, skip with `--no-verify`.
-- **`multi-agent-council/`** is a git submodule (see `.gitmodules`).
 - **`.gitattributes`** forces `eol=lf` on text files — important: stray CRLF
   leaks into shell pipelines and breaks `install_skill.py`'s cache-dir naming.
 - Each skill may keep a `feedback/log.md` (newest entry on top) recording

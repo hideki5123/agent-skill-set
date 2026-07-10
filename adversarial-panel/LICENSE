@@ -1,0 +1,43 @@
+Vendored from: https://github.com/makinux/adversarial-panel
+Source path:   / (SKILL.md at repo root)
+Commit:        6b1061b50dbe27613f0e0b2b90882d297ed46a29
+Retrieved:     2026-07-10
+
+MODIFIED — not a verbatim copy. Changes from upstream, all confined to
+SKILL.md and reviewable as a diff against the pinned commit above:
+  1. frontmatter `description` rewritten: removed the proactive auto-fire
+     clause and the bare "get a second opinion" trigger (which collided
+     with the codex-server skill), narrowed activation to explicit user
+     requests on high-stakes questions, and added a cost statement plus a
+     go-ahead gate before launching a panel.
+  2. appended a `## Local interop notes` section routing the tier-1
+     external-family panelist to codex-server/codex-cli, recording the
+     600000 ms Bash timeout ceiling, and preferring the Workflow tool.
+The 162-line protocol body between the frontmatter and that section is
+byte-for-byte identical to upstream.
+
+Upstream is distributed under the following MIT License.
+
+----------------------------------------------------------------------
+
+MIT License
+
+Copyright (c) 2026 makinux
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.

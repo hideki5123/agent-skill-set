@@ -1,0 +1,13 @@
+{
+  "name": "adversarial-panel",
+  "version": "1.0.0",
+  "description": "Run a multi-model adversarial mutual review with facilitator synthesis: 2+ panelists (different model families where possible — use codex-server / codex-cli for the external-family seat) independently",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "adversarial-panel"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}
