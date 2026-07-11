@@ -1,0 +1,14 @@
+{
+  "name": "postmortem",
+  "version": "1.0.0",
+  "description": "Generate a blameless postmortem (incident report) from a Slack incident thread and publish it to Confluence. Fans out to subagents that collect evidence from Slack, GitHub, and Jira, merges their comp",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "postmortem"
+  ],
+  "license": "MIT",
+  "skills": "./skills",
+  "agents": "./agents"
+}

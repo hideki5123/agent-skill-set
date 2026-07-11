@@ -248,6 +248,11 @@
       "name": "adversarial-panel",
       "source": "./plugins/adversarial-panel",
       "description": "Run a multi-model adversarial mutual review with facilitator synthesis: 2+ panelists (different model families where possible — use codex-server / codex-cli for the external-family seat) independently"
+    },
+    {
+      "name": "postmortem",
+      "source": "./plugins/postmortem",
+      "description": "Generate a blameless postmortem (incident report) from a Slack incident thread and publish it to Confluence. Fans out to subagents that collect evidence from Slack, GitHub, and Jira, merges their comp"
     }
   ]
 }
