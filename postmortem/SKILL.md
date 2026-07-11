@@ -247,15 +247,25 @@ Revise with **Edit on the file**, one section at a time. The user may approve, r
 
 Present the action-item table for approval — this table is short enough to show inline.
 
-Offer, do not assume, to file each approved item as a Jira ticket:
+**Ask which project the action items go in.** The anchor was a Slack thread, so there may be no
+incident ticket to inherit a project from — and even when there is, the fixes often belong to a
+different team's project than the incident report. Offer the options with `jira project list`. Do not
+guess a project key.
+
+Offer, do not assume, to file each approved item. Write each description to a temp file — `--description`
+mangles multi-line text:
 
 ```bash
-jira issue create --project <KEY> --type Task \
-  --summary "<action>" --description-file <path> --priority <P>
+cat > "${TMPDIR:-/tmp}/pm-action-<n>.md" << 'ACTION'
+<action item detail, plus the postmortem link>
+ACTION
+
+jira issue create --project <PROJECT> --type Task \
+  --summary "<action>" --description-file "${TMPDIR:-/tmp}/pm-action-<n>.md" --priority <P>
 ```
 
 Leave every ticket **unassigned** (omit `--assignee`). Note: the installed `@pchuri/jira-cli` has no
-`--label` flag on `issue create` — labels cannot be set from the CLI, so do not promise them; if the
+`--label` flag on `issue create` — labels cannot be set from the CLI, so do not promise them. If the
 project requires labels, tell the user to add them in Jira, or use the Atlassian MCP tools.
 
 Write the returned issue keys back into the draft's Action Items table (Edit) so the published
