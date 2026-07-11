@@ -2,6 +2,18 @@
 
 <!-- Append new entries at the top. Do not edit previous entries. -->
 
+## 2026-07-12T00:00:00Z
+- **Skill Version**: 1.1.0
+- **Task**: create `postmortem` skill (Slack-anchored incident report → subagent evidence collection → adversarial fact-check → Confluence)
+- **Outcome**: success
+- **Rating**: — (pending user)
+- **Rating reason**: —
+- **Corrections**: An adversarial audit (4 lenses, every finding independently re-verified) raised 36 findings, 30 confirmed. Six were runtime-fatal CLI bugs written from sibling-skill house style rather than from the installed binaries: `slack-cli users info -u` (flag is `--id`; ALL mention resolution would have hard-failed), `jira issue view --plain` / `--comments` / `-q` / `--columns` / `--paginate` (flags of the *Go* jira CLI, not the installed `@pchuri/jira-cli`), `confluence create --parent` (needs the `create-child` subcommand). Runtime smoke found three more: `slack-cli --format json` emits unescaped newlines so `jq` cannot parse an incident thread; Jira Cloud rejects unbounded JQL; `command -v gh` passes for an installed-but-logged-out `gh`, which then fails deep inside a collector and looks like "no code changed".
+- **Issues**: **The factory has a mandatory pre-install grep for path leaks, but nothing equivalent for CLI invocations.** Path discipline is checked because a hardcoded `/Users/alice/` is "broken-by-construction" — a wrong CLI flag is broken-by-construction in exactly the same way, and is *less* visible on review because it reads as idiomatic. Both sibling skills (`slack-to-ticket`, `jira-cli`) were the source of the wrong flags, so copying house style actively propagated the bugs. Secondary: Step 5b (runtime smoke) is defined but easy to satisfy weakly — here it only paid off because it was run against the *live services*, not just `--help`.
+- **User Note**: —
+- **Proposed amendment**: add a **pre-install CLI-flag verification** step alongside the existing path-discipline grep — for every shell command in the skill source, run the real `<cmd> --help` and confirm each subcommand and flag exists. Cheap, mechanical, and it would have caught 6 of the 6 critical bugs before install.
+---
+
 ## 2026-06-09T14:27:43Z
 - **Skill Version**: 1.1.0
 - **Task**: create grill-to-impl skill (grill→brief→codex-server review loop→claude-bg prd-council launch)
