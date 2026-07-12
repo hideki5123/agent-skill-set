@@ -5,6 +5,11 @@
   },
   "plugins": [
     {
+      "name": "adversarial-panel",
+      "source": "./plugins/adversarial-panel",
+      "description": "Run a multi-model adversarial mutual review with facilitator synthesis: 2+ panelists (different model families where possible — use codex-server / codex-cli for the external-family seat) independently"
+    },
+    {
       "name": "agent-swarm",
       "source": "./plugins/agent-swarm",
       "description": "Orchestrate multiple coding-agent sessions (Claude Code, Codex, Gemini) over the mcp_agent_mail MCP server, observe their progress on a recurring auto-loop, and prevent inconsistencies (file/edit conf"
@@ -150,6 +155,11 @@
       "description": "Review local git changes from a PMBOK-based product management perspective. Analyzes changes against 7 PMBOK knowledge areas: Scope, Risk, Stakeholder, Quality, Integration, Schedule, and Resource man"
     },
     {
+      "name": "postmortem",
+      "source": "./plugins/postmortem",
+      "description": "Generate a blameless postmortem (incident report) from a Slack incident thread and publish it to Confluence. Fans out to subagents that collect evidence from Slack, GitHub, and Jira, merges their comp"
+    },
+    {
       "name": "pr-review",
       "source": "./plugins/pr-review",
       "description": "Review a teammate's pull request. The reviewer role (multi-lens analysis, severity calibration, suggestion writing) lives in the `pr-review:pr-review` subagent; this skill is the orchestrator — it res"
@@ -243,16 +253,6 @@
       "name": "zoom-out",
       "source": "./plugins/zoom-out",
       "description": "Tell the agent to zoom out and give broader context or a higher-level perspective. Use when you're unfamiliar with a section of code or need to understand how it fits into the bigger picture."
-    },
-    {
-      "name": "adversarial-panel",
-      "source": "./plugins/adversarial-panel",
-      "description": "Run a multi-model adversarial mutual review with facilitator synthesis: 2+ panelists (different model families where possible — use codex-server / codex-cli for the external-family seat) independently"
-    },
-    {
-      "name": "postmortem",
-      "source": "./plugins/postmortem",
-      "description": "Generate a blameless postmortem (incident report) from a Slack incident thread and publish it to Confluence. Fans out to subagents that collect evidence from Slack, GitHub, and Jira, merges their comp"
     }
   ]
 }
