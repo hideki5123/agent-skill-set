@@ -1,0 +1,13 @@
+{
+  "name": "well-arch-cost",
+  "version": "1.0.0",
+  "description": "Review local git changes or an architecture document against the Cost Optimization pillar of Google's Cloud Well-Architected Framework. Identifies gaps across 6 principles (spend aligned to value, cos",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "well-arch-cost"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}

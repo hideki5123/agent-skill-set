@@ -1,0 +1,13 @@
+{
+  "name": "well-arch-reliability",
+  "version": "1.0.0",
+  "description": "Review local git changes or an architecture document against the Reliability pillar of Google's Cloud Well-Architected Framework. Identifies gaps across 8 principles (SLOs aligned to UX, recovery targ",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "well-arch-reliability"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}

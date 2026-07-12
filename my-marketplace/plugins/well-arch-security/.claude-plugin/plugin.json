@@ -1,0 +1,13 @@
+{
+  "name": "well-arch-security",
+  "version": "1.0.0",
+  "description": "Review local git changes or an architecture document against the Security, Privacy, and Compliance pillar of Google's Cloud Well-Architected Framework. Identifies gaps across 7 principles (security by",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "well-arch-security"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}

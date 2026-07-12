@@ -1,0 +1,20 @@
+{
+  "name": "hideki-plugins",
+  "owner": {
+    "name": "Hideki"
+  },
+  "metadata": {
+    "description": "Custom Claude Code plugins by Hideki"
+  },
+  "plugins": [
+    {
+      "name": "well-arch-cost",
+      "source": {
+        "type": "local",
+        "path": "."
+      },
+      "description": "Review local git changes or an architecture document against the Cost Optimization pillar of Google's Cloud Well-Architected Framework. Identifies gaps across 6 principles (spend aligned to value, cos",
+      "version": "1.0.0"
+    }
+  ]
+}
