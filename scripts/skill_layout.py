@@ -335,6 +335,19 @@ def validate_claude_plugin(meta: SkillMeta) -> list[str]:
         if a_changed:
             errors.append(f"[{meta.name}] changed file content in agents/: {', '.join(a_changed)}")
 
+        # Agent files must sit DIRECTLY in agents/. Claude Code does not recurse into
+        # subdirectories, so a nested layout registers zero agents — silently, with the
+        # skill still loading fine. review-local shipped 8 reviewers in agents/perspectives/
+        # and none of them existed as far as the Agent tool was concerned.
+        nested = sorted(
+            rel for rel in agent_source_files if "/" in rel.replace("\\", "/")
+        )
+        if nested:
+            errors.append(
+                f"[{meta.name}] agent files are nested in a subdirectory and will NOT be "
+                f"discovered — move them directly into agents/: {', '.join(nested)}"
+            )
+
     plugin_json_path = plugin_dir / ".claude-plugin" / "plugin.json"
     if plugin_json_path.exists():
         try:

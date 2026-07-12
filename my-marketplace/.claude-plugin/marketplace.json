@@ -180,11 +180,6 @@
       "description": "Sync a session-recap directory (summary.md + note.md + meta.json) to Notion under the explicit \"My Agent Notes / Session Recaps\" database via the notion-cli skill. The Notion target is fixed by design"
     },
     {
-      "name": "review-local",
-      "source": "./plugins/review-local",
-      "description": "Review local git changes from 8 expert perspectives by spawning the matching reviewer subagents in parallel. Produces a consolidated report with Critical/Important/Nice-to-have severity. Lightweight p"
-    },
-    {
       "name": "scenario-gen",
       "source": "./plugins/scenario-gen",
       "description": "Generate test scenarios from git branch changes. Compares current branch to main/master, identifies changed files, classifies them by type (frontend, API, backend, config), and generates test scenario"
@@ -253,6 +248,11 @@
       "name": "zoom-out",
       "source": "./plugins/zoom-out",
       "description": "Tell the agent to zoom out and give broader context or a higher-level perspective. Use when you're unfamiliar with a section of code or need to understand how it fits into the bigger picture."
+    },
+    {
+      "name": "review-local",
+      "source": "./plugins/review-local",
+      "description": "Review local git changes from 8 expert perspectives by spawning the matching reviewer subagents in parallel. Produces a consolidated report with Critical/Important/Nice-to-have severity. Lightweight p"
     }
   ]
 }

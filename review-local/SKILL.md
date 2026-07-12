@@ -80,7 +80,20 @@ default `30` already covers most local-changes flows.
 
 For each lens in `--lens` (default: all eight), spawn the matching
 subagent via the Agent tool with `subagent_type` set to the scoped
-identifier. Pass each:
+identifier — `review-local:<lens>`:
+
+| Lens | `subagent_type` |
+|------|-----------------|
+| architecture | `review-local:architecture` |
+| bdd | `review-local:bdd` |
+| devils-advocate | `review-local:devils-advocate` |
+| idempotence | `review-local:idempotence` |
+| infrastructure | `review-local:infrastructure` |
+| qa | `review-local:qa` |
+| security | `review-local:security` |
+| tdd | `review-local:tdd` |
+
+Pass each:
 
 - The combined diff from Phase 1.
 - The file context from Phase 2 (path → content map).
@@ -164,8 +177,10 @@ Code. So:
 
 - `references/perspectives/` — Individual perspective definitions. These
   also serve as the source for each reviewer subagent's system prompt
-  (the agent files in `agents/perspectives/` carry the same content
-  packaged as subagent definitions).
+  (the agent files in `agents/` carry the same content packaged as
+  subagent definitions). **Agent files must sit directly in `agents/`** —
+  Claude Code does not discover them in a subdirectory, and a plugin whose
+  agents are nested registers zero of them.
 - `references/synthesis-protocol.md` — How to merge, deduplicate, and
   categorize findings across lenses.
 - `references/report-template.md` — Exact markdown format for the
