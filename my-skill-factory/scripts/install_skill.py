@@ -219,8 +219,10 @@ def install(skill_dir: Path, version: str, cache_only: bool = False):
                 "author": {"name": "Hideki"}, "keywords": [name],
                 "license": "MIT", "skills": "./skills"
             }
-            if has_agents:
-                plugin_json["agents"] = "./agents"
+            # Do NOT write an "agents" key. `"agents": "./agents"` makes the manifest
+            # invalid ("Plugin X has an invalid manifest file"), which silently
+            # unregisters the plugin's SKILLS as well. Claude Code discovers
+            # <plugin>/agents/*.md by convention, so the directory alone is enough.
             write_json(plugin_claude / "plugin.json", plugin_json)
             write_json(plugin_claude / "marketplace.json", {
                 "name": MARKETPLACE_NAME,
@@ -273,8 +275,8 @@ def install(skill_dir: Path, version: str, cache_only: bool = False):
             "license": "MIT",
             "skills": "./skills"
         }
-        if has_agents:
-            plugin_json["agents"] = "./agents"
+        # No "agents" key — see the note above; it invalidates the manifest and
+        # takes the plugin's skills down with it. agents/ is discovered by convention.
         write_json(plugin_claude / "plugin.json", plugin_json)
 
         # Write per-plugin marketplace.json

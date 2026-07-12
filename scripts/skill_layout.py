@@ -236,8 +236,10 @@ def ensure_plugin_metadata(plugin_dir: Path, meta: SkillMeta, has_agents: bool) 
         "license": "MIT",
         "skills": "./skills",
     }
-    if has_agents:
-        plugin_json["agents"] = "./agents"
+    # Deliberately NO "agents" key. `"agents": "./agents"` makes Claude Code reject the
+    # manifest ("Plugin X has an invalid manifest file") and silently unregister the
+    # plugin's SKILLS along with it. <plugin>/agents/*.md is discovered by convention,
+    # so shipping the directory is sufficient — and is how the official plugins do it.
     write_json(plugin_json_path, plugin_json)
 
     plugin_marketplace = {
@@ -339,11 +341,16 @@ def validate_claude_plugin(meta: SkillMeta) -> list[str]:
             plugin_json = json.loads(read_text(plugin_json_path))
         except json.JSONDecodeError:
             plugin_json = {}
-        declares_agents = "agents" in plugin_json
-        if has_source_agents and not declares_agents:
-            errors.append(f'[{meta.name}] plugin.json missing "agents" key despite source agents/')
-        elif not has_source_agents and declares_agents:
-            errors.append(f'[{meta.name}] plugin.json declares "agents" key but source has no agents/')
+        # An "agents" key is INVALID in plugin.json — Claude Code rejects the whole
+        # manifest and unregisters the plugin's skills too. Agents are discovered from
+        # <plugin>/agents/ by convention. This check used to require the key, which is
+        # what kept every agents-carrying skill in this repo silently unregistered.
+        if "agents" in plugin_json:
+            errors.append(
+                f'[{meta.name}] plugin.json declares an "agents" key — this invalidates '
+                f"the manifest and unregisters the plugin's skills. Remove it; agents/ "
+                f"is discovered by convention."
+            )
     elif has_source_agents:
         errors.append(f"[{meta.name}] plugin.json missing: {plugin_json_path}")
 
