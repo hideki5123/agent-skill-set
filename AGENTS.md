@@ -104,3 +104,11 @@ for the diff summary. Re-vendoring means re-applying that frontmatter.
   challenge each new tool. Keep secrets out of agent reach (existence checks,
   scoped runtime flags).
 - **Isolate file-mutating work in a git worktree**, then merge to `master`.
+- **No pull requests. Ship straight to `master`.** Do not open a PR, do not ask
+  whether to open one, and do not leave work parked on a branch waiting for
+  review. Merge to `master` and push. Delete the branch afterwards — a merged
+  branch left on the remote is just a second copy of `master`.
+  The worktree rule above still applies: isolate, merge, push, delete. The
+  worktree is for isolation, not for review.
+  Before deleting any branch, confirm `git log --oneline origin/master..<branch>`
+  is empty. A branch that still holds unique commits is not a leftover.

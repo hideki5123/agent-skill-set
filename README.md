@@ -20,6 +20,7 @@ A collection of agent skills and tools for Claude Code and Cursor.
 | [orch-qa](orch-qa/) | QA/QC engineer that evaluates codebases for test quality and writes missing tests |
 | [playwright-cli](playwright-cli/) | Run Playwright CLI commands for test execution, codegen, reporting, and debugging — including the guided codegen-to-test-suite workflow |
 | [pm-review](pm-review/) | Review local changes from a PMBOK-based product management perspective |
+| [postmortem](postmortem/) | Blameless incident report from a Slack thread — subagents collect evidence from Slack/GitHub/Jira, claims are fact-checked against the sources, then published to Confluence |
 | [pr-review](pr-review/) | Review a teammate's pull request from multiple expert perspectives |
 | [review-local](review-local/) | Review local git changes from 8 expert perspectives as a pre-commit quality gate |
 | [scenario-gen](scenario-gen/) | Generate test scenarios from git branch changes with screenshot evidence |
