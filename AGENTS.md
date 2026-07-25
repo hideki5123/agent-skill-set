@@ -31,7 +31,7 @@ python scripts/vendor_skill.py <name> [--ref <sha>] [--install]
 # Sync skills to SSH hosts listed in .claude/sync-targets
 # (invoke the /sync-skills skill)
 
-# One-time after clone: enable the pre-push auto-install hook
+# One-time after clone: enable the pre-push / post-merge auto-install hooks
 bash scripts/setup_hooks.sh
 ```
 
@@ -86,6 +86,11 @@ for the diff summary. Re-vendoring means re-applying that frontmatter.
 
 - **Pre-push hook** (`scripts/hooks/pre-push`, enabled via `setup_hooks.sh`)
   auto-installs changed skills on `git push`; non-blocking, skip with `--no-verify`.
+- **Post-merge hook** (`scripts/hooks/post-merge`, same setup) is the pull-side
+  counterpart: install state under `~/.claude/plugins` is **per-machine**, so
+  after `git pull` it audits every skill and installs missing or version-bumped
+  ones at their committed versions (never `install_skill.py`'s 1.0.0 default).
+  Does not fire on `git fetch` + `reset` — reconcile manually in that flow.
 - **`.gitattributes`** forces `eol=lf` on text files — important: stray CRLF
   leaks into shell pipelines and breaks `install_skill.py`'s cache-dir naming.
 - Each skill may keep a `feedback/log.md` (newest entry on top) recording

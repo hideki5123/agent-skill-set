@@ -1,0 +1,140 @@
+#!/usr/bin/env python3
+# post-merge hook: after git pull/merge, reconcile this machine's Claude Code
+# plugin state (~/.claude/plugins) with the repo. The pull-side counterpart of
+# pre-push: install state is per-machine, so skills added or version-bumped on
+# another machine never become usable here until installed locally.
+# Non-blocking — always exits 0. Failures only warn.
+#
+# Per skill (top-level dir with SKILL.md):
+#   - not in installed_plugins.json            -> full install
+#   - installed version != committed version   -> full install (updates ledger)
+#   - source changed in ORIG_HEAD..HEAD        -> cache-only refresh
+#   - enabledPlugins entry explicitly false    -> skipped (user's choice)
+# Committed version = my-marketplace/plugins/<name>/.claude-plugin/plugin.json
+# at HEAD; never install_skill.py's 1.0.0 default, which silently downgrades.
+#
+# Full installs regenerate tracked my-marketplace/ metadata (catalog reorder);
+# paths that were clean before the hook ran are restored afterwards so a plain
+# `git pull` never leaves the tree dirty. Paths already dirty before the hook
+# (e.g. mid-authoring) are left untouched.
+
+import json
+import os
+import subprocess
+import sys
+
+
+def run(*args, **kw):
+    return subprocess.run(args, capture_output=True, text=True, **kw)
+
+
+def main():
+    home = os.path.expanduser("~")
+    if not os.path.isdir(os.path.join(home, ".claude")):
+        return
+
+    repo = run("git", "rev-parse", "--show-toplevel").stdout.strip()
+    if not repo:
+        return
+    install_script = os.path.join(repo, "my-skill-factory", "scripts", "install_skill.py")
+    if not os.path.isfile(install_script):
+        print(f"[post-merge] Warning: install_skill.py not found", file=sys.stderr)
+        return
+
+    try:
+        ledger = json.load(open(os.path.join(home, ".claude", "plugins", "installed_plugins.json")))["plugins"]
+    except (OSError, ValueError, KeyError):
+        ledger = {}
+    try:
+        enabled = json.load(open(os.path.join(home, ".claude", "settings.json"))).get("enabledPlugins", {})
+    except (OSError, ValueError):
+        enabled = {}
+
+    skills = sorted(
+        d for d in os.listdir(repo)
+        if not d.startswith(".")
+        and os.path.isfile(os.path.join(repo, d, "SKILL.md"))
+        and not os.path.isfile(os.path.join(repo, d, ".git"))  # submodule checkout
+    )
+
+    changed = set()
+    if run("git", "rev-parse", "-q", "--verify", "ORIG_HEAD", cwd=repo).returncode == 0:
+        out = run("git", "diff", "--name-only", "ORIG_HEAD..HEAD", cwd=repo).stdout
+        changed = {line.split("/", 1)[0] for line in out.splitlines() if "/" in line}
+
+    def committed_version(name):
+        p = run("git", "show", f"HEAD:my-marketplace/plugins/{name}/.claude-plugin/plugin.json", cwd=repo)
+        if p.returncode == 0:
+            try:
+                return json.loads(p.stdout)["version"]
+            except (ValueError, KeyError):
+                pass
+        return "1.0.0"
+
+    dirty_before = set(
+        line[3:] for line in
+        run("git", "status", "--porcelain", "--", "my-marketplace", cwd=repo).stdout.splitlines()
+    )
+
+    full, refresh = [], []
+    for name in skills:
+        key = f"{name}@hideki-plugins"
+        if enabled.get(key) is False:
+            continue
+        ver = committed_version(name)
+        entry = ledger.get(key)
+        if not entry:
+            full.append((name, ver))
+        elif entry[0].get("version") != ver:
+            full.append((name, ver))
+        elif name in changed:
+            refresh.append((name, ver))
+
+    orphans = sorted(
+        k for k in ledger
+        if k.endswith("@hideki-plugins") and k[: -len("@hideki-plugins")] not in skills
+    )
+    if orphans:
+        print(f"[post-merge] Note: installed but no longer in repo: {', '.join(orphans)}")
+
+    if not full and not refresh:
+        print("[post-merge] Plugin state in sync — nothing to install.")
+        return
+
+    for name, ver in full:
+        print(f"[post-merge] Installing {name} v{ver}")
+        r = subprocess.run(
+            [sys.executable, install_script, os.path.join(repo, name), "--version", ver],
+            stdout=subprocess.DEVNULL,
+        )
+        if r.returncode != 0:
+            print(f"[post-merge] Warning: failed to install {name}", file=sys.stderr)
+
+    for name, ver in refresh:
+        print(f"[post-merge] Refreshing cache for {name} v{ver}")
+        r = subprocess.run(
+            [sys.executable, install_script, os.path.join(repo, name), "--version", ver, "--cache-only"],
+            stdout=subprocess.DEVNULL,
+        )
+        if r.returncode != 0:
+            print(f"[post-merge] Warning: failed to refresh {name}", file=sys.stderr)
+
+    if full:
+        dirty_after = set(
+            line[3:] for line in
+            run("git", "status", "--porcelain", "--", "my-marketplace", cwd=repo).stdout.splitlines()
+        )
+        to_restore = sorted(dirty_after - dirty_before)
+        if to_restore:
+            run("git", "checkout", "--", *to_restore, cwd=repo)
+
+    print(f"[post-merge] Done: {len(full)} installed, {len(refresh)} refreshed."
+          " New skills load in new Claude Code sessions.")
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as e:  # never block the merge
+        print(f"[post-merge] Warning: {e}", file=sys.stderr)
+    sys.exit(0)
