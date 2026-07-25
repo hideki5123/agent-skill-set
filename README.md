@@ -15,7 +15,6 @@ A collection of agent skills and tools for Claude Code and Cursor.
 | [dev-workflow](dev-workflow/) | **⚠️ DEPRECATED** (disabled; superseded by upstream `grill-me`→`to-prd`→`tdd`→`improve-codebase-architecture`). End-to-end TDD development workflow with multi-agent team review |
 | [jira-cli](jira-cli/) | View, search, create, update, and delete Jira issues, comments, sprints via `@pchuri/jira-cli` |
 | [e2e-test](e2e-test/) | Run frontend E2E tests via `npx playwright test`, generated from a scenario CSV, with video/screenshot evidence |
-| [multi-agent-council](multi-agent-council/) | Multi-LLM council for architecture decisions and code reviews (submodule) |
 | [my-skill-factory](my-skill-factory/) | Create, build, and install custom skills into the local marketplace |
 | [orch-qa](orch-qa/) | QA/QC engineer that evaluates codebases for test quality and writes missing tests |
 | [playwright-cli](playwright-cli/) | Run Playwright CLI commands for test execution, codegen, reporting, and debugging — including the guided codegen-to-test-suite workflow |
@@ -143,4 +142,40 @@ python scripts/sync_skills.py --targets codex --codex-home "D:/path/to/.codex"
 python my-skill-factory/scripts/install_skill.py <skill-dir>/
 ```
 
-This handles the full pipeline: marketplace structure, plugin cache, `installed_plugins.json`, and `settings.json`. A pre-push hook also auto-installs changed skills on `git push`.
+This handles the full pipeline: marketplace structure, plugin cache, `installed_plugins.json`, and `settings.json`. See the next section for the git hooks that run this automatically.
+
+## Multi-Machine Model & Git Hooks
+
+Skill *sources* travel through git, but Claude Code's install state — the
+plugin cache at `~/.claude/plugins/cache/`, the `installed_plugins.json`
+ledger, and `enabledPlugins` in `~/.claude/settings.json` — is **per-machine**
+and never leaves the box. A skill that exists in the repo stays invisible to
+Claude Code sessions until it is installed on that machine. (The Codex side is
+different: `sync_skills.py` writes `~/.codex/skills` directly, so it is always
+current after a local sync run.)
+
+Two non-blocking git hooks keep the Claude side reconciled. They live in the
+tracked `scripts/hooks/` directory and are wired up via `core.hooksPath`.
+Enable them **once per machine** after cloning:
+
+```bash
+bash scripts/setup_hooks.sh
+```
+
+| Hook | Fires on | What it does |
+|------|----------|--------------|
+| `pre-push` | `git push` | Refreshes the plugin cache for skills changed in the pushed commits (`--cache-only`). Skip with `git push --no-verify`. |
+| `post-merge` | `git pull` / merge | Audits every skill against the install ledger: full-installs missing or version-bumped skills at their **committed** version, cache-refreshes skills whose source changed, and restores the generated `my-marketplace/` churn so a plain pull leaves the tree clean. |
+
+Caveats:
+
+- `post-merge` does not fire on `git fetch` + `git reset` — after that flow,
+  run `scripts/hooks/post-merge` directly to reconcile.
+- When running `install_skill.py` by hand, always pass
+  `--version <version from my-marketplace/plugins/<name>/.claude-plugin/plugin.json>`.
+  The flag defaults to `1.0.0`, which silently **downgrades** version-bumped
+  skills and re-dirties the tracked marketplace metadata.
+- Plugins explicitly disabled in `enabledPlugins` (e.g. the deprecated
+  `dev-workflow`) are respected — the hooks never re-enable them.
+- New skills and updates load in **new** Claude Code sessions only; already
+  running sessions keep their skill set.
