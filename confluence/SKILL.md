@@ -10,6 +10,7 @@ description: >
   "read confluence", "search confluence", "create confluence page",
   "update confluence page", "confluence attachment", "confluence spaces",
   "export confluence", "confluence comments", "confluence copy-tree".
+version: 1.1.0
 ---
 
 # confluence-cli Skill
@@ -739,6 +740,29 @@ confluence edit 123456789 --output ./page.xml
 # 3. Push the updated content
 confluence update 123456789 --file ./page.xml --format storage
 ```
+
+### Surgical edits on storage XML — safety rules
+
+When scripting targeted replacements on a fetched `page.xml`:
+
+1. **Re-fetch immediately before every update.** Pages get edited concurrently
+   (humans, other agent sessions). `confluence edit` prints the current version —
+   if any time passed since your fetch, fetch again and re-apply the edits on the
+   fresh copy; otherwise `update` silently clobbers the newer version.
+2. **Never anchor replacements on `local-id` attributes.** The Confluence editor
+   normalizes or strips `local-id`s whenever a human edits the page, so id-based
+   anchors break without warning. Anchor on unique literal text instead.
+3. **Assert uniqueness per replacement** so a drifted anchor fails loudly instead
+   of corrupting the page:
+
+   ```python
+   def rep(old, new):
+       global src
+       assert src.count(old) == 1, f"anchor drift: {old[:60]!r}"
+       src = src.replace(old, new, 1)
+   ```
+
+4. New elements you insert may omit `local-id` — Confluence assigns ids on save.
 
 ### Build a documentation hierarchy
 
