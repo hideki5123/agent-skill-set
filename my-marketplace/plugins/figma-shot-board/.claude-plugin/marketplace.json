@@ -1,0 +1,20 @@
+{
+  "name": "hideki-plugins",
+  "owner": {
+    "name": "Hideki"
+  },
+  "metadata": {
+    "description": "Custom Claude Code plugins by Hideki"
+  },
+  "plugins": [
+    {
+      "name": "figma-shot-board",
+      "source": {
+        "type": "local",
+        "path": "."
+      },
+      "description": "Place a set of local screenshots/images into Figma as a labeled, sectioned board (auto-layout, title + section rows, layer names = filenames) using the Figma MCP (upload_assets + use_figma). Works aga",
+      "version": "1.0.0"
+    }
+  ]
+}

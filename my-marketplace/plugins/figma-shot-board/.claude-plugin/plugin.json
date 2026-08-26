@@ -1,0 +1,13 @@
+{
+  "name": "figma-shot-board",
+  "version": "1.0.0",
+  "description": "Place a set of local screenshots/images into Figma as a labeled, sectioned board (auto-layout, title + section rows, layer names = filenames) using the Figma MCP (upload_assets + use_figma). Works aga",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "figma-shot-board"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}

@@ -1,0 +1,20 @@
+{
+  "name": "hideki-plugins",
+  "owner": {
+    "name": "Hideki"
+  },
+  "metadata": {
+    "description": "Custom Claude Code plugins by Hideki"
+  },
+  "plugins": [
+    {
+      "name": "ui-spec-sim",
+      "source": {
+        "type": "local",
+        "path": "."
+      },
+      "description": "チケットや要件から「HTML UIスペック (決定ログ D番号・未決Qカード・文言一覧)」と 「触って遷移を確認できるHTMLシミュレーター (カバレッジ自動チェック付き)」のペアを artifactとして作り、ユーザーレビューを何巡も回して確定させる設計レビューループ。 各巡で敵対的な整合検証 (スペック⇔シミュレーター⇔文言表) を行い、確定した内容だけを 実装Ticket/Confluenc",
+      "version": "1.0.0"
+    }
+  ]
+}
