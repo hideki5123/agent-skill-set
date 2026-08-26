@@ -6,6 +6,6 @@
 - **Change**: references/tech-doc-house-style.md に §5「一括置換の順序規則」を追加 (複合語の事前置換→複合カタカナ語→単語の長い順、事前走査/事後検証のgrep付き)。§4 手順2から参照。
 - **Files Modified**: references/tech-doc-house-style.md, SKILL.md (version)
 - **Version Bump**: 1.2.0 → 1.3.0
-- **Git Commit**: pending
+- **Git Commit**: 4542f44
 - **Status**: applied — monitoring
 ---

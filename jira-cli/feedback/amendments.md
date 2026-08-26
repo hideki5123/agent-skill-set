@@ -6,6 +6,6 @@
 - **Change**: Added "Attachments via REST" workflow (upload with X-Atlassian-Token: no-check, list, delete), comparison-table row, and quick-reference row.
 - **Files Modified**: SKILL.md (When to Use CLI vs. MCP table, Quick Reference, Common Agent Workflows)
 - **Version Bump**: (none) → 1.1.0
-- **Git Commit**: pending
+- **Git Commit**: 418302a
 - **Status**: applied — monitoring
 ---

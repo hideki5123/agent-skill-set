@@ -6,6 +6,6 @@
 - **Change**: Added "Surgical edits on storage XML — safety rules" (re-fetch before update, never anchor on local-id, assert-unique replace pattern, omit local-id on new elements).
 - **Files Modified**: SKILL.md (Common Agent Workflows)
 - **Version Bump**: (none) → 1.1.0
-- **Git Commit**: pending
+- **Git Commit**: 6248c83
 - **Status**: applied — monitoring
 ---
