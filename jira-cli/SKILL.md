@@ -10,6 +10,7 @@ description: >
   "create jira issue", "search jira", "jira sprint", "jira board",
   "jira project", "jira comment", "jira JQL", "list jira issues",
   "view jira issue", "jira backlog".
+version: 1.1.0
 ---
 
 # jira-cli Skill
@@ -119,6 +120,7 @@ If this fails:
 | **Internal comments** | No | Yes — `--internal` flag |
 | **Shell pipelines** | No | Yes — pipe to `jq`, `grep`, etc. |
 | **API version control** | No | Yes — `JIRA_API_VERSION` env var |
+| **Attachments (upload/delete)** | No | No — use the REST fallback (see Common Agent Workflows) |
 
 **Rule of thumb:** Use MCP for simple view/create/edit and transitions. Use CLI for delete, comments management, sprints, boards, project details, markdown export, and shell pipelines.
 
@@ -144,6 +146,7 @@ If this fails:
 | List sprints | `jira sprint list --board <boardId>` |
 | Active sprint | `jira sprint active --board <boardId>` |
 | Show config | `jira config --show` |
+| Attach / delete files | REST fallback — see "Attachments via REST" workflow |
 
 ---
 
@@ -550,6 +553,33 @@ jira issue comment list PROJ-123 --format json | jq '.[].body'
 ```
 
 ---
+
+### Attachments via REST (neither CLI nor MCP supports them)
+
+Neither jira-cli nor the `mcp__claude_ai_Atlassian__*` tools can upload or delete
+issue attachments. Use the Jira Cloud REST API directly. Auth is a classic API
+token with Basic auth (`email:token`) against the site domain — a confluence-cli
+profile for the same site (`~/.config/confluence-cli/config.json`) holds a token
+that works for Jira too.
+
+```bash
+AUTH="user@example.com:$JIRA_API_TOKEN"
+
+# Upload (multiple -F file=@... parts are allowed in ONE request)
+curl -s -u "$AUTH" -X POST -H "X-Atlassian-Token: no-check" \
+  -F "file=@a.png" -F "file=@b.png" \
+  "https://<site>.atlassian.net/rest/api/3/issue/<KEY>/attachments"
+
+# List attachment ids
+curl -s -u "$AUTH" "https://<site>.atlassian.net/rest/api/3/issue/<KEY>?fields=attachment"
+
+# Delete one attachment (204 on success)
+curl -s -u "$AUTH" -X DELETE "https://<site>.atlassian.net/rest/api/3/attachment/<attachmentId>"
+```
+
+- `X-Atlassian-Token: no-check` is required on upload (XSRF guard) — without it the API returns 403.
+- The upload response is a JSON array (`id`, `filename`, `size`); capture ids if you may delete later.
+- Verify auth first with `GET /rest/api/3/myself` (expect HTTP 200).
 
 ## Agent Tips
 
