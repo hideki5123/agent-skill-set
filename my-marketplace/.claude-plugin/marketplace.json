@@ -35,11 +35,6 @@
       "description": "Run OpenAI Codex via the Codex App Server (JSON-RPC-over-stdio) for streaming multi-turn chat sessions with persistent threads, structured output, image input, and rich event streams. Default entry po"
     },
     {
-      "name": "confluence",
-      "source": "./plugins/confluence",
-      "description": "Use confluence-cli to read, search, create, update, move, and delete Confluence pages and attachments from the terminal. Prefer this skill over `mcp__claude_ai_Atlassian__*` MCP tools when you need: p"
-    },
-    {
       "name": "dev-workflow",
       "source": "./plugins/dev-workflow",
       "description": "End-to-end TDD development workflow with multi-agent team review and skill-based quality gates. Plans, discusses, and implements features using strict RED-GREEN-REFACTOR test-driven development. Handl"
@@ -100,11 +95,6 @@
       "description": "日本語の技術文書（書籍の章、記事、解説文）を新規に書く、既存の下書きを推敲する、公開前に規範違反を洗い出す、の3モードで支援します。k16shikano氏のGist「日本語技術文書の文章規範」(Unlicense) をベースにした段落構成、論証の厳密さ、読み手の負荷管理、演出の抑制などの文章規範 (references/rules.md) と、BLOCKER/IMPORTANT/TASTEのsev"
     },
     {
-      "name": "jira-cli",
-      "source": "./plugins/jira-cli",
-      "description": "Use @pchuri/jira-cli to view, search, create, update, and delete Jira issues, comments, sprints, and projects from the terminal. Prefer this skill over `mcp__claude_ai_Atlassian__*` MCP tools when you"
-    },
-    {
       "name": "local-skill-factory",
       "source": "./plugins/local-skill-factory",
       "description": "Create project-local Claude Code skills (.claude/commands/) in any project directory. Analyzes the project's tech stack, structure, and conventions, then generates tailored local skills (custom slash "
@@ -113,11 +103,6 @@
       "name": "my-gdrive",
       "source": "./plugins/my-gdrive",
       "description": "Operate ONLY the user's private (personal) Google Drive via `rclone`, scoped to a single pinned remote (default `my-gdrive:`, override with the `MY_GDRIVE_REMOTE` env var). A safety wrapper around the"
-    },
-    {
-      "name": "naturalize-ja",
-      "source": "./plugins/naturalize-ja",
-      "description": "任意の日本語テキスト (ファイル / 貼り付けテキスト / ディレクトリ) を読み、AI 生成と気づかれる「不自然な日本語表現」を検出・置換します。プレ AI 時代の技術ブログ調へ整えるための禁止フレーズ辞書 (16 カテゴリ A–P。曖昧・稚拙な用語の的確化も含む。実フィードバックと公開研究を統合) と、grep + 質的レビューの二段監査を内蔵 (subagent をさらに spawn せず、"
     },
     {
       "name": "notion-cli",
@@ -268,6 +253,21 @@
       "name": "my-skill-factory",
       "source": "./plugins/my-skill-factory",
       "description": "Create, build, and install custom Claude Code skills into Hideki's local marketplace. End-to-end workflow from requirements gathering to a fully installed and usable skill. Use when the user asks to c"
+    },
+    {
+      "name": "jira-cli",
+      "source": "./plugins/jira-cli",
+      "description": "Use @pchuri/jira-cli to view, search, create, update, and delete Jira issues, comments, sprints, and projects from the terminal. Prefer this skill over `mcp__claude_ai_Atlassian__*` MCP tools when you"
+    },
+    {
+      "name": "confluence",
+      "source": "./plugins/confluence",
+      "description": "Use confluence-cli to read, search, create, update, move, and delete Confluence pages and attachments from the terminal. Prefer this skill over `mcp__claude_ai_Atlassian__*` MCP tools when you need: p"
+    },
+    {
+      "name": "naturalize-ja",
+      "source": "./plugins/naturalize-ja",
+      "description": "任意の日本語テキスト (ファイル / 貼り付けテキスト / ディレクトリ) を読み、AI 生成と気づかれる「不自然な日本語表現」を検出・置換します。プレ AI 時代の技術ブログ調へ整えるための禁止フレーズ辞書 (16 カテゴリ A–P。曖昧・稚拙な用語の的確化も含む。実フィードバックと公開研究を統合) と、grep + 質的レビューの二段監査を内蔵 (subagent をさらに spawn せず、"
     }
   ]
 }
