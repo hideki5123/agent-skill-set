@@ -2,6 +2,17 @@
 
 <!-- Append new entries at the top. Do not edit previous entries. -->
 
+## 2026-08-26T11:32:09+00:00
+- **Skill Version**: 1.2.1
+- **Task**: jira-cli / confluence / naturalize-ja へのセッション実証ベース amendment (AMD-001 x3、retrofit level None x2)
+- **Outcome**: success
+- **Rating**: — 
+- **Rating reason**: —
+- **Corrections**: (1) naturalize-ja house-style の手順番号を誤記憶しアンカー不一致 (count==1 assert が検出、正アンカーで再適用) (2) install_skill.py が naturalize-ja の plugin version を 1.2.0→1.0.0 に巻き戻し、手動で 1.3.0 に復元してからコミット
+- **Issues**: install_skill.py は既存 plugin.json の version を保持しない (既存バージョン読み取り→維持/バンプが必要)。my-skill-factory 側の改善候補。
+- **User Note**: — (次コマンドへ移行のためスキップ)
+---
+
 ## 2026-05-13T00:00:00Z
 - **Skill Version**: 1.1.0
 - **Task**: /skill-improve --skill skill-improve (self-amendment) — applied AMD-001..004 propagating the my-skill-factory v1.1.0 anti-pattern fixes to skill-improve itself; BDD → separate file; WHEN TO READ markers; smoke-check phase; WHY-on-low-rating
