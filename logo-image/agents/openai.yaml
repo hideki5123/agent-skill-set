@@ -1,0 +1,4 @@
+interface:
+  display_name: "Logo Image"
+  short_description: "Turn an image into a grid of minimalist logos"
+  default_prompt: "Use $logo-image to turn this image into a grid of 16 minimalist logo marks."
