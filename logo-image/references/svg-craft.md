@@ -106,7 +106,7 @@ Rules marked (build) are checked by build_sheet.py; the rest are yours to check.
   isometric faces.
 - Prefer primitives and `A` arcs; at most 2 cubic curves per mark. Every mark
   must stay legible in the thumbnail.
-- (build) Painted strokes are W1=12 or W2=8. Strokes inside `<mask>` or
+- (build, direct shapes only) Painted strokes are W1=12 or W2=8. Strokes inside `<mask>` or
   `<clipPath>` only cut and may be any width.
 - Transforms: translate, `rotate(a 120 120)` and the mirror
   `translate(240 0) scale(-1 1)`. Do not scale stroked groups; draw the smaller
