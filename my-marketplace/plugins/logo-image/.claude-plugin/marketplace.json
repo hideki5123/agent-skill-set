@@ -1,0 +1,20 @@
+{
+  "name": "hideki-plugins",
+  "owner": {
+    "name": "Hideki"
+  },
+  "metadata": {
+    "description": "Custom Claude Code plugins by Hideki"
+  },
+  "plugins": [
+    {
+      "name": "logo-image",
+      "source": {
+        "type": "local",
+        "path": "."
+      },
+      "description": "Turn an image into a grid of 16-20 minimalist logo marks (geometric, line art, negative space, emblem, badge, monogram) on a light background. Use for logo ideas or brand marks from a photo.",
+      "version": "1.0.0"
+    }
+  ]
+}

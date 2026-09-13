@@ -1,0 +1,13 @@
+{
+  "name": "logo-image",
+  "version": "1.0.0",
+  "description": "Turn an image into a grid of 16-20 minimalist logo marks (geometric, line art, negative space, emblem, badge, monogram) on a light background. Use for logo ideas or brand marks from a photo.",
+  "author": {
+    "name": "Hideki"
+  },
+  "keywords": [
+    "logo-image"
+  ],
+  "license": "MIT",
+  "skills": "./skills"
+}

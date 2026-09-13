@@ -278,6 +278,11 @@
       "name": "figma-shot-board",
       "source": "./plugins/figma-shot-board",
       "description": "Place a set of local screenshots/images into Figma as a labeled, sectioned board (auto-layout, title + section rows, layer names = filenames) using the Figma MCP (upload_assets + use_figma). Works aga"
+    },
+    {
+      "name": "logo-image",
+      "source": "./plugins/logo-image",
+      "description": "Turn an image into a grid of 16-20 minimalist logo marks (geometric, line art, negative space, emblem, badge, monogram) on a light background. Use for logo ideas or brand marks from a photo."
     }
   ]
 }
