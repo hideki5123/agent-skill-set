@@ -265,11 +265,6 @@
       "description": "Use confluence-cli to read, search, create, update, move, and delete Confluence pages and attachments from the terminal. Prefer this skill over `mcp__claude_ai_Atlassian__*` MCP tools when you need: p"
     },
     {
-      "name": "naturalize-ja",
-      "source": "./plugins/naturalize-ja",
-      "description": "任意の日本語テキスト (ファイル / 貼り付けテキスト / ディレクトリ) を読み、AI 生成と気づかれる「不自然な日本語表現」を検出・置換します。プレ AI 時代の技術ブログ調へ整えるための禁止フレーズ辞書 (16 カテゴリ A–P。曖昧・稚拙な用語の的確化も含む。実フィードバックと公開研究を統合) と、grep + 質的レビューの二段監査を内蔵 (subagent をさらに spawn せず、"
-    },
-    {
       "name": "ui-spec-sim",
       "source": "./plugins/ui-spec-sim",
       "description": "チケットや要件から「HTML UIスペック (決定ログ D番号・未決Qカード・文言一覧)」と 「触って遷移を確認できるHTMLシミュレーター (カバレッジ自動チェック付き)」のペアを artifactとして作り、ユーザーレビューを何巡も回して確定させる設計レビューループ。 各巡で敵対的な整合検証 (スペック⇔シミュレーター⇔文言表) を行い、確定した内容だけを 実装Ticket/Confluenc"
@@ -288,6 +283,11 @@
       "name": "natural-japanese",
       "source": "./plugins/natural-japanese",
       "description": "仕事の日本語文書を読みやすくわかりやすく書く・直すためのスキル。議事録（文字起こしからの議事録化を含む）、調査レポート・分析レポート、社内ガイド・マニュアル、リサーチメモ・ディスカッションペーパー・企画書・提案書・報告書・メール、スライド構成案といったビジネス文書の作成・校正、「結論から書いて」「論旨を明確に」「見出しを端的に」「専門用語をわかりやすく説明して」といった指示のいずれでも使用する。A"
+    },
+    {
+      "name": "naturalize-ja",
+      "source": "./plugins/naturalize-ja",
+      "description": "日本語の技術文書 (技術ブログ・技術記事・README・設計書・英語の技術語が混ざるドキュメント) に絞った AI 臭レビュアー。ファイル / 貼り付けテキスト / ディレクトリを読み、プレ AI 時代の技術ブログ調へ整えるための禁止フレーズ辞書 (16 カテゴリ A–P。曖昧・稚拙な用語の的確化も含む。実フィードバックと公開研究を統合) と、grep + 質的レビューの二段監査で検出・置換します"
     }
   ]
 }

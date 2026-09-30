@@ -1,7 +1,7 @@
 ---
 name: naturalize-ja
-description: 任意の日本語テキスト (ファイル / 貼り付けテキスト / ディレクトリ) を読み、AI 生成と気づかれる「不自然な日本語表現」を検出・置換します。プレ AI 時代の技術ブログ調へ整えるための禁止フレーズ辞書 (16 カテゴリ A–P。曖昧・稚拙な用語の的確化も含む。実フィードバックと公開研究を統合) と、grep + 質的レビューの二段監査を内蔵 (subagent をさらに spawn せず、自分のコンテキスト内で完結)。英語語混在の技術ドキュメントには、カタカナ技術語→英語表記・英字↔日本語の境界スペース除去のハウススタイルも適用します。en-to-ja-explainer など他スキルから委譲して使うことも想定。Triggers: 「AI っぽい日本語をレビューして」「この文章を自然な日本語にして」「ChatGPT 臭を抜きたい」「日本語の AI 臭をチェック」「ナチュラルな日本語に直して」「AI 生成バレしないように直して」「naturalize Japanese」「naturalize-ja」「/naturalize-ja」
-version: 1.3.0
+description: 日本語の技術文書 (技術ブログ・技術記事・README・設計書・英語の技術語が混ざるドキュメント) に絞った AI 臭レビュアー。ファイル / 貼り付けテキスト / ディレクトリを読み、プレ AI 時代の技術ブログ調へ整えるための禁止フレーズ辞書 (16 カテゴリ A–P。曖昧・稚拙な用語の的確化も含む。実フィードバックと公開研究を統合) と、grep + 質的レビューの二段監査で検出・置換します (subagent をさらに spawn せず、自分のコンテキスト内で完結)。英語語混在の技術ドキュメントには、カタカナ技術語→英語表記・英字↔日本語の境界スペース除去のハウススタイルも適用します。en-to-ja-explainer と japanese-tech-writing が名前指定で委譲する先でもある。技術文書以外 (議事録・レポート・メール・企画書などのビジネス文書、note・一般のブログ・エッセイ) の AI 臭除去、読みやすさの改善、AI 臭さの採点・診断は natural-japanese の担当なので、そちらを使う。Triggers: 「技術ブログの AI 臭を抜いて」「技術記事の日本語を自然にして」「README の日本語が AI っぽい」「技術ドキュメントの ChatGPT 臭をチェック」「カタカナ技術語を英語表記に揃えて」「naturalize Japanese」「naturalize-ja」「/naturalize-ja」
+version: 1.4.0
 ---
 
 # naturalize-ja
@@ -29,6 +29,14 @@ version: 1.3.0
 - もしくは `/naturalize-ja` skill 呼出 (本 wrapper 経由)
 
 どちらでも、最終的に subagent 側のワークフローが走る。
+
+## natural-japanese との住み分け
+
+AI 臭の除去は vendored スキル `natural-japanese` (coji/natural-japanese) と
+重なる。自動起動の振り分けは description で行い、このスキルは技術文書、
+`natural-japanese` はビジネス文書・エッセイ・読みやすさ・採点を受け持つ。
+振り分けのために `natural-japanese` 側は書き換えない (上流と無改変のまま
+保つため)。技術文書以外を明示的に渡された場合も拒否はせず、そのまま処理する。
 
 ## なぜ subagent 化したか
 

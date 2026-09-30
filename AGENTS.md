@@ -91,8 +91,10 @@ Install it with the upstream version from its `.claude-plugin/plugin.json`
 `uv run` with PEP 723 inline deps (sudachipy + dictionary, fetched into uv's
 cache on first run); `scripts/semantic.py` is opt-in and pulls torch (~1GB).
 It overlaps `naturalize-ja` on AI-tell removal but is broader (business docs,
-readability, scoring); `naturalize-ja` stays as the tech-doc house-style
-reviewer that `japanese-tech-writing` and `en-to-ja-explainer` delegate to.
+readability, scoring). Routing is done by narrowing the homegrown
+`naturalize-ja` description to technical docs (never by editing the vendored
+one); `naturalize-ja` stays the tech-doc house-style reviewer that
+`japanese-tech-writing` and `en-to-ja-explainer` delegate to by name.
 
 ### Other moving parts
 
