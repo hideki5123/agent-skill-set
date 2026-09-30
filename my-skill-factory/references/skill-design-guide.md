@@ -5,7 +5,7 @@
 ```yaml
 ---
 name: skill-name
-description: What it does + all trigger phrases and contexts. This is the ONLY thing Claude sees before the skill loads, so include ALL "when to use" info here.
+description: What it does (key use case first) + when to use it. The ONLY thing Claude sees before the skill loads. Max 1,024 chars, third person — longer ones get truncated or dropped from the listing.
 ---
 ```
 
@@ -38,7 +38,7 @@ skill-name/
 ## Progressive Disclosure
 
 1. **Metadata** (name + description) — always loaded (~100 words)
-2. **SKILL.md body** — loaded when skill triggers (<5k words)
+2. **SKILL.md body** — loaded when skill triggers (≤5k tokens on invoke; measure with `claude plugin details <name>@hideki-plugins`)
 3. **references/** — loaded on demand by Claude (unlimited)
 
 ## Common Patterns

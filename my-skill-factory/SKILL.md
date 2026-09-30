@@ -1,6 +1,6 @@
 ---
 name: my-skill-factory
-version: 1.1.0
+version: 1.2.0
 description: Create, build, and install custom Claude Code skills into Hideki's local marketplace. End-to-end workflow from requirements gathering to a fully installed and usable skill. Use when the user asks to create a new skill, build a skill, make a plugin, add a new capability, or says "make me a skill for X". Also use when updating or reinstalling an existing custom skill. Trigger phrases include "create skill", "make skill", "new skill", "build plugin", "skill for X", "update skill".
 ---
 
@@ -60,6 +60,7 @@ Anything else is a bug.
 
 ## Workflow
 
+0. **Feedback Check + Ecosystem Check** — Inward (own feedback) and outward (Claude Code / Codex / model changes) improvement signals; research runs in the background
 1. **Gather requirements** — Understand what the skill should do
 2. **Design the skill** — Plan structure, references, scripts, assets, and improvement loop level
 3. **Team orchestration assessment** — Decide if the skill needs multi-agent review; if so, select perspectives
@@ -79,6 +80,27 @@ Before starting Step 1, look for accumulated feedback on this factory skill itse
 - Continue with normal execution either way.
 
 If `feedback/log.md` does not exist, skip silently.
+
+## Ecosystem Check
+
+Run on every invocation, right after Feedback Check. Feedback Check only learns from
+this skill's own past runs; this check notices when the *ecosystem* moved (Claude Code
+or Codex releases, model launches, skill-spec changes), which no feedback entry would
+ever surface.
+
+```bash
+cd <repo-root>
+python my-skill-factory/scripts/ecosystem_check.py
+```
+
+- `"due": false` → continue silently. The whole check is two `--version` calls.
+- `"due": true`, or the user asked to "refresh" → read `references/ecosystem-refresh.md`,
+  launch its research brief as a **background** subagent, tell the user (in Japanese)
+  「エコシステムの更新を検出 ([reasons])。最新の作法をバックグラウンドで調査します。」,
+  and start Step 1 without waiting.
+- The proposals are triaged at the start of Step 2 — **every item needs the user's
+  approval, even in auto-mode** — and written back only after Step 5, as a separate
+  commit. The protocol file has both procedures.
 
 ## Step 1: Gather Requirements
 
@@ -123,14 +145,23 @@ Read `references/bdd-skill-scenarios.md` for templates by skill type and anti-pa
 
 Read `references/skill-design-guide.md` for design patterns and structure guidance.
 
+Read `references/ecosystem-practices.md` (WHEN TO READ: every Step 2 — it is kept
+compact) together with any proposals approved in this run's Ecosystem Check, and
+apply the items relevant to this skill: model usage, token cost, agent usage,
+authoring rules, Codex compatibility. Where a practice there contradicts older
+guidance in this file, the practice wins — it carries a newer `verified` date and a
+primary source.
+
 Decide:
 - **Freedom level**: High (text guidance) vs Low (exact scripts)
 - **References needed?** Detailed checklists, schemas, examples → put in `references/`
 - **Scripts needed?** Deterministic operations → put in `scripts/`
 - **Assets needed?** Templates, images → put in `assets/`
 - **Improvement loop level**: Read `references/skill-improvement-guide.md`. Assess: will this skill be used >5 times? Does it have a complex multi-phase workflow? Choose None / Observe / Full accordingly. If Observe or Full, add the Retrospective and/or Feedback Check sections from the guide's templates.
-- **Token-cost contract**: estimate the SKILL.md body's load cost (always
-  loaded on trigger — aim small). Mark every `references/` file with
+- **Token-cost contract**: plan the SKILL.md body's load cost (always
+  loaded on trigger — aim for ≤5k tokens on invoke, standing rules first),
+  then *measure* it after install with
+  `claude plugin details <skill-name>@hideki-plugins`. Mark every `references/` file with
   explicit "WHEN TO READ: ..." guidance so it stays at 0 tokens during
   normal execution. BDD scenarios, long worked examples, and detailed
   protocol docs must NOT be auto-loaded — they live behind explicit
@@ -173,14 +204,18 @@ Create the skill directory at `<repo-root>/<skill-name>/` (see the "Paths" secti
 ```yaml
 ---
 name: <skill-name>
-description: <What it does + ALL trigger phrases. This is the only text Claude sees before loading the skill body.>
+description: <≤1,024 chars, third person. Key use case first, then the contexts that should trigger it.>
+# plus the invocation fields chosen in Step 2 (see ecosystem-practices.md § Skill authoring)
 ---
 ```
 
-The description is critical — it controls when the skill triggers. Include:
-- What the skill does (1 sentence)
-- All contexts/scenarios when to use it
-- Specific trigger phrases
+The description is critical — it controls when the skill triggers, and it is the only
+text Claude sees before loading the body. Keep it **≤1,024 characters**: Claude Code
+truncates longer ones and drops rarely-used skills' descriptions when the listing
+overflows, so extra trigger phrases get lost rather than helping. Include:
+- What the skill does (1 sentence, the key use case first)
+- The contexts/scenarios when to use it
+- The few trigger phrases that best distinguish it from neighbouring skills
 
 ### SKILL.md body
 
@@ -247,6 +282,9 @@ git push
 ```
 
 ## Step 5: Verify and Smoke Test
+
+Also run the verification practices listed in `references/ecosystem-practices.md`
+§ Skill authoring. They complement 5a/5b, not replace them.
 
 **5a — Listing check.** Launch a new CLI session to confirm the skill is registered:
 
@@ -320,7 +358,7 @@ session:
 1. **Write scenarios for the change** — Define Given/When/Then scenarios for new or modified behavior
 2. **Identify the delta** — Compare new scenarios against existing ones; classify as Added, Modified, or Removed
 3. **Team assessment** — Re-evaluate if the updated skill should add, remove, or change team perspectives
-4. **Edit skill files and install** — Update SKILL.md and supporting files, then always run the install script immediately (it overwrites the previous installation)
+4. **Edit skill files and install** — Update SKILL.md and supporting files, applying `references/ecosystem-practices.md` as in Step 2, then always run the install script immediately (it overwrites the previous installation)
 5. **Commit and push** — `git add` the skill source dir, marketplace plugin dir, and marketplace.json, then `git commit -m "chore: update <skill-name> skill"` and `git push`
 6. **Validate coverage** — Confirm each new scenario has corresponding content in SKILL.md
 7. **Verify** — New sessions will pick up the changes automatically
@@ -337,87 +375,22 @@ Use `/skill-improve` to retrofit OIAE components and analyze feedback for existi
 
 ## Behavior Scenarios
 
-```gherkin
-Scenario: Create a new skill from scratch
-  Given the user has a clear idea for a new skill
-  When the user says "create a skill for X"
-  Then the skill gathers requirements, writes BDD scenarios, designs structure,
-       assesses whether team orchestration is needed, includes team perspectives
-       if warranted, creates files, installs, commits and pushes, and verifies
+BDD spec lives in `references/scenarios.feature`. Read only when auditing or amending
+this skill (e.g. via `/skill-improve --skill my-skill-factory`); not needed for normal
+execution.
 
-Scenario: Skill assessed as needing team orchestration
-  Given the user wants a skill with a multi-phase workflow touching security and architecture
-  When the assessment finds 2+ criteria are true
-  Then the skill includes a "Create an agent team..." step with selected perspectives
-       and a references file with detailed teammate prompts
+## Deferred (tracked TODOs)
 
-Scenario: Skill assessed as NOT needing team orchestration
-  Given the user wants a simple single-step utility skill
-  When the assessment finds 0-1 criteria are true
-  Then team orchestration is skipped and no team review step is included in the skill
-
-Scenario: Update an existing skill
-  Given a skill is already installed in the marketplace
-  When the user says "update the X skill to add Y"
-  Then the skill writes change-delta scenarios, identifies added/modified/removed behaviors, edits files, always re-installs immediately without asking, commits and pushes, and verifies
-
-Scenario: Vague request
-  Given the user provides only a one-line idea without details
-  When the user says "make me a skill"
-  Then the skill asks 2-3 focused questions to clarify purpose, triggers, and output format
-
-Scenario: Skill with external dependencies
-  Given the user needs a skill that relies on CLI tools or MCP servers
-  When the user describes the skill's requirements
-  Then the skill identifies dependencies, documents them in SKILL.md, and includes setup guidance
-
-Scenario: Re-install without changes
-  Given a skill's files have not changed
-  When the user re-runs the install script
-  Then the script overwrites the previous installation and the skill remains functional
-
-Scenario: Feedback Check surfaces a recurring pattern in the factory itself
-  Given my-skill-factory/feedback/log.md has 5+ entries with a common issue keyword in 3+
-  When the factory is invoked
-  Then it tells the user about the pattern and suggests
-       /skill-improve --skill my-skill-factory, then continues normally
-
-Scenario: Retrospective recorded after a run with corrections
-  Given the user rejected the initial design and asked for a different approach mid-run
-  When the workflow completes
-  Then the factory asks for a 1-5 rating in Japanese, creates feedback/log.md if missing,
-       and prepends an entry capturing the corrections, the user's note, and the outcome
-
-Scenario: Retrospective skipped on a clean run
-  Given the run had no corrections, no issues, and the user provides no feedback
-  When the workflow completes
-  Then the factory ends without writing to feedback/log.md
-
-Scenario: New skill must not contain hardcoded absolute paths
-  Given the user is creating or editing a skill
-  When the factory writes any of the skill's SKILL.md, references, or scripts
-  Then no operator-specific path (/Users/..., /home/..., C:\..., D:\..., /private/...)
-       appears in the skill's content except as an explicit documentation example
-  And before install, the path-discipline grep is run and any non-example hits are
-       replaced with <repo-root>, ~, $HOME, or runtime resolution
-
-Scenario: Improve a skill based on feedback
-  Given a skill has feedback/log.md with recurring failure patterns
-  When the user says "improve skill X" or "fix skill X based on feedback"
-  Then the factory reads all feedback, identifies patterns, proposes targeted amendments
-       with evidence, applies approved changes, records in amendments.md, and re-installs
-
-Scenario: Evaluate previous amendments
-  Given a skill has amendments with status "applied — monitoring"
-  When the factory's improve workflow runs
-  Then it checks post-amendment feedback, updates amendment status to effective/ineffective,
-       and suggests rollback for ineffective amendments
-
-Scenario: Skill has no feedback yet
-  Given a skill's feedback/ directory does not exist or log.md is empty
-  When the user asks to improve the skill
-  Then the factory reports no feedback data and suggests running the skill a few times first
-```
+- [ ] **Impact scan of existing skills** — when a refresh retires or changes a practice
+  (a deprecated model ID, a frontmatter change), grep `<repo-root>/*/SKILL.md` for the
+  affected skills and suggest `/skill-improve --skill <name>` for each. Deferred: scoped
+  out of v1.2.0 by the user (2026-09-30); natural home is a new write-back step in
+  `references/ecosystem-refresh.md`.
+- [ ] **Refresh independent of factory runs** — a scheduled routine (`/schedule`) so the
+  knowledge base stays current during weeks when no skill is built. Deferred: v1.2.0
+  piggybacks on factory runs only.
+- [ ] **Codex-native research path** — under Codex there is no background subagent, so
+  a due refresh is skipped without `record`. Deferred until Codex offers an equivalent.
 
 ## References
 
@@ -426,3 +399,6 @@ Scenario: Skill has no feedback yet
 - `references/marketplace-structure.md` — Full directory layout, JSON schemas, and config file locations for the local marketplace
 - `references/skill-design-review-team.md` — Perspective catalog: available team angles, prompts, output formats, and cross-skill delegation (loaded only when assessment warrants team orchestration)
 - `references/skill-improvement-guide.md` — OIAE cycle protocol, feedback log format, amendment format, pattern detection heuristics, and Retrospective/Feedback Check templates for generated skills
+- `references/ecosystem-practices.md` — Living knowledge base of current Claude Code / Codex / model / authoring practices, each item sourced and dated. **WHEN TO READ**: every Step 2 (and step 4 of an update)
+- `references/ecosystem-refresh.md` — Ecosystem Refresh protocol: research brief, triage, write-back. **WHEN TO READ**: only when `ecosystem_check.py` reports due, or the user asks to refresh
+- `references/scenarios.feature` — BDD spec for this skill. **WHEN TO READ**: only when auditing or amending the factory itself

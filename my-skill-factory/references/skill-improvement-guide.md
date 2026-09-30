@@ -13,6 +13,15 @@ Skills are living system components, not static prompt files. The OIAE cycle all
 
 Skills observe and record. The factory analyzes and amends. Skills never self-modify during execution.
 
+OIAE learns only from a skill's *own* runs. Its outward-facing complement is
+`my-skill-factory`'s **Ecosystem Refresh** (`references/ecosystem-refresh.md`): when
+Claude Code or Codex has moved, a background subagent reads primary sources and
+proposes updates to the factory's knowledge base (`references/ecosystem-practices.md`).
+It is the one sanctioned case of the factory amending itself, and it still respects the
+rule above in spirit. Approved items are used in-context during the run, but they are
+written to disk only after the primary task completes, as a separate, user-approved
+commit recorded as an amendment (`Source: ecosystem-refresh`).
+
 ## Feedback Directory Structure
 
 ```
@@ -70,7 +79,8 @@ Created by the factory's "Improve" workflow. Tracks what was changed and why.
 
 ## AMD-<NNN> — <YYYY-MM-DD>
 - **Pattern**: <recurring issue description>
-- **Evidence**: <dates of log entries that motivated this change>
+- **Source**: feedback | ecosystem-refresh | ecosystem-practices   (omit = feedback)
+- **Evidence**: <dates of log entries — or, for the ecosystem sources, the primary-source URLs / knowledge-base items>
 - **Change**: <what was modified — human-readable summary>
 - **Files Modified**: <file paths and sections changed>
 - **Version Bump**: <old version> → <new version>
