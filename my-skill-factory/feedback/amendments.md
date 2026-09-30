@@ -83,7 +83,8 @@
   - Every proposal needs the user's approval, even in auto-mode. Approved items are used in-context in Step 2, and written back after Step 5 as a separate amendment-recorded commit.
   - The new `references/ecosystem-practices.md` is a sourced, dated, size-capped knowledge base that Step 2 reads on every run.
   - `skill-improvement-guide.md` documents this loop as the one sanctioned self-amendment and adds a `Source` field to the amendment format.
-  - Deferred TODOs are tracked in SKILL.md: impact scan, scheduled refresh, Codex-native path.
+  - Due policy (`refresh_reasons`): a refresh is due when any installed CLI is *newer* than the recorded version. The user chose this on 2026-10-01 over a draft with a 7-day cooldown and a 30-day max age, because the two only differ when factory runs cluster within days. "Newer" rather than "different" keeps synced hosts with older CLIs from flip-flopping the shared state.
+  - Deferred TODOs are tracked in SKILL.md: impact scan, scheduled refresh, cooldown/max-age knobs, Codex-native path.
 - **Files Modified**: `my-skill-factory/SKILL.md` (Workflow, new `## Ecosystem Check`, Step 2, Updating step 4, References, new Deferred TODOs); new `scripts/ecosystem_check.py`, `references/ecosystem-refresh.md`, `references/ecosystem-practices.md`; `references/skill-improvement-guide.md` (Overview, Amendment Format).
 - **Version Bump**: 1.1.0 → 1.2.0
 - **Git Commit**: (pending)

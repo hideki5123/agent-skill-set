@@ -389,6 +389,11 @@ execution.
 - [ ] **Refresh independent of factory runs** — a scheduled routine (`/schedule`) so the
   knowledge base stays current during weeks when no skill is built. Deferred: v1.2.0
   piggybacks on factory runs only.
+- [ ] **Cooldown / max-age knobs on the due policy** — v1.2.0 refreshes whenever an
+  installed CLI is newer than recorded (chosen 2026-10-01 over a 7-day cooldown +
+  30-day max age, which only differ when runs cluster within days). Revisit if the
+  AMD-007 evaluation shows later refreshes are costly, or if practice changes that ship
+  without a CLI release (model launches, doc rewrites) get missed.
 - [ ] **Codex-native research path** — under Codex there is no background subagent, so
   a due refresh is skipped without `record`. Deferred until Codex offers an equivalent.
 

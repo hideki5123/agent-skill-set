@@ -73,31 +73,28 @@ def parse_version(v: str | None) -> tuple[int, int, int] | None:
 def refresh_reasons(
     recorded: dict[str, str | None],
     current: dict[str, str | None],
-    days_since: int,
 ) -> list[str]:
     """Decide whether the expensive web research is due.
 
-    Returns human-readable reasons, e.g. ["claude 2.1.278 -> 2.2.0"]; an empty
-    list means "not due". Only called when a previous refresh exists (the
+    Due when any installed CLI is NEWER than the version recorded at the last
+    refresh. Returns human-readable reasons, e.g. ["claude 2.1.278 -> 2.1.285"];
+    an empty list means "not due". Only called when a previous refresh exists (the
     first-ever run is always due and handled by the caller).
 
     recorded / current: {"claude": "2.1.278", "codex": "0.154.0"}. A value is None
         when that CLI is absent on this machine, or was absent when recorded.
-    days_since: whole days since the last recorded refresh.
 
-    This is the knob that trades freshness against token cost:
-      - Claude Code bumps its *patch* number almost daily (2.1.278 -> 2.1.285 within
-        a week), and Codex bumps its *minor* every few days (0.154 -> 0.159). A bare
-        "any version differs" rule would fire on nearly every factory run.
-      - A machine synced via git (e.g. tail-dgx) may run an OLDER version than the one
-        recorded here. That machine has nothing new to learn and should not trigger.
-      - Practice changes can ship without any CLI release (a new model launch, an
-        updated best-practices page), so some upper bound on days_since is needed.
-
-    Helpers: parse_version("2.1.278") -> (2, 1, 278); tuples compare element-wise.
+    "Newer", not "different": the state file is shared with synced hosts (e.g.
+    tail-dgx). A host running an OLDER CLI has nothing new to learn; comparing on
+    "different" would make it trigger a refresh and then record its older version,
+    so the next newer host would trigger again, back and forth.
     """
-    # TODO(user): implement the due policy (5-10 lines).
-    raise NotImplementedError("refresh_reasons: due policy not implemented yet")
+    reasons = []
+    for tool, cur_s in current.items():
+        cur, rec = parse_version(cur_s), parse_version(recorded.get(tool))
+        if cur is not None and (rec is None or cur > rec):
+            reasons.append(f"{tool} {recorded.get(tool) or 'none'} -> {cur_s}")
+    return reasons
 
 
 def load_state() -> dict | None:
@@ -124,7 +121,7 @@ def check() -> dict:
     last = state.get("last_refresh")
     days_since = (date.today() - date.fromisoformat(last)).days if last else 10**6
     verdict.update(recorded=recorded, last_refresh=last, days_since=days_since)
-    reasons = refresh_reasons(recorded, current, days_since)
+    reasons = refresh_reasons(recorded, current)
     verdict.update(due=bool(reasons), reasons=reasons)
     return verdict
 

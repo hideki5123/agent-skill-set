@@ -92,13 +92,13 @@ Feature: my-skill-factory
   # --- Ecosystem Refresh (v1.2.0) ---
 
   Scenario: Ecosystem check is not due
-    Given the last refresh is recent and neither claude nor codex moved past the due policy
+    Given neither the installed claude nor codex is newer than the recorded version
     When the factory is invoked
     Then ecosystem_check.py prints "due": false after two --version calls
     And the factory continues to Step 1 silently, reading no refresh protocol
 
   Scenario: Ecosystem check is due
-    Given Claude Code or Codex moved past the due policy, or the last refresh is too old
+    Given the installed claude or codex is newer than the version recorded at the last refresh
     When the factory is invoked
     Then it reads references/ecosystem-refresh.md, launches the research brief as a
          background subagent, tells the user in one Japanese line, and starts Step 1
