@@ -185,11 +185,6 @@
       "description": "Watch another running Claude Code session in real time and narrate its activity in Japanese with detailed term-by-term explanations. By default targets a session active in the current working director"
     },
     {
-      "name": "skill-improve",
-      "source": "./plugins/skill-improve",
-      "description": "Retrofit the OIAE self-improvement loop to existing skills and analyze feedback to propose evidence-based amendments. Adds Retrospective, Feedback Check, and version tracking to skills that lack them."
-    },
-    {
       "name": "slack-cli",
       "source": "./plugins/slack-cli",
       "description": "Operate Slack from the terminal via `slack-cli` (@urugus/slack-cli). Send messages, check unreads, search history, upload files, manage reactions/pins, schedule messages, and manage channels — all thr"
@@ -250,11 +245,6 @@
       "description": "Review local git changes or an architecture document against the Cost Optimization pillar of Google's Cloud Well-Architected Framework. Identifies gaps across 6 principles (spend aligned to value, cos"
     },
     {
-      "name": "my-skill-factory",
-      "source": "./plugins/my-skill-factory",
-      "description": "Create, build, and install custom Claude Code skills into Hideki's local marketplace. End-to-end workflow from requirements gathering to a fully installed and usable skill. Use when the user asks to c"
-    },
-    {
       "name": "jira-cli",
       "source": "./plugins/jira-cli",
       "description": "Use @pchuri/jira-cli to view, search, create, update, and delete Jira issues, comments, sprints, and projects from the terminal. Prefer this skill over `mcp__claude_ai_Atlassian__*` MCP tools when you"
@@ -288,6 +278,16 @@
       "name": "naturalize-ja",
       "source": "./plugins/naturalize-ja",
       "description": "日本語の技術文書 (技術ブログ・技術記事・README・設計書・英語の技術語が混ざるドキュメント) に絞った AI 臭レビュアー。ファイル / 貼り付けテキスト / ディレクトリを読み、プレ AI 時代の技術ブログ調へ整えるための禁止フレーズ辞書 (16 カテゴリ A–P。曖昧・稚拙な用語の的確化も含む。実フィードバックと公開研究を統合) と、grep + 質的レビューの二段監査で検出・置換します"
+    },
+    {
+      "name": "my-skill-factory",
+      "source": "./plugins/my-skill-factory",
+      "description": "Create, build, and install custom Claude Code skills into Hideki's local marketplace. End-to-end workflow from requirements gathering to a fully installed and usable skill. Use when the user asks to c"
+    },
+    {
+      "name": "skill-improve",
+      "source": "./plugins/skill-improve",
+      "description": "Retrofit the OIAE self-improvement loop to existing skills and analyze feedback to propose evidence-based amendments. Adds Retrospective, Feedback Check, and version tracking to skills that lack them."
     }
   ]
 }

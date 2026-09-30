@@ -87,7 +87,7 @@
   - Deferred TODOs are tracked in SKILL.md: impact scan, scheduled refresh, cooldown/max-age knobs, Codex-native path.
 - **Files Modified**: `my-skill-factory/SKILL.md` (Workflow, new `## Ecosystem Check`, Step 2, Updating step 4, References, new Deferred TODOs); new `scripts/ecosystem_check.py`, `references/ecosystem-refresh.md`, `references/ecosystem-practices.md`; `references/skill-improvement-guide.md` (Overview, Amendment Format).
 - **Version Bump**: 1.1.0 → 1.2.0
-- **Git Commit**: (pending)
+- **Git Commit**: e66ed67 (loop), 8fb78ab (due policy)
 - **Status**: applied — monitoring
 ---
 
@@ -98,7 +98,7 @@
 - **Change**: Moved all scenarios to `references/scenarios.feature`, gated with WHEN TO READ, and added 9 Ecosystem Refresh scenarios. The SKILL.md body now carries a one-line pointer, and the file went from 428 to 395 lines despite the new section.
 - **Files Modified**: `my-skill-factory/SKILL.md` — `## Behavior Scenarios`; new `references/scenarios.feature`.
 - **Version Bump**: 1.1.0 → 1.2.0 (same release as AMD-007)
-- **Git Commit**: (pending)
+- **Git Commit**: e66ed67
 - **Status**: applied — monitoring
 ---
 
@@ -124,7 +124,7 @@
   - Per the user's scoping, **other skills are not modified**. The 13–14 over-long descriptions and the 3 skills relying on the fork-background default are left for the deferred impact scan.
 - **Files Modified**: `my-skill-factory/references/ecosystem-practices.md`; `my-skill-factory/SKILL.md` (Step 2, Step 4 frontmatter, Step 5); `my-skill-factory/references/skill-design-guide.md` (Frontmatter, Progressive Disclosure); new `my-skill-factory/feedback/ecosystem-state.json`.
 - **Version Bump**: shipped inside 1.2.0 together with AMD-007/008. The write-back protocol normally bumps separately, but 1.2.0 had not been released yet, so a 1.2.1 would have had no prior install to follow.
-- **Git Commit**: (pending)
+- **Git Commit**: e66ed67
 - **Status**: applied — monitoring
 - **Cost note**: the first refresh took ~222k subagent tokens, 57 tool calls, and ~10 min, because a first run has no version slice to diff against. Later refreshes read only newer changelog sections; compare their cost against this baseline when evaluating AMD-007.
 ---
