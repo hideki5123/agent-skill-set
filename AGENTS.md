@@ -82,6 +82,18 @@ form a composable workflow documented in
 `6b1061b`, and its frontmatter is **modified**, not verbatim — see its `LICENSE`
 for the diff summary. Re-vendoring means re-applying that frontmatter.
 
+`natural-japanese/` comes from [coji/natural-japanese](https://github.com/coji/natural-japanese)
+and **is** verbatim: its `skills/natural-japanese/` layout is one level shallower
+than mattpocock's, but `vendor_skill.py` still finds it with an explicit path —
+`python scripts/vendor_skill.py --repo coji/natural-japanese --path skills/natural-japanese --ref <sha>`.
+Install it with the upstream version from its `.claude-plugin/plugin.json`
+(currently `--version 1.5.0`), not the 1.0.0 default. Its scripts run via
+`uv run` with PEP 723 inline deps (sudachipy + dictionary, fetched into uv's
+cache on first run); `scripts/semantic.py` is opt-in and pulls torch (~1GB).
+It overlaps `naturalize-ja` on AI-tell removal but is broader (business docs,
+readability, scoring); `naturalize-ja` stays as the tech-doc house-style
+reviewer that `japanese-tech-writing` and `en-to-ja-explainer` delegate to.
+
 ### Other moving parts
 
 - **Pre-push hook** (`scripts/hooks/pre-push`, enabled via `setup_hooks.sh`)

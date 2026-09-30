@@ -17,6 +17,7 @@ A collection of agent skills and tools for Claude Code and Cursor.
 | [logo-image](logo-image/) | Turn an image into a grid of 16-20 minimalist logo marks as one brand collection: hand-authored SVG on Claude, built-in `image_gen` on Codex. Portable to claude.ai and Claude Code on the web via zip upload |
 | [e2e-test](e2e-test/) | Run frontend E2E tests via `npx playwright test`, generated from a scenario CSV, with video/screenshot evidence |
 | [my-skill-factory](my-skill-factory/) | Create, build, and install custom skills into the local marketplace |
+| [natural-japanese](natural-japanese/) | Write and revise Japanese work documents (minutes, reports, guides, memos, slides, essays) for readability, with AI-tell removal built in. Deterministic `uv run` lint + readability review. Vendored verbatim from [coji/natural-japanese](https://github.com/coji/natural-japanese) |
 | [orch-qa](orch-qa/) | QA/QC engineer that evaluates codebases for test quality and writes missing tests |
 | [playwright-cli](playwright-cli/) | Run Playwright CLI commands for test execution, codegen, reporting, and debugging — including the guided codegen-to-test-suite workflow |
 | [pm-review](pm-review/) | Review local changes from a PMBOK-based product management perspective |
