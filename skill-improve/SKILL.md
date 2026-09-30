@@ -1,6 +1,6 @@
 ---
 name: skill-improve
-version: 1.2.1
+version: 1.3.0
 description: >
   Retrofit the OIAE self-improvement loop to existing skills and analyze feedback
   to propose evidence-based amendments. Adds Retrospective, Feedback Check, and
@@ -250,12 +250,35 @@ Read `"$MSF_HOME"/references/skill-improvement-guide.md` for pattern detection h
     git push
     ```
 
+### Phase 3b: Ecosystem Drift Check
+
+Skip only if `--retrofit-only` is set. Runs even when the skill has no feedback log:
+a skill nobody has complained about can still be written against an outdated
+ecosystem (a retired model ID, a superseded frontmatter rule, a hand-rolled check
+that a CLI now does natively).
+
+1. Read `"$MSF_HOME"/references/ecosystem-practices.md`, the factory's knowledge
+   base of current Claude Code / Codex / model / authoring practices. If it is
+   missing or empty, say so in one line and skip this phase.
+2. Compare the target skill against each item that applies to its type. Flag only
+   concrete contradictions or missed practices, never general style.
+3. Derive proposals **only from items in that file**, never from your own recollection
+   of the ecosystem. Every item there was sourced and user-approved; recollection was
+   not. Items with a `verified` date older than 90 days are reported as stale, not
+   proposed.
+4. Present, apply, record, install, smoke, and commit exactly as in Phase 3
+   steps 6–11. Use `Source: ecosystem-practices` in the amendment, with the item and
+   its source URL as `Evidence`, and a commit message of the form
+   `fix: align <skill-name> with current ecosystem practices (AMD-NNN)`.
+   When Phase 3 also produced amendments, present both sets together once.
+
 ### Phase 4: Report
 
 Summarize what was done:
 - OIAE components retrofitted (if any)
 - Previous amendments evaluated (status updates)
 - Patterns found in feedback (if any)
+- Ecosystem drift found (if any)
 - Amendments applied (if any)
 - Current skill version
 
@@ -322,3 +345,6 @@ Read these on-demand only — they are not auto-loaded. Resolve `$SKILL_HOME`
   **WHEN TO READ**: in Phase 2 when looking up template wording, and in
   Phase 3 when applying pattern-detection heuristics or formatting an
   amendments.md entry.
+- `"$MSF_HOME"/references/ecosystem-practices.md` — the factory's sourced,
+  user-approved knowledge base of current Claude Code / Codex / model / authoring
+  practices. **WHEN TO READ**: in Phase 3b only.

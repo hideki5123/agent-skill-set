@@ -46,3 +46,14 @@
 - **Git Commit**: 858a1c6
 - **Status**: applied — monitoring
 ---
+
+## AMD-005 — 2026-09-30
+- **Pattern**: skill-improve audited skills only against their own feedback. A skill nobody complained about could still be written against an outdated ecosystem, such as a retired model ID, a superseded frontmatter rule, or a hand-rolled check that the CLI now does natively.
+- **Source**: user request (2026-09-30)
+- **Evidence**: The user scoped "skill-improve also reads the knowledge base" into the my-skill-factory AMD-007 run on 2026-09-30.
+- **Change**: New `### Phase 3b: Ecosystem Drift Check`, which runs even without a feedback log. It compares the target skill against `"$MSF_HOME"/references/ecosystem-practices.md` and proposes only from knowledge-base items, never from the auditor's recollection. It records `Source: ecosystem-practices`. The subagent gained judgment call 7 and an `ecosystem_drift` output key, and there is a new scenario.
+- **Files Modified**: `skill-improve/SKILL.md` (Phase 3b, Phase 4, References); `skill-improve/agents/skill-improve.md`; `skill-improve/references/scenarios.feature`.
+- **Version Bump**: 1.2.1 → 1.3.0
+- **Git Commit**: (pending)
+- **Status**: applied — monitoring
+---

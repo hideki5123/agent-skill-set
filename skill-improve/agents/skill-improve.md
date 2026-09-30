@@ -22,6 +22,7 @@ install script run, the smoke check, and the commit/push.
 - Existing `feedback/log.md` (full content if present, count if not).
 - Existing `feedback/amendments.md` (if present).
 - Mode: `retrofit-only`, `analyze-only`, or both.
+- Path to the factory's `references/ecosystem-practices.md` (for the drift check).
 
 ## Judgment calls you own
 
@@ -109,6 +110,19 @@ Be specific. "Improve the description" is not an amendment; "Replace
 Bash cat' to address the misuse pattern logged on 2026-04-12 and 2026-04-18"
 is.
 
+### 7. Ecosystem drift
+
+Compare the skill against each item in `ecosystem-practices.md` that applies to
+its type: a retired model ID, a superseded frontmatter rule, a hand-rolled check
+that a CLI now does natively.
+
+- Propose only from items in that file. Never from your own recollection of the
+  ecosystem: those items were sourced and user-approved, and recollection was not.
+- Cite the item and its source URL as evidence. There is no feedback date here.
+- Report items whose `verified` date is older than 90 days as stale; do not
+  propose from them.
+- Flag concrete contradictions or missed practices only, never general style.
+
 ## Output to the orchestrator
 
 ```json
@@ -142,6 +156,10 @@ is.
       "after": "...",
       "suggested_bump": "patch"
     }
+  ],
+  "ecosystem_drift": [
+    {"item": "<knowledge-base line>", "source": "<url>", "target_file": "skill-name/SKILL.md",
+     "target_section": "...", "before": "...", "after": "...", "suggested_bump": "patch"}
   ],
   "previous_amendment_evaluations": [
     {"id": "AMD-001", "verdict": "effective", "rationale": "..."},

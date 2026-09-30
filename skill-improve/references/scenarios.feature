@@ -77,3 +77,11 @@ Feature: skill-improve — OIAE retrofit + feedback-driven amendments
     And confirms the frontmatter version matches the bumped version
     And confirms path-discipline grep still passes
     And only then reports completion to the user
+
+  Scenario: Ecosystem drift check without any feedback
+    Given the target skill has no feedback/log.md
+    And the factory's ecosystem-practices.md lists a practice the skill contradicts
+    When skill-improve runs without --retrofit-only
+    Then Phase 3b proposes an amendment citing that knowledge-base item and its source URL
+    And proposes nothing from the auditor's own recollection of the ecosystem
+    And records an approved change with Source: ecosystem-practices
